@@ -1,20 +1,72 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Digital RT-RW: Sistem Informasi Lingkungan Pintar
 
-# Run and deploy your AI Studio app
+Digital RT-RW adalah dashboard manajemen lingkungan yang dirancang untuk memodernisasi administrasi di tingkat RT/RW. Aplikasi ini menawarkan solusi terpadu untuk pengelolaan iuran, pengajuan surat (e-reporting), dan transparansi keuangan warga secara digital.
 
-This contains everything you need to run your app locally.
+## 🌟 Fitur Utama
 
-View your app in AI Studio: https://ai.studio/apps/ed6aaa23-ad0a-4ee2-9b10-26838800e014
+-   **Otentikasi Multilevel**: Login khusus untuk Warga dan Pengurus (Admin).
+-   **E-Reporting & Masukan**: Warga dapat melaporkan masalah lingkungan (lampu jalan mati, sampah, dll.) lengkap dengan unggahan foto.
+-   **Transparansi Dana Warga**: Dashboard visual untuk memantau pemasukan dan pengeluaran kas RT secara real-time.
+-   **Layanan E-Surat**: Pengajuan berbagai surat keterangan (Domisili, SKU, SKTM, dll.) dengan fitur tanda tangan digital dan unduh PDF otomatis.
+-   **Manajemen Keuangan Admin**: Pengurus dapat mencatat transaksi kas dengan kewajiban melampirkan bukti kwitansi digital.
+-   **Verifikasi NIK & Telepon**: Keamanan pendaftaran warga dengan validasi NIK (16 digit) dan nomor WhatsApp.
 
-## Run Locally
+## 🛠️ Teknologi yang Digunakan
 
-**Prerequisites:**  Node.js
+-   **Frontend**: React 19, Vite, TypeScript
+-   **Backend**: Express.js (Node.js)
+-   **Styling**: Tailwind CSS
+-   **Animasi**: Framer Motion (`motion/react`)
+-   **Visualisasi Data**: Recharts
+-   **Dokumen**: jsPDF & jsPDF-AutoTable
+-   **Ikon**: Lucide React
 
+## 🚀 Panduan Setup Lokal
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di mesin lokal Anda:
+
+### 1. Prasyarat
+
+Pastikan Anda sudah menginstal:
+-   [Node.js](https://nodejs.org/) (Versi 18 atau lebih tinggi)
+-   [npm](https://www.npmjs.com/) (Biasanya disertakan dalam instalasi Node.js)
+
+### 2. Kloning Repositori (Jika berlaku) atau Unduh File
+Ekstrak file proyek ke direktori pilihan Anda.
+
+### 3. Instalasi Dependensi
+Buka terminal/command prompt di direktori proyek dan jalankan:
+```bash
+npm install
+```
+
+### 4. Konfigurasi Variabel Lingkungan
+Buat file bernama `.env` di direktori akar (root) jika diperlukan untuk API Key pihak ketiga. Anda dapat menyalin dari `.env.example` jika tersedia.
+
+### 5. Menjalankan Aplikasi
+Untuk memulai server pengembangan (development server):
+```bash
+npm run dev
+```
+Aplikasi biasanya akan berjalan di `http://localhost:3000`.
+
+### 6. Membangun untuk Produksi
+Jika Anda ingin membuat versi produksi:
+```bash
+npm run build
+```
+Hasil build akan berada di folder `dist/`.
+
+## 📂 Struktur Proyek Singkat
+
+-   `server.ts`: Entry point backend (Express) yang juga menangani routing Vite.
+-   `src/App.tsx`: Komponen utama yang mengatur routing frontend.
+-   `src/views/`: Berisi halaman utama (Dashboard Warga, Dashboard Admin, Login).
+-   `src/components/`: Komponen UI yang dapat digunakan kembali.
+
+## 📝 Catatan Khusus
+-   Aplikasi ini menggunakan `tsx` untuk menjalankan file TypeScript secara langsung pada backend.
+-   Pastikan port `3000` tidak sedang digunakan oleh aplikasi lain.
+
+---
+Dikembangkan dengan ❤️ untuk lingkungan yang lebih cerdas.
