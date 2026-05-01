@@ -7,6 +7,11 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [role, setRole] = useState<Role>("user");
   
+  const [nik, setNik] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
+  
   const [ocrScanning, setOcrScanning] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
 
@@ -19,14 +24,21 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
         name: "Nama Dummy",
         alamat: "Jl. Merdeka No. 45"
       });
+      setNik("3273112345678900");
     }, 2000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeTab === "register" && role === "user" && !ocrResult) {
-      alert("Warga wajib mengunggah KTP untuk verifikasi NIK!");
-      return;
+    if (activeTab === "register") {
+      if (role === "user" && !ocrResult) {
+        alert("Warga wajib mengunggah KTP untuk verifikasi NIK!");
+        return;
+      }
+      if (!nik || !phone) {
+        alert("Pendaftaran memerlukan NIK dan Nomor Telepon.");
+        return;
+      }
     }
     onLogin(role);
   };
@@ -81,18 +93,54 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
             </div>
 
             {/* General Fields */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Phone / NIK</label>
-              <div className="relative">
-                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input 
-                  type="text" 
-                  placeholder={role === "user" ? "Masukkan NIK Anda" : "No. HP / Username"}
-                  className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
-                  required
-                />
+            {activeTab === "login" ? (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Phone / NIK</label>
+                <div className="relative">
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input 
+                    type="text" 
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
+                    placeholder={role === "user" ? "Masukkan NIK / No. HP" : "No. HP / Username"}
+                    className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor NIK</label>
+                  <div className="relative">
+                    <ShieldAlert size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input 
+                      type="text" 
+                      value={role === "user" && ocrResult ? ocrResult.nik : nik}
+                      onChange={(e) => setNik(e.target.value)}
+                      placeholder="Masukkan 16 digit NIK"
+                      disabled={role === "user" && !!ocrResult}
+                      className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors disabled:opacity-70" 
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor Telepon (WhatsApp)</label>
+                  <div className="relative">
+                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input 
+                      type="tel" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="08xxxxxxxxxx"
+                      className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Password</label>
@@ -100,7 +148,9 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
                 <KeyRound size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input 
                   type="password" 
-                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan Password"
                   className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
                   required
                 />

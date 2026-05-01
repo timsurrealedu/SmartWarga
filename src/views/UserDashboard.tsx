@@ -3,15 +3,19 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, FileCheck, CheckCircle2, AlertCircle, PhoneCall, 
-  MapPin, Clock, Upload, Search, Download, Plus, MessageSquare, CreditCard
+  MapPin, Clock, Upload, Search, Download, Plus, MessageSquare, CreditCard,
+  Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert
 } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar,
+  PieChart, Pie, Cell, Legend
 } from "recharts";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 
 export function UserDashboard({ currentTab, setTab }: { currentTab: string, setTab: (tab: string) => void }) {
   const [letters, setLetters] = useState<any[]>([]);
-  const [finance, setFinance] = useState<any[]>([]);
+  const [finance, setFinance] = useState<any>({ summary: [], details: [], history: [] });
   
   useEffect(() => {
     fetch('/api/user/letters').then(r => r.json()).then(setLetters);
@@ -106,10 +110,39 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
 function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded: (l: any) => void }) {
   const [type, setType] = useState("Surat Pengantar Domisili");
   const [keperluan, setKeperluan] = useState("");
+  const [showOtherOptions, setShowOtherOptions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  const mainLetterTypes = [
+    { id: "Surat Pengantar Domisili", label: "Domisili", icon: <MapPin size={24} />, color: "bg-blue-50 text-blue-600 border-blue-100" },
+    { id: "Surat Keterangan Usaha", label: "Usaha (SKU)", icon: <Briefcase size={24} />, color: "bg-orange-50 text-orange-600 border-orange-100" },
+    { id: "Surat Keterangan Tidak Mampu (SKTM)", label: "SKTM", icon: <HelpingHand size={24} />, color: "bg-green-50 text-green-600 border-green-100" },
+    { id: "Surat Pengantar Nikah (N1-N4)", label: "P. Nikah", icon: <Heart size={24} />, color: "bg-rose-50 text-rose-600 border-rose-100" },
+    { id: "Surat Keterangan Pindah Domisili", label: "Pindah", icon: <Truck size={24} />, color: "bg-purple-50 text-purple-600 border-purple-100" },
+    { id: "Lainnya", label: "Lainnya", icon: <MoreHorizontal size={24} />, color: "bg-gray-50 text-gray-600 border-gray-100" },
+  ];
+
+  const otherLetterTypes = [
+    "Surat Keterangan Kelahiran",
+    "Surat Keterangan Kematian",
+    "Surat Pengantar SKCK",
+    "Surat Keterangan Penghasilan",
+    "Surat Keterangan Belum Menikah",
+  ];
+
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+
+  const handleTypeSelect = (selectedId: string) => {
+    if (selectedId === "Lainnya") {
+      setShowOtherOptions(true);
+      setType(otherLetterTypes[0]);
+    } else {
+      setShowOtherOptions(false);
+      setType(selectedId);
+    }
+  };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -189,6 +222,77 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
     }
   };
 
+  const handleDownloadPDF = (letter: any) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("RUKUN TETANGGA 05 / RUKUN WARGA 12", 105, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Kelurahan Sukamaju, Kecamatan Cibeunying, Kota Bandung, Jawa Barat", 105, 20, { align: "center" });
+    doc.line(20, 25, 190, 25);
+    doc.line(20, 26, 190, 26);
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    const title = letter.type.toUpperCase();
+    doc.text(title, 105, 40, { align: "center" });
+    doc.setLineWidth(0.5);
+    doc.line(105 - (doc.getTextWidth(title)/2), 41, 105 + (doc.getTextWidth(title)/2), 41);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Nomor: ${letter.id}/RT.05/${new Date().getFullYear()}`, 105, 46, { align: "center" });
+
+    // Body
+    doc.text("Yang bertanda tangan di bawah ini Ketua RT. 05 RW. 12 Kelurahan Sukamaju, menerangkan bahwa:", 20, 60);
+    
+    const data = [
+      ["Nama", `: ${letter.name || "Budi Santoso"}`],
+      ["NIK", ": 3273****************"],
+      ["Alamat", ": Jl. Merdeka No. 45"],
+      ["Keperluan", `: ${letter.keperluan}`],
+    ];
+
+    (doc as any).autoTable({
+      startY: 65,
+      margin: { left: 25 },
+      body: data,
+      theme: 'plain',
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnStyles: { 0: { cellWidth: 40 } }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.text("Demikian surat ini dibuat agar dapat dipergunakan sebagaimana mestinya.", 20, finalY + 15);
+
+    // Signatures
+    const sigY = finalY + 40;
+    doc.text("Bandung, " + letter.date.split(",")[0], 140, sigY - 10);
+    
+    doc.text("Pemohon,", 30, sigY);
+    if (letter.wargaSignature) {
+      doc.addImage(letter.wargaSignature, 'PNG', 25, sigY + 5, 40, 20);
+    }
+    doc.text(`(${letter.name || "Budi Santoso"})`, 30, sigY + 30);
+
+    doc.text("Ketua RT 05,", 140, sigY);
+    if (letter.adminSignature) {
+      doc.addImage(letter.adminSignature, 'PNG', 135, sigY + 5, 40, 20);
+    } else {
+      doc.setFontSize(8);
+      doc.setTextColor(200, 0, 0);
+      doc.text("BELUM DITANDA TANGANI", 135, sigY + 15);
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+    }
+    doc.text("(..............................)", 140, sigY + 30);
+
+    doc.save(`${letter.type}-${letter.id}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-end mb-6">
@@ -201,21 +305,50 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
       <div className="grid md:grid-cols-2 gap-6">
          {/* Form Request */}
          <div className="space-y-6">
-           <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+            <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
               <h3 className="font-semibold text-text-main border-b border-border-weak pb-4 mb-4">Form Pengajuan</h3>
-              <div className="space-y-4">
+              <div className="space-y-6">
                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Jenis Surat</label>
-                    <select 
-                      value={type} 
-                      onChange={e => setType(e.target.value)}
-                      className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
-                    >
-                       <option>Surat Pengantar Domisili</option>
-                       <option>Surat Keterangan Usaha</option>
-                       <option>Surat Keterangan Tidak Mampu</option>
-                    </select>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">Pilih Jenis Surat</label>
+                    <div className="grid grid-cols-3 gap-3">
+                       {mainLetterTypes.map((item) => (
+                         <button
+                           key={item.id}
+                           type="button"
+                           onClick={() => handleTypeSelect(item.id)}
+                           className={cn(
+                             "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all gap-2",
+                             (type === item.id || (item.id === "Lainnya" && showOtherOptions))
+                               ? "border-primary bg-primary/5 shadow-sm scale-[1.02]" 
+                               : "border-transparent bg-canvas hover:border-border-strong"
+                           )}
+                         >
+                           <div className={cn("w-12 h-12 rounded-full flex items-center justify-center border", item.color)}>
+                              {item.icon}
+                           </div>
+                           <span className={cn("text-[10px] font-bold uppercase text-center leading-tight transition-colors", (type === item.id || (item.id === "Lainnya" && showOtherOptions)) ? "text-primary" : "text-text-muted")}>
+                              {item.label}
+                           </span>
+                         </button>
+                       ))}
+                    </div>
+
+                    {showOtherOptions && (
+                      <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-[10px] font-bold uppercase text-text-muted mb-2 tracking-widest">Surat Lainnya</label>
+                        <select 
+                          value={type} 
+                          onChange={e => setType(e.target.value)}
+                          className="w-full bg-canvas border-2 border-primary/30 rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+                        >
+                           {otherLetterTypes.map(ot => (
+                             <option key={ot} value={ot}>{ot}</option>
+                           ))}
+                        </select>
+                      </div>
+                    )}
                  </div>
+                 
                  <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Keperluan</label>
                     <textarea 
@@ -263,14 +396,25 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                  {letters.length === 0 && <p className="text-sm text-text-muted text-center py-4">Belum ada riwayat pengajuan.</p>}
                  {letters.map(letter => (
-                   <div key={letter.id} className="flex items-center justify-between p-3 border border-border-weak rounded-xl hover:bg-surface-hover cursor-pointer transition-colors">
-                     <div>
+                   <div key={letter.id} className="flex items-center justify-between p-3 border border-border-weak rounded-xl hover:bg-surface-hover transition-colors">
+                     <div className="flex-1">
                        <p className="text-sm font-semibold text-text-main">{letter.type}</p>
                        <p className="text-xs text-text-muted mt-0.5">{letter.date} — {letter.keperluan}</p>
                      </div>
-                     {letter.status === 'approved' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-primary/20 text-primary rounded-md whitespace-nowrap">Selesai / QR Valid</span>}
-                     {letter.status === 'pending' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-accent/20 text-accent rounded-md whitespace-nowrap">Menunggu RT</span>}
-                     {letter.status === 'rejected' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-red-900/40 text-red-400 rounded-md whitespace-nowrap">Ditolak</span>}
+                     <div className="flex items-center gap-2">
+                        {letter.status === 'approved' && (
+                          <button 
+                            onClick={() => handleDownloadPDF(letter)}
+                            className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                            title="Download PDF"
+                          >
+                            <Download size={14} />
+                          </button>
+                        )}
+                        {letter.status === 'approved' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-primary/20 text-primary rounded-md whitespace-nowrap">Selesai / QR Valid</span>}
+                        {letter.status === 'pending' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-accent/20 text-accent rounded-md whitespace-nowrap">Menunggu RT</span>}
+                        {letter.status === 'rejected' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-red-900/40 text-red-400 rounded-md whitespace-nowrap">Ditolak</span>}
+                     </div>
                    </div>
                  ))}
               </div>
@@ -322,17 +466,18 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
   );
 }
 
-function FinanceTab({ data }: { data: any[] }) {
-  // Use passed data or fallback to empty array if not loaded yet
-  const chartData = data.length > 0 ? data : [
-    { name: "Jan", Pemasukan: 0, Pengeluaran: 0 }
-  ];
+function FinanceTab({ data }: { data: any }) {
+  const chartData = data.summary || [];
+  const details = data.details || [];
+  const totalExpense = chartData.reduce((sum: number, item: any) => sum + item.value, 0);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">Transparansi Dana Warga</h2>
-        <p className="text-sm text-text-muted mt-1">Laporan real-time pemasukan dan pengeluaran kas RT/RW.</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Transparansi Dana Warga</h2>
+          <p className="text-sm text-text-muted mt-1">Laporan real-time pemasukan dan pengeluaran kas RT/RW.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -340,42 +485,94 @@ function FinanceTab({ data }: { data: any[] }) {
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Saldo Kas Saat Ini</p>
             <p className="text-2xl font-display font-bold text-text-main">Rp 12.550.000</p>
          </div>
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Pemasukan Bulan Ini</p>
-            <p className="text-2xl font-display font-bold text-primary">+ Rp 2.400.000</p>
+         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-primary">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pemasukan (Okt)</p>
+            <p className="text-2xl font-display font-bold">+ Rp 2.400.000</p>
+         </div>
+         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-accent">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pengeluaran (Okt)</p>
+            <p className="text-2xl font-display font-bold">- Rp {totalExpense.toLocaleString('id-ID')}</p>
          </div>
          <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Pengeluaran</p>
-            <p className="text-2xl font-display font-bold text-accent">- Rp 850.000</p>
-         </div>
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Warga Lunas Iuran</p>
-            <p className="text-2xl font-display font-bold text-text-main">85 / 120</p>
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Warga Terdaftar</p>
+            <p className="text-2xl font-display font-bold text-text-main">120 KK</p>
          </div>
       </div>
 
-      <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak h-[400px]">
-        <h3 className="font-semibold text-text-main mb-6">Grafik Arus Kas 6 Bulan Terakhir</h3>
-        <ResponsiveContainer width="100%" height="85%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#A8E6CF" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#A8E6CF" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorOut" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF8A65" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#FF8A65" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="name" axisLine={false} tickLine={false} className="text-xs" />
-            <YAxis axisLine={false} tickLine={false} className="text-xs" />
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-            <RechartsTooltip />
-            <Area type="monotone" dataKey="Pemasukan" stroke="#A8E6CF" fillOpacity={1} fill="url(#colorIn)" />
-            <Area type="monotone" dataKey="Pengeluaran" stroke="#FF8A65" fillOpacity={1} fill="url(#colorOut)" />
-          </AreaChart>
-        </ResponsiveContainer>
+      <div className="grid md:grid-cols-2 gap-6">
+         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+            <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
+            <div className="h-[300px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    formatter={(value: number) => {
+                      const percent = ((value / totalExpense) * 100).toFixed(1);
+                      return [`${percent}%`, "Persentase"];
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-center pointer-events-none">
+                 <p className="text-[10px] uppercase font-bold text-text-muted">Total Pengeluaran</p>
+                 <p className="text-lg font-bold text-text-main">Rp {(totalExpense/1000).toFixed(0)}k</p>
+              </div>
+            </div>
+         </div>
+
+         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+            <h3 className="font-semibold text-text-main mb-4">Rincian Pengeluaran Bulanan</h3>
+            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+               {chartData.map((item: any, idx: number) => (
+                 <div key={idx} className="flex items-center justify-between p-3 border border-border-weak rounded-xl">
+                    <div className="flex items-center gap-3">
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                       <span className="text-sm font-medium text-text-main">{item.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-text-main">Rp {item.value.toLocaleString('id-ID')}</span>
+                 </div>
+               ))}
+               <div className="pt-4 border-t border-border-strong flex justify-between items-center">
+                  <span className="font-bold text-text-main uppercase text-xs">Total Dana Operasional</span>
+                  <span className="font-bold text-accent">Rp {totalExpense.toLocaleString('id-ID')}</span>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+         <h3 className="font-semibold text-text-main mb-6">Bukti Pengeluaran (Kwitansi Digital)</h3>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {details.map((item: any) => (
+               <div key={item.id} className="border border-border-weak rounded-xl overflow-hidden hover:border-primary transition-all group">
+                  <div className="relative h-32 overflow-hidden bg-canvas">
+                     <img src={item.proof} alt="Proof" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                     <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded uppercase">Kwitansi Valid</div>
+                  </div>
+                  <div className="p-4">
+                     <div className="flex justify-between items-start mb-1">
+                        <h4 className="font-semibold text-sm text-text-main">{item.desc}</h4>
+                        <span className="text-[10px] font-bold text-accent">-{item.amount/1000}k</span>
+                     </div>
+                     <p className="text-[10px] text-text-muted uppercase tracking-wider">{item.category} • {item.date}</p>
+                  </div>
+               </div>
+            ))}
+         </div>
       </div>
     </div>
   );
@@ -509,11 +706,32 @@ function ReportingTab() {
   const [reports, setReports] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("Infrastruktur");
+  const [isPublic, setIsPublic] = useState(true);
+  
+  const reportCategories = [
+    { id: "Infrastruktur", label: "Lampu/Jalan", icon: <MapPin size={20} />, color: "bg-blue-50 text-blue-600 border-blue-100" },
+    { id: "Kebersihan", label: "Sampah", icon: <Plus size={20} />, color: "bg-green-50 text-green-600 border-green-100" },
+    { id: "Keamanan", label: "Keamanan", icon: <ShieldAlert size={20} />, color: "bg-red-50 text-red-600 border-red-100" },
+  ];
+  const [image, setImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<"mine" | "public">("mine");
 
   useEffect(() => {
     fetch('/api/user/reports').then(r => r.json()).then(setReports);
   }, []);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -523,12 +741,13 @@ function ReportingTab() {
       const res = await fetch("/api/user/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, location })
+        body: JSON.stringify({ title, location, image, isPublic, category })
       });
       const newReport = await res.json();
       setReports([newReport, ...reports]);
       setTitle("");
       setLocation("");
+      setImage(null);
       alert("Laporan berhasil dikirim!");
     } catch (e) {
       alert("Gagal mengirim laporan.");
@@ -537,24 +756,48 @@ function ReportingTab() {
     }
   };
 
+  const filteredReports = viewMode === "mine" 
+    ? reports.filter(r => r.sender === "Budi Santoso")
+    : reports.filter(r => r.isPublic);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">E-Reporting</h2>
-        <p className="text-sm text-text-muted mt-1">Sistem pelaporan masalah lingkungan (infrastruktur, keamanan, ketertiban).</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-display font-semibold text-text-main">E-Reporting</h2>
+          <p className="text-sm text-text-muted mt-1">Sistem pelaporan masalah lingkungan (infrastruktur, keamanan, ketertiban).</p>
+        </div>
+        <div className="flex bg-surface rounded-lg p-1 border border-border-weak">
+          <button 
+            onClick={() => setViewMode("mine")}
+            className={cn("px-4 py-1.5 text-xs font-semibold rounded-md transition-all", viewMode === "mine" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main")}
+          >
+            Laporan Saya
+          </button>
+          <button 
+            onClick={() => setViewMode("public")}
+            className={cn("px-4 py-1.5 text-xs font-semibold rounded-md transition-all", viewMode === "public" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main")}
+          >
+            Laporan Warga
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 border border-border-strong rounded-2xl p-6 bg-surface">
+        <div className="md:col-span-1 border border-border-strong rounded-2xl p-6 bg-surface h-fit overflow-hidden">
           <h3 className="font-semibold text-text-main mb-4">Buat Laporan Baru</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Pilih Kategori</label>
-              <select className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main">
-                 <option>Infrastruktur (Lampu, Jalan)</option>
-                 <option>Kebersihan (Sampah, Selokan)</option>
-                 <option>Keamanan & Ketertiban</option>
-                 <option>Lainnya</option>
+              <select 
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+              >
+                 <option value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
+                 <option value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
+                 <option value="Keamanan">Keamanan & Ketertiban</option>
+                 <option value="Lainnya">Lainnya</option>
               </select>
             </div>
             <div>
@@ -577,6 +820,47 @@ function ReportingTab() {
                 className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
               />
             </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Foto Pendukung (Opsional)</label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-border-strong border-dashed rounded-lg bg-canvas hover:bg-surface-hover transition-colors">
+                <div className="space-y-1 text-center">
+                  {!image ? (
+                    <>
+                      <Camera className="mx-auto h-12 w-12 text-text-muted" />
+                      <div className="flex text-sm text-text-muted">
+                        <label className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none">
+                          <span>Unggah foto</span>
+                          <input type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                        </label>
+                        <p className="pl-1">atau tarik seret</p>
+                      </div>
+                      <p className="text-xs text-text-muted">PNG, JPG, GIF up to 5MB</p>
+                    </>
+                  ) : (
+                    <div className="relative inline-block">
+                      <img src={image} alt="Preview" className="h-32 w-auto rounded-lg shadow-sm" />
+                      <button 
+                        type="button" 
+                        onClick={() => setImage(null)}
+                        className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
+                      >
+                        <Plus size={14} className="rotate-45" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 py-2">
+               <input 
+                 type="checkbox" 
+                 id="public_report" 
+                 checked={isPublic} 
+                 onChange={e => setIsPublic(e.target.checked)}
+                 className="accent-primary"
+               />
+               <label htmlFor="public_report" className="text-xs text-text-muted font-medium cursor-pointer">Publikasikan laporan agar warga lain dapat melihat</label>
+            </div>
             <button 
               type="submit" 
               disabled={submitting}
@@ -588,29 +872,41 @@ function ReportingTab() {
         </div>
 
         <div className="md:col-span-2 border border-border-strong rounded-2xl p-6 bg-surface">
-           <h3 className="font-semibold text-text-main mb-4">Laporan Saya</h3>
-           <div className="space-y-4 max-h-[500px] overflow-y-auto">
-             {reports.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada laporan.</p>}
-             {reports.map(report => (
-               <div key={report.id} className="border border-border-weak p-4 rounded-xl flex gap-4 hover:border-border-strong transition-colors">
-                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
-                    <MessageSquare size={20} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                       <h4 className="font-semibold text-text-main">{report.title}</h4>
-                       <span className={cn(
-                          "text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md",
-                          report.status === "SELESAI" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"
-                       )}>{report.status}</span>
+           <h3 className="font-semibold text-text-main mb-4">{viewMode === "mine" ? "Laporan Saya" : "Laporan Publik Warga"}</h3>
+           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+             {filteredReports.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada laporan.</p>}
+             {filteredReports.map(report => (
+               <div key={report.id} className="border border-border-weak p-4 rounded-xl flex flex-col gap-4 hover:border-border-strong transition-colors bg-canvas/30">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                      <MessageSquare size={20} />
                     </div>
-                    <p className="text-xs text-text-muted mb-2"><MapPin size={12} className="inline mr-1" />{report.location} • {report.date}</p>
-                    {report.status === "SELESAI" && (
-                       <div className="bg-canvas p-2.5 rounded-lg text-xs border border-border-strong">
-                          <strong className="text-text-main">Tanggapan RT:</strong> Terima kasih, laporan sudah ditindaklanjuti dan selesai dikerjakan kemarin sore.
-                       </div>
-                    )}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-1">
+                         <h4 className="font-semibold text-text-main">{report.title}</h4>
+                         <span className={cn(
+                            "text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md",
+                            report.status === "SELESAI" ? "bg-primary/20 text-primary" : 
+                            report.status === "PROSES" ? "bg-blue-500/20 text-blue-500" : "bg-accent/20 text-accent"
+                         )}>{report.status}</span>
+                      </div>
+                      <p className="text-xs text-text-muted mb-2">
+                        {viewMode === "public" && <span className="font-semibold text-primary mr-2">{report.sender}</span>}
+                        <MapPin size={12} className="inline mr-1" />{report.location} • {report.date}
+                      </p>
+                    </div>
                   </div>
+                  {report.image && (
+                    <div className="ml-16">
+                      <img src={report.image} alt="Report attachment" className="h-40 w-auto rounded-lg shadow-sm border border-border-weak" />
+                    </div>
+                  )}
+                  {report.status === "SELESAI" && (
+                     <div className="ml-16 bg-primary/20 p-2.5 rounded-lg text-xs border border-primary/20 text-text-main shadow-sm animate-in fade-in slide-in-from-left-2 transition-all">
+                        <strong className="text-primary block mb-1 uppercase tracking-widest text-[9px]">Tanggapan RT:</strong> 
+                        <p className="leading-relaxed">Terima kasih, laporan sudah ditindaklanjuti dan selesai dikerjakan kemarin sore bersama tim lingkungan.</p>
+                     </div>
+                  )}
                </div>
              ))}
            </div>

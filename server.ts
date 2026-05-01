@@ -32,9 +32,24 @@ async function startServer() {
   ];
 
   let reportsData = [
-    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES" },
-    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI" },
-    { id: "REP-03", title: "Parkir Liar", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI" }
+    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=200", sender: "Bpk. Rahardian", isPublic: true },
+    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: null, sender: "Ibu Sari", isPublic: true },
+    { id: "REP-03", title: "Parkir Liar", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: null, sender: "Budi Santoso", isPublic: false }
+  ];
+
+  let financeDetails = [
+    { id: "EXP-01", category: "Kebersihan", amount: 450000, desc: "Honor Petugas Sampah", date: "25 Okt 2023", proof: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" },
+    { id: "EXP-02", category: "Keamanan", amount: 1200000, desc: "Gaji Satpam Malam (2 org)", date: "28 Okt 2023", proof: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" },
+    { id: "EXP-03", category: "Infrastruktur", amount: 850000, desc: "Perbaikan Lampu Jalan Blok D", date: "30 Okt 2023", proof: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" },
+    { id: "EXP-04", category: "Acara Warga", amount: 1500000, desc: "Konsumsi Kerja Bakti Lingkungan", date: "20 Okt 2023", proof: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" }
+  ];
+
+  let financeSummary = [
+    { name: "Kebersihan", value: 450000, color: "#1B332D" },
+    { name: "Keamanan", value: 1200000, color: "#4a5d4a" },
+    { name: "Infrastruktur", value: 850000, color: "#e2e8e2" },
+    { name: "Acara Warga", value: 1500000, color: "#a2b897" },
+    { name: "Admin RT", value: 300000, color: "#FF8A65" },
   ];
 
   // API Routes
@@ -64,7 +79,7 @@ async function startServer() {
   });
 
   app.get("/api/finance", (req, res) => {
-    res.json(financeData);
+    res.json({ summary: financeSummary, details: financeDetails, history: financeData });
   });
 
   app.get("/api/user/dues", (req, res) => {
@@ -82,13 +97,17 @@ async function startServer() {
   });
 
   app.post("/api/user/reports", (req, res) => {
-    const { title, location } = req.body;
+    const { title, location, image, isPublic, category } = req.body;
     const newReport = {
       id: `REP-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       title: title || "Laporan Baru",
       location: location || "Lokasi tidak diketahui",
       date: "Baru saja",
-      status: "TERKIRIM"
+      status: "TERKIRIM",
+      image: image || null,
+      sender: "Budi Santoso",
+      isPublic: isPublic ?? true,
+      category: category || "Lainnya"
     };
     reportsData = [newReport, ...reportsData];
     res.json(newReport);
@@ -110,6 +129,28 @@ async function startServer() {
     const { id } = req.params;
     letters = letters.map(l => l.id === id ? { ...l, status: "rejected" } : l);
     res.json({ success: true });
+  });
+
+  app.post("/api/admin/finance", (req, res) => {
+    const { type, amount, desc, image } = req.body;
+    if (!image) return res.status(400).json({ error: "Proof image is mandatory" });
+    
+    const newTransaction = {
+      id: `${type === 'in' ? 'INC' : 'EXP'}-${Math.floor(Math.random() * 1000)}`,
+      category: type === 'in' ? "Pemasukan" : "Operasional",
+      amount: Number(amount),
+      desc,
+      date: "Hari ini",
+      proof: image
+    };
+    
+    if (type === 'out') {
+       financeDetails = [newTransaction, ...financeDetails];
+       // Simply update first item in summary for demo
+       financeSummary[0].value += Number(amount);
+    }
+    
+    res.json({ success: true, transaction: newTransaction });
   });
 
   app.post("/api/admin/validate-user", (req, res) => {

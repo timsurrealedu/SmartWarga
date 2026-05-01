@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard
+  Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
+  Download
 } from "lucide-react";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 
 export function AdminDashboard({ currentTab, setTab }: { currentTab: string, setTab: (tab: string) => void }) {
   return (
@@ -155,6 +158,71 @@ function LettersApprovalTab() {
     setHasSignature(false);
   };
 
+  const handleDownloadPDF = (letter: any) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("RUKUN TETANGGA 05 / RUKUN WARGA 12", 105, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Kelurahan Sukamaju, Kecamatan Cibeunying, Kota Bandung, Jawa Barat", 105, 20, { align: "center" });
+    doc.line(20, 25, 190, 25);
+    doc.line(20, 26, 190, 26);
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    const title = letter.type.toUpperCase();
+    doc.text(title, 105, 40, { align: "center" });
+    doc.setLineWidth(0.5);
+    doc.line(105 - (doc.getTextWidth(title)/2), 41, 105 + (doc.getTextWidth(title)/2), 41);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Nomor: ${letter.id}/RT.05/${new Date().getFullYear()}`, 105, 46, { align: "center" });
+
+    // Body
+    doc.text("Yang bertanda tangan di bawah ini Ketua RT. 05 RW. 12 Kelurahan Sukamaju, menerangkan bahwa:", 20, 60);
+    
+    const data = [
+      ["Nama", `: ${letter.name || "Warga"}`],
+      ["NIK", ": 3273****************"],
+      ["Alamat", ": Jl. Merdeka No. 45"],
+      ["Keperluan", `: ${letter.keperluan}`],
+    ];
+
+    (doc as any).autoTable({
+      startY: 65,
+      margin: { left: 25 },
+      body: data,
+      theme: 'plain',
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnStyles: { 0: { cellWidth: 40 } }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.text("Demikian surat ini dibuat agar dapat dipergunakan sebagaimana mestinya.", 20, finalY + 15);
+
+    // Signatures
+    const sigY = finalY + 40;
+    doc.text("Bandung, " + letter.date.split(",")[0], 140, sigY - 10);
+    
+    doc.text("Pemohon,", 30, sigY);
+    if (letter.wargaSignature) {
+      doc.addImage(letter.wargaSignature, 'PNG', 25, sigY + 5, 40, 20);
+    }
+    doc.text(`(${letter.name || "Warga"})`, 30, sigY + 30);
+
+    doc.text("Ketua RT 05,", 140, sigY);
+    if (letter.adminSignature) {
+      doc.addImage(letter.adminSignature, 'PNG', 135, sigY + 5, 40, 20);
+    }
+    doc.text("(..............................)", 140, sigY + 30);
+
+    doc.save(`${letter.type}-${letter.id}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       {selectedLetter && (
@@ -272,11 +340,22 @@ function LettersApprovalTab() {
                     </button>
                  </div>
                ) : (
-                 <div className={cn(
-                   "px-4 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wider shrink-0 flex items-center gap-2",
-                   letter.status === "approved" ? "bg-primary/20 text-primary" : "bg-red-900/40 text-red-400"
-                 )}>
-                    {letter.status === "approved" ? <><Check size={16} /> Disetujui</> : <><X size={16} /> Ditolak</>}
+                 <div className="flex items-center gap-2 shrink-0">
+                    {letter.status === "approved" && (
+                      <button 
+                        onClick={() => handleDownloadPDF(letter)}
+                        className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                        title="Download PDF"
+                      >
+                        <Download size={14} />
+                      </button>
+                    )}
+                    <div className={cn(
+                      "px-4 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wider shrink-0 flex items-center gap-2",
+                      letter.status === "approved" ? "bg-primary/20 text-primary" : "bg-red-900/40 text-red-400"
+                    )}>
+                       {letter.status === "approved" ? <><Check size={16} /> Disetujui</> : <><X size={16} /> Ditolak</>}
+                    </div>
                  </div>
                )}
              </div>
@@ -414,6 +493,46 @@ function AdminFinanceTab() {
     { id: "3", type: "in", amount: 150000, desc: "Iuran Bulanan - Ibu Rini Blok A1", date: "05 Okt 2023" },
   ]);
   const [showAdd, setShowAdd] = useState(false);
+  const [type, setType] = useState("in");
+  const [amount, setAmount] = useState("");
+  const [desc, setDesc] = useState("");
+  const [image, setImage] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!amount || !desc) return alert("Nominal dan keterangan wajib diisi!");
+    if (!image) return alert("Bukti transaksi (kwitansi/foto) wajib diunggah!");
+    
+    try {
+      const res = await fetch("/api/admin/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, amount, desc, image })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Transaksi disimpan!");
+        setShowAdd(false);
+        setAmount("");
+        setDesc("");
+        setImage(null);
+      } else {
+        alert(data.error || "Gagal menyimpan transaksi");
+      }
+    } catch (e) {
+      alert("Terjadi kesalahan sistem");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -424,42 +543,90 @@ function AdminFinanceTab() {
         </div>
         <button 
           onClick={() => setShowAdd(!showAdd)}
-          className="bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors"
+          className={cn("bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors", showAdd && "bg-accent hover:bg-accent/80")}
         >
-          <Plus size={18} /> Tambah Transaksi
+          {showAdd ? <X size={18} /> : <Plus size={18} />} {showAdd ? "Batal" : "Tambah Transaksi"}
         </button>
       </div>
 
       {showAdd && (
         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak animate-in fade-in slide-in-from-top-4">
           <h3 className="font-semibold text-text-main mb-4">Transaksi Baru</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Jenis</label>
-              <select className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none">
-                <option value="in">Pemasukan (Iuran/Donasi)</option>
-                <option value="out">Pengeluaran (Operasional)</option>
-              </select>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Jenis</label>
+                  <select 
+                    value={type}
+                    onChange={e => setType(e.target.value)}
+                    className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+                  >
+                    <option value="in">Pemasukan (Iuran/Donasi)</option>
+                    <option value="out">Pengeluaran (Operasional)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Nominal (Rp)</label>
+                  <input 
+                    type="number" 
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder="Contoh: 150000" 
+                    className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Keterangan</label>
+                <input 
+                  type="text" 
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  placeholder="Detail transaksi..." 
+                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
+                />
+              </div>
             </div>
+            
             <div>
-              <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Nominal (Rp)</label>
-              <input type="number" placeholder="Contoh: 150000" className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Keterangan</label>
-              <input type="text" placeholder="Detail transaksi..." className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none" />
+              <label className="block text-xs font-semibold uppercase text-text-muted mb-2">Bukti Transaksi (Kwitansi/Foto)</label>
+              <div className="mt-1 flex justify-center px-4 py-8 border-2 border-border-strong border-dashed rounded-lg bg-canvas hover:bg-surface-hover transition-colors overflow-hidden">
+                <div className="space-y-1 text-center">
+                  {!image ? (
+                    <>
+                      <Camera className="mx-auto h-10 w-10 text-text-muted" />
+                      <div className="flex text-xs text-text-muted mt-2">
+                        <label className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none">
+                          <span>Unggah bukti</span>
+                          <input type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                        </label>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="relative inline-block">
+                      <img src={image} alt="Receipt Preview" className="h-28 w-auto rounded-lg shadow-sm" />
+                      <button 
+                        type="button" 
+                        onClick={() => setImage(null)}
+                        className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-[10px] text-accent mt-2 font-semibold">* Wajib diunggah bukti fisik/digital</p>
             </div>
           </div>
-          <div className="mt-4 flex justify-end gap-3">
+          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-border-weak">
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-text-muted hover:text-text-main">Batal</button>
             <button 
-              onClick={() => {
-                alert("Transaksi disimpan!");
-                setShowAdd(false);
-              }}
-              className="bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium"
+              onClick={handleSave}
+              className="bg-primary text-text-inverse px-8 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
             >
-              Simpan
+              Simpan Transaksi
             </button>
           </div>
         </div>
@@ -569,14 +736,14 @@ function AdminTicketsTab() {
                </div>
              </div>
 
-             {/* Responses Section */}
+              {/* Responses Section */}
              {report.responses && report.responses.length > 0 && (
                <div className="mt-4 pt-4 border-t border-border-weak space-y-3">
                  <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Tanggapan Pengurus:</h4>
                  {report.responses.map((resp, idx) => (
-                    <div key={idx} className="bg-[#e2e8e2] px-3 py-2 rounded-lg inline-block w-full max-w-lg">
-                       <p className="text-sm font-medium text-[#1B332D] mb-1">{resp.text}</p>
-                       <p className="text-[10px] text-[#4a5d4a]">{resp.date}</p>
+                    <div key={idx} className="bg-primary/20 px-3 py-2 rounded-lg inline-block w-full max-w-lg border border-primary/20">
+                       <p className="text-sm font-medium text-text-main mb-1">{resp.text}</p>
+                       <p className="text-[10px] text-text-muted">{resp.date}</p>
                     </div>
                  ))}
                </div>
