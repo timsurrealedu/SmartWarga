@@ -132,21 +132,22 @@ export function AuthView({
               </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor NIK</label>
-                  <div className="relative">
-                    <ShieldAlert size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input 
-                      type="text" 
-                      value={role === "user" && ocrResult ? ocrResult.nik : nik}
-                      onChange={(e) => setNik(e.target.value)}
-                      placeholder="Masukkan 16 digit NIK"
-                      disabled={role === "user" && !!ocrResult}
-                      className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors disabled:opacity-70" 
-                      required
-                    />
+                {role === "admin" && (
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor NIK</label>
+                    <div className="relative">
+                      <ShieldAlert size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input 
+                        type="text" 
+                        value={nik}
+                        onChange={(e) => setNik(e.target.value)}
+                        placeholder="Masukkan 16 digit NIK"
+                        className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor Telepon (WhatsApp)</label>
                   <div className="relative">
