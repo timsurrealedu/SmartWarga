@@ -54,9 +54,9 @@ export function AuthView({
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4">
       {/* Back to Landing */}
-      <div className="absolute top-8 left-8">
+      <div className="w-full max-w-md mb-6">
         <button 
           onClick={onBack}
           className="flex items-center gap-2 text-text-muted hover:text-accent transition-colors font-medium text-sm"
