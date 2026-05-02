@@ -5,25 +5,49 @@ import { UserDashboard } from "./views/UserDashboard";
 import { AdminDashboard } from "./views/AdminDashboard";
 import { ArchitectureDoc } from "./views/ArchitectureDoc";
 import { AuthView } from "./views/AuthView";
+import { LandingView } from "./views/LandingView";
 
 export default function App() {
   const [currentRole, setCurrentRole] = useState<Role>("user");
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authConfig, setAuthConfig] = useState<{tab: "login"|"register", role: Role}>({tab: "login", role: "user"});
 
   const handleLogin = (role: Role) => {
     setCurrentRole(role);
     setCurrentTab("dashboard");
     setIsAuthenticated(true);
+    setShowAuth(false);
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setShowAuth(false);
+  };
+
+  const handleOpenAuth = (tab: "login" | "register", role: Role) => {
+    setAuthConfig({ tab, role });
+    setShowAuth(true);
   };
 
   if (!isAuthenticated) {
-    return <AuthView onLogin={handleLogin} />;
+    if (!showAuth) {
+      return (
+        <LandingView 
+          onStart={() => handleOpenAuth("register", "user")} 
+          onLogin={() => handleOpenAuth("login", "admin")} 
+          onLoginUser={() => handleOpenAuth("login", "user")}
+        />
+      );
+    }
+    return <AuthView 
+      onLogin={handleLogin} 
+      onBack={() => setShowAuth(false)} 
+      initialTab={authConfig.tab}
+      initialRole={authConfig.role}
+    />;
   }
 
   return (

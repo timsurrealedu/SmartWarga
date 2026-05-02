@@ -49,9 +49,11 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
       <div className="p-6 relative">
-        <h1 className="text-3xl font-serif tracking-tight" style={{ letterSpacing: '-0.02em' }}>
-          <span className="text-primary">Smart</span><span className="italic relative text-[#a2b897]" style={{ marginLeft: '-0.02em' }}>Warga</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-serif-title font-semibold tracking-tight">
+            <span className="text-text-main">Smart</span><span className="text-accent">Warga</span>
+          </h1>
+        </div>
         <p className="text-xs text-text-muted opacity-70 mt-1">RT/RW Digital Platform</p>
         <button 
           className="md:hidden absolute top-6 right-4 text-text-muted hover:text-text-main"

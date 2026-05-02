@@ -784,94 +784,99 @@ function ReportingTab() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 border border-border-strong rounded-2xl p-6 bg-surface h-fit overflow-hidden">
-          <h3 className="font-semibold text-text-main mb-4">Buat Laporan Baru</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Pilih Kategori</label>
-              <select 
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
-              >
-                 <option value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
-                 <option value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
-                 <option value="Keamanan">Keamanan & Ketertiban</option>
-                 <option value="Lainnya">Lainnya</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Judul Laporan</label>
-              <input 
-                type="text" 
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Misal: Lampu Jalan Padam di Blok D"
-                className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Lokasi Detail</label>
-              <input 
-                type="text" 
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                placeholder="Jalan, Blok, atau patokan terdekat"
-                className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Foto Pendukung (Opsional)</label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-border-strong border-dashed rounded-lg bg-canvas hover:bg-surface-hover transition-colors">
-                <div className="space-y-1 text-center">
-                  {!image ? (
-                    <>
-                      <Camera className="mx-auto h-12 w-12 text-text-muted" />
-                      <div className="flex text-sm text-text-muted">
-                        <label className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none">
-                          <span>Unggah foto</span>
-                          <input type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
-                        </label>
-                        <p className="pl-1">atau tarik seret</p>
+        {viewMode === "mine" && (
+          <div className="md:col-span-1 border border-border-strong rounded-2xl p-6 bg-surface h-fit overflow-hidden">
+            <h3 className="font-semibold text-text-main mb-4">Buat Laporan Baru</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Pilih Kategori</label>
+                <select 
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+                >
+                   <option value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
+                   <option value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
+                   <option value="Keamanan">Keamanan & Ketertiban</option>
+                   <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Judul Laporan</label>
+                <input 
+                  type="text" 
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="Misal: Lampu Jalan Padam di Blok D"
+                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Lokasi Detail</label>
+                <input 
+                  type="text" 
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  placeholder="Jalan, Blok, atau patokan terdekat"
+                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Foto Pendukung (Opsional)</label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-border-strong border-dashed rounded-lg bg-canvas hover:bg-surface-hover transition-colors">
+                  <div className="space-y-1 text-center">
+                    {!image ? (
+                      <>
+                        <Camera className="mx-auto h-12 w-12 text-text-muted" />
+                        <div className="flex text-sm text-text-muted">
+                          <label className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none">
+                            <span>Unggah foto</span>
+                            <input type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                          </label>
+                          <p className="pl-1">atau tarik seret</p>
+                        </div>
+                        <p className="text-xs text-text-muted">PNG, JPG, GIF up to 5MB</p>
+                      </>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img src={image} alt="Preview" className="h-32 w-auto rounded-lg shadow-sm" />
+                        <button 
+                          type="button" 
+                          onClick={() => setImage(null)}
+                          className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
+                        >
+                          <Plus size={14} className="rotate-45" />
+                        </button>
                       </div>
-                      <p className="text-xs text-text-muted">PNG, JPG, GIF up to 5MB</p>
-                    </>
-                  ) : (
-                    <div className="relative inline-block">
-                      <img src={image} alt="Preview" className="h-32 w-auto rounded-lg shadow-sm" />
-                      <button 
-                        type="button" 
-                        onClick={() => setImage(null)}
-                        className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
-                      >
-                        <Plus size={14} className="rotate-45" />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 py-2">
-               <input 
-                 type="checkbox" 
-                 id="public_report" 
-                 checked={isPublic} 
-                 onChange={e => setIsPublic(e.target.checked)}
-                 className="accent-primary"
-               />
-               <label htmlFor="public_report" className="text-xs text-text-muted font-medium cursor-pointer">Publikasikan laporan agar warga lain dapat melihat</label>
-            </div>
-            <button 
-              type="submit" 
-              disabled={submitting}
-              className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-lg hover:bg-surface-hover transition-colors"
-            >
-              {submitting ? "Kirim Laporan..." : "Kirim Laporan"}
-            </button>
-          </form>
-        </div>
+              <div className="flex items-center gap-2 py-2">
+                 <input 
+                   type="checkbox" 
+                   id="public_report" 
+                   checked={isPublic} 
+                   onChange={e => setIsPublic(e.target.checked)}
+                   className="accent-primary"
+                 />
+                 <label htmlFor="public_report" className="text-xs text-text-muted font-medium cursor-pointer">Publikasikan laporan agar warga lain dapat melihat</label>
+              </div>
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-lg hover:bg-surface-hover transition-colors"
+              >
+                {submitting ? "Kirim Laporan..." : "Kirim Laporan"}
+              </button>
+            </form>
+          </div>
+        )}
 
-        <div className="md:col-span-2 border border-border-strong rounded-2xl p-6 bg-surface">
+        <div className={cn(
+          "border border-border-strong rounded-2xl p-6 bg-surface",
+          viewMode === "mine" ? "md:col-span-2" : "md:col-span-3"
+        )}>
            <h3 className="font-semibold text-text-main mb-4">{viewMode === "mine" ? "Laporan Saya" : "Laporan Publik Warga"}</h3>
            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
              {filteredReports.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada laporan.</p>}

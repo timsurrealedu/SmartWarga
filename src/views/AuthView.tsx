@@ -1,11 +1,21 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Upload, Camera, CheckCircle2, User, KeyRound, ShieldAlert } from "lucide-react";
+import { Upload, Camera, CheckCircle2, User, KeyRound, ShieldAlert, ArrowLeft } from "lucide-react";
 import { Role } from "@/components/layout/Sidebar";
 
-export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const [role, setRole] = useState<Role>("user");
+export function AuthView({ 
+  onLogin, 
+  onBack,
+  initialTab = "login",
+  initialRole = "user"
+}: { 
+  onLogin: (role: Role) => void; 
+  onBack: () => void;
+  initialTab?: "login"|"register";
+  initialRole?: Role;
+}) {
+  const [activeTab, setActiveTab] = useState<"login" | "register">(initialTab);
+  const [role, setRole] = useState<Role>(initialRole);
   
   const [nik, setNik] = useState("");
   const [phone, setPhone] = useState("");
@@ -44,7 +54,17 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4 relative">
+      {/* Back to Landing */}
+      <div className="absolute top-8 left-8">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-text-muted hover:text-accent transition-colors font-medium text-sm"
+        >
+          <ArrowLeft size={18} /> Kembali ke Beranda
+        </button>
+      </div>
+
       <div className="w-full max-w-md bg-surface border border-border-strong rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
         
         {/* Header Tabs */}
@@ -65,9 +85,11 @@ export function AuthView({ onLogin }: { onLogin: (role: Role) => void }) {
 
         <div className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-serif tracking-tight mb-2" style={{ letterSpacing: '-0.02em' }}>
-              <span className="text-primary">Smart</span><span className="italic relative text-[#a2b897]" style={{ marginLeft: '-0.02em' }}>Warga</span>
+            <div className="flex items-center justify-center gap-2">
+            <h1 className="text-4xl font-serif-title font-semibold tracking-tight mb-2" style={{ letterSpacing: '-0.02em' }}>
+              <span className="text-text-main">Smart</span><span className="text-accent">Warga</span>
             </h1>
+          </div>
             <p className="text-sm text-text-muted">
               {activeTab === "login" ? "Masuk ke dashboard lingkungan Anda" : "Mulai bergabung di lingkungan digital Anda"}
             </p>
