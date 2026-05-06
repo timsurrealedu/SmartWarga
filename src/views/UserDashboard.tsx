@@ -672,26 +672,89 @@ function StorageTab() {
 
 function PanicTab() {
   const [clicked, setClicked] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimer = React.useRef<any>(null);
+  const HOLD_DURATION = 1500; // 1.5 seconds
+
+  const handleStartHold = () => {
+    if (clicked) return;
+    const startTime = Date.now();
+    holdTimer.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+      setHoldProgress(progress);
+      if (progress >= 100) {
+        setClicked(true);
+        if (holdTimer.current) clearInterval(holdTimer.current);
+      }
+    }, 16);
+  };
+
+  const handleStopHold = () => {
+    if (holdTimer.current) {
+      clearInterval(holdTimer.current);
+      holdTimer.current = null;
+    }
+    if (!clicked) {
+      setHoldProgress(0);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-12rem)] max-h-[600px] border border-accent/20 bg-accent/5 rounded-3xl">
+    <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-12rem)] max-h-[600px] border border-accent/20 bg-accent/5 rounded-3xl p-6">
       <h2 className="text-3xl font-display font-bold text-text-main mb-2">Darurat Lingkungan?</h2>
-      <p className="text-text-muted mb-12 max-w-md">Tekan tombol di bawah untuk langsung memberikan notifikasi ke Petugas Keamanan dan broadcast ke seluruh warga.</p>
+      <p className="text-text-muted mb-12 max-w-md">Tahan tombol di bawah selama 1.5 detik untuk langsung memberikan notifikasi ke Petugas Keamanan dan broadcast ke seluruh warga.</p>
       
-      <button 
-        onClick={() => setClicked(true)}
-        className={cn(
-          "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-accent/40",
-          clicked ? "bg-red-600 scale-95" : "bg-accent hover:scale-105"
+      <div className="relative">
+        {/* Progress ring/border */}
+        {!clicked && holdProgress > 0 && (
+          <svg className="absolute -top-4 -left-4 w-[calc(100%+32px)] h-[calc(100%+32px)] -rotate-90 pointer-events-none">
+            <circle
+              cx="50%"
+              cy="50%"
+              r="48%"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="text-accent/20"
+            />
+            <circle
+              cx="50%"
+              cy="50%"
+              r="48%"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              strokeDasharray="100 100"
+              strokeDashoffset={100 - holdProgress}
+              className="text-accent transition-all duration-75"
+              pathLength="100"
+            />
+          </svg>
         )}
-      >
-        {clicked && (
-          <span className="absolute w-full h-full rounded-full border-4 border-red-500 animate-ping"></span>
-        )}
-        <div className="flex flex-col items-center justify-center space-y-2">
-          {clicked ? <PhoneCall size={64} className="animate-bounce" /> : <AlertCircle size={64} />}
-          <span className="font-display font-bold text-2xl uppercase tracking-widest">{clicked ? "Memanggil..." : "PANIC"}</span>
-        </div>
-      </button>
+
+        <button 
+          onMouseDown={handleStartHold}
+          onMouseUp={handleStopHold}
+          onMouseLeave={handleStopHold}
+          onTouchStart={handleStartHold}
+          onTouchEnd={handleStopHold}
+          className={cn(
+            "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-accent/40 select-none touch-none",
+            clicked ? "bg-red-600 scale-95" : "bg-accent hover:scale-105 active:scale-95"
+          )}
+        >
+          {clicked && (
+            <span className="absolute w-full h-full rounded-full border-4 border-red-500 animate-ping"></span>
+          )}
+          <div className="flex flex-col items-center justify-center space-y-2">
+            {clicked ? <PhoneCall size={64} className="animate-bounce" /> : <AlertCircle size={64} />}
+            <span className="font-display font-bold text-2xl uppercase tracking-widest">
+              {clicked ? "Memanggil..." : holdProgress > 0 ? "Menahan..." : "TAHAN PANIC"}
+            </span>
+          </div>
+        </button>
+      </div>
 
       {clicked && (
         <div className="mt-8 px-6 py-3 bg-accent/20 text-accent font-semibold rounded-full text-sm flex items-center gap-2 animate-in fade-in zoom-in">

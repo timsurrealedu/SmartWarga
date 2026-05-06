@@ -36,9 +36,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
   const adminTabs = [
     { id: "dashboard", label: "Admin Overview", icon: LayoutDashboard },
     { id: "validations", label: "Validasi Warga", icon: Users },
-    { id: "letters_approve", label: "Approval Surat", icon: FileText },
     { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
-    { id: "tickets", label: "Laporan Warga", icon: MessageSquare },
   ];
 
   const tabs = currentRole === "user" ? userTabs : currentRole === "admin" ? adminTabs : [];

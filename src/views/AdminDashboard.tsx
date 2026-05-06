@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
-  Download
+  Download, ChevronDown, ChevronUp
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -21,9 +21,7 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
         >
           {currentTab === "dashboard" && <AdminOverviewTab setTab={setTab} />}
           {currentTab === "validations" && <ValidationsTab />}
-          {currentTab === "letters_approve" && <LettersApprovalTab />}
           {currentTab === "finance_manage" && <AdminFinanceTab />}
-          {currentTab === "tickets" && <AdminTicketsTab />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -31,6 +29,9 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
 }
 
 function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
+  const [isLettersOpen, setIsLettersOpen] = useState(true);
+  const [isTicketsOpen, setIsTicketsOpen] = useState(true);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -48,11 +49,19 @@ function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
               </div>
            </div>
            <div className="flex gap-4 mt-6">
-              <button onClick={() => setTab("letters_approve")} className="bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                Cek Surat
+              <button 
+                onClick={() => setIsLettersOpen(!isLettersOpen)} 
+                className="bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
+                {isLettersOpen ? "Tutup Surat" : "Cek Surat"}
+                {isLettersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
-              <button onClick={() => setTab("tickets")} className="bg-surface text-text-main border border-border-strong px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors">
-                Lihat Laporan
+              <button 
+                onClick={() => setIsTicketsOpen(!isTicketsOpen)} 
+                className="bg-surface text-text-main border border-border-strong px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors flex items-center gap-2"
+              >
+                {isTicketsOpen ? "Tutup Laporan" : "Lihat Laporan"}
+                {isTicketsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
             </div>
         </div>
@@ -68,7 +77,36 @@ function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
         </div>
       </div>
       
-      {/* Quick Access or Logs could go here */}
+      {/* Collapsible Sections */}
+      <AnimatePresence>
+        {isLettersOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border-weak pt-6">
+              <LettersApprovalTab />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isTicketsOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border-weak pt-6">
+              <AdminTicketsTab />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
