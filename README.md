@@ -51,6 +51,49 @@ Brankas digital bagi warga untuk menyimpan dokumen penting agar selalu tersedia 
 
 ---
 
+## 🛠️ Teknologi & Framework (Tech Stack)
+
+Aplikasi ini dibangun menggunakan teknologi modern untuk memastikan performa yang cepat dan pengalaman pengguna yang mulus:
+
+-   **Frontend**: [React 19](https://react.dev/) - Library JavaScript untuk membangun antarmuka pengguna.
+-   **Bundler & Build Tool**: [Vite](https://vitejs.dev/) - Tooling frontend generasi berikutnya yang sangat cepat.
+-   **Bahasa Pemrograman**: [TypeScript](https://www.typescriptlang.org/) - Memberikan keamanan tipe data untuk mengurangi bug.
+-   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) - Framework CSS utility-first untuk desain responsif yang cepat.
+-   **Ikonografi**: [Lucide React](https://lucide.dev/) - Set ikon vektor yang bersih dan konsisten.
+-   **Animasi**: [Motion](https://motion.dev/) - Digunakan untuk transisi halus dan feedback visual.
+-   **Backend (Minimal)**: [Express](https://expressjs.com/) - Digunakan untuk melayani aset statis dan API sederhana.
+-   **Inteligensi**: [Google Gemini AI (@google/genai)](https://ai.google.dev/) - Digunakan untuk teknologi Smart OCR pada pendaftaran KTP.
+
+---
+
+## 🚀 Menjalankan di Lokal (Local Setup)
+
+Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi SmartWarga di komputer Anda:
+
+### Prasyarat
+- Pastikan Anda sudah menginstal [Node.js](https://nodejs.org/) (versi 18 ke atas) dan npm.
+
+### Langkah-langkah
+1.  **Clone atau Unduh Proyek**  
+    Unduh source code aplikasi ini ke komputer Anda.
+2.  **Buka Terminal**  
+    Masuk ke direktori utama proyek (`smartwarga`).
+3.  **Instal Dependensi**  
+    Jalankan perintah berikut untuk mengunduh semua library yang dibutuhkan:
+    ```bash
+    npm install
+    ```
+4.  **Menjalankan Mode Pengembangan**  
+    Gunakan perintah berikut untuk menyalakan server lokal:
+    ```bash
+    npm run dev
+    ```
+5.  **Akses Aplikasi**  
+    Buka peramban (browser) Anda dan akses alamat:
+    `http://localhost:3000`
+
+---
+
 ## 🎨 Filosofi Desain & User Experience
 
 Aplikasi ini dibangun dengan prinsip **"Trust through Clarity"** (Kepercayaan melalui Kejelasan):
