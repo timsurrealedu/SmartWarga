@@ -30,7 +30,17 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
 
 function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
   const [isLettersOpen, setIsLettersOpen] = useState(true);
-  const [isTicketsOpen, setIsTicketsOpen] = useState(true);
+  const [isTicketsOpen, setIsTicketsOpen] = useState(false);
+
+  const toggleLetters = () => {
+    setIsLettersOpen(!isLettersOpen);
+    if (!isLettersOpen) setIsTicketsOpen(false);
+  };
+
+  const toggleTickets = () => {
+    setIsTicketsOpen(!isTicketsOpen);
+    if (!isTicketsOpen) setIsLettersOpen(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -50,15 +60,23 @@ function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
            </div>
            <div className="flex gap-4 mt-6">
               <button 
-                onClick={() => setIsLettersOpen(!isLettersOpen)} 
-                className="bg-primary text-text-inverse px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                onClick={toggleLetters} 
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  isLettersOpen 
+                    ? "bg-primary text-text-inverse hover:bg-primary/90" 
+                    : "bg-surface text-text-main border border-border-strong hover:bg-surface-hover"
+                }`}
               >
                 {isLettersOpen ? "Tutup Surat" : "Cek Surat"}
                 {isLettersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               <button 
-                onClick={() => setIsTicketsOpen(!isTicketsOpen)} 
-                className="bg-surface text-text-main border border-border-strong px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors flex items-center gap-2"
+                onClick={toggleTickets} 
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  isTicketsOpen 
+                    ? "bg-primary text-text-inverse hover:bg-primary/90" 
+                    : "bg-surface text-text-main border border-border-strong hover:bg-surface-hover"
+                }`}
               >
                 {isTicketsOpen ? "Tutup Laporan" : "Lihat Laporan"}
                 {isTicketsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}

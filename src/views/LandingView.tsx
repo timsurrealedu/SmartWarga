@@ -25,7 +25,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
             onClick={onStart}
             className="bg-accent text-text-main px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-accent/20 hover:scale-105 active:scale-95 transition-all"
           >
-            Daftar Sekarang
+            Daftar
           </button>
         </div>
       </nav>
@@ -56,21 +56,15 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={onStart}
-                className="bg-accent text-text-main px-8 py-4 rounded-xl font-bold text-sm md:text-base flex items-center gap-3 shadow-xl shadow-accent/20 hover:bg-accent-light hover:-translate-y-1 transition-all"
+                className="bg-accent text-text-main px-10 py-5 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-xl shadow-accent/20 hover:bg-accent-light hover:-translate-y-1 transition-all"
               >
-                <Zap size={20} /> Mulai Sekarang
-              </button>
-              <button 
-                onClick={onLogin}
-                className="bg-surface border border-border-strong text-text-main px-8 py-4 rounded-xl font-bold text-sm md:text-base flex items-center gap-2 hover:bg-surface-hover transition-colors"
-              >
-                Masuk sebagai Admin <ArrowRight size={20} />
+                <Zap size={24} /> Mulai Sekarang
               </button>
             </div>
 
-            <div className="mt-20 flex gap-12 md:gap-20 border-t border-border-weak pt-10">
+            <div className="mt-20 flex gap-6 md:gap-16 border-t border-border-weak pt-10">
               <div>
-                <div className="font-serif-title text-4xl md:text-5xl font-medium mb-1 tracking-tight">10<span className="text-accent">m</span></div>
+                <div className="font-serif-title text-3xl md:text-4xl font-medium mb-1 tracking-tight">Digitalisasi</div>
                 <div className="text-[10px] md:text-xs uppercase font-bold tracking-widest text-text-muted">Pengurusan Surat</div>
               </div>
               <div>
@@ -175,7 +169,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
             onClick={onStart}
             className="bg-accent text-text-main px-12 py-5 rounded-2xl font-bold text-lg shadow-2xl shadow-accent/20 hover:bg-accent-light hover:scale-105 transition-all"
           >
-            Daftar Sekarang — Gratis
+            Daftar — Gratis
           </button>
         </div>
       </section>
