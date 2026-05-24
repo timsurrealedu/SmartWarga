@@ -1349,50 +1349,22 @@ function NewsTab() {
         <p className="text-sm text-text-muted mt-1">Dapatkan pengumuman dan liputan penting terpercaya seputar lingkungan pemukiman.</p>
       </div>
 
-      {articles.length > 0 && (
-        <div className="bg-surface border border-border-weak rounded-3xl overflow-hidden shadow-lg grid md:grid-cols-2 items-center">
-          <img 
-            src={articles[0].image} 
-            alt={articles[0].title}
-            className="w-full h-64 md:h-full object-cover"
-          />
-          <div className="p-6 md:p-8 space-y-4">
-            <span className="bg-primary/20 text-primary font-mono text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-              {articles[0].category}
-            </span>
-            <h3 className="text-2xl font-bold text-text-main line-clamp-2 leading-tight">
-              {articles[0].title}
-            </h3>
-            <p className="text-sm text-text-muted leading-relaxed font-sans line-clamp-3">
-              {articles[0].summary}
-            </p>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-xs text-text-muted font-mono">{articles[0].date} • Oleh: Pengurus RT</span>
-              <button 
-                onClick={() => setSelectedArticle(articles[0])}
-                className="text-primary font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer"
-              >
-                Baca Lengkap &rarr;
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-2 gap-6 pt-4">
-        {articles.slice(1).map(art => (
-          <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        {articles.map(art => (
+          <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all duration-300">
             <div>
-              <img 
-                src={art.image} 
-                alt={art.title} 
-                className="w-full h-48 object-cover"
-              />
+              <div className="relative h-48 w-full overflow-hidden bg-canvas">
+                <img 
+                  src={art.image} 
+                  alt={art.title} 
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
               <div className="p-5 space-y-2">
-                <span className="text-[10px] bg-primary/10 text-primary font-bold tracking-wider rounded px-2 py-0.5 uppercase">
+                <span className="text-[10px] bg-primary/10 text-primary font-bold tracking-wider rounded px-2.5 py-1 uppercase">
                   {art.category}
                 </span>
-                <h4 className="font-bold text-text-main text-base line-clamp-2">
+                <h4 className="font-bold text-text-main text-base line-clamp-2 pt-1">
                   {art.title}
                 </h4>
                 <p className="text-xs text-text-muted line-clamp-3 leading-relaxed">
@@ -1404,9 +1376,9 @@ function NewsTab() {
               <span>{art.date}</span>
               <button 
                 onClick={() => setSelectedArticle(art)}
-                className="text-primary font-bold hover:underline"
+                className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
               >
-                Selengkapnya
+                Selengkapnya &rarr;
               </button>
             </div>
           </div>

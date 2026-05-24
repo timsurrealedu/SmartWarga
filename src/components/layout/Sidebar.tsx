@@ -92,8 +92,8 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
               currentTab === tab.id
-                ? "bg-surface text-text-main"
-                : "text-text-main/70 hover:bg-primary/20 hover:text-text-main"
+                ? "bg-primary/15 text-primary font-semibold border border-primary/25 shadow-xs"
+                : "text-text-main/70 hover:bg-primary/10 hover:text-text-main"
             )}
           >
             <tab.icon size={18} />

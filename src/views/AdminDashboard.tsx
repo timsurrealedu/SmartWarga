@@ -549,7 +549,7 @@ function AdminFinanceTab() {
   const [residents, setResidents] = useState<any[]>([]);
   const [subSection, setSubSection] = useState<"ledgers" | "dues">("dues");
   const [selectedResidentId, setSelectedResidentId] = useState<string | null>(null);
-  const transactions = ledger?.history || [];
+  const transactions = ledger?.details || [];
 
   // Manual transaction form states
   const [showAdd, setShowAdd] = useState(false);
@@ -971,22 +971,26 @@ function AdminFinanceTab() {
 
       <div className="bg-surface rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak overflow-hidden">
          <div className="divide-y divide-border-weak">
-            {transactions.map(t => (
-              <div key={t.id} className="p-4 flex items-center justify-between hover:bg-surface-hover transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className={cn("p-2 rounded-full", t.type === 'in' ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent")}>
-                    <CreditCard size={20} />
+            {transactions.map(t => {
+              const isIncoming = t.type === 'in' || t.id?.startsWith('INC') || t.category === 'Pemasukan';
+              const amtNum = Number(t.amount) || 0;
+              return (
+                <div key={t.id} className="p-4 flex items-center justify-between hover:bg-surface-hover transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("p-2 rounded-full", isIncoming ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent")}>
+                      <CreditCard size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-text-main text-sm">{t.desc}</h4>
+                      <p className="text-xs text-text-muted">{t.date || "Hari ini"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-text-main text-sm">{t.desc}</h4>
-                    <p className="text-xs text-text-muted">{t.date}</p>
+                  <div className={cn("font-bold font-display", isIncoming ? "text-primary" : "text-accent")}>
+                    {isIncoming ? "+" : "-"} Rp {amtNum.toLocaleString('id-ID')}
                   </div>
                 </div>
-                <div className={cn("font-bold font-display", t.type === 'in' ? "text-primary" : "text-accent")}>
-                  {t.type === 'in' ? "+" : "-"} Rp {t.amount.toLocaleString('id-ID')}
-                </div>
-              </div>
-            ))}
+              );
+            })}
          </div>
       </div>
     </div>
