@@ -68,29 +68,156 @@ Aplikasi ini dibangun menggunakan teknologi modern untuk memastikan performa yan
 
 ## 🚀 Menjalankan di Lokal (Local Setup)
 
-Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi SmartWarga di komputer Anda:
+Ikuti langkah-langkah terperinci di bawah ini untuk mengunduh, mengonfigurasi, dan menjalankan aplikasi SmartWarga pada mesin lokal Anda:
 
-### Prasyarat
-- Pastikan Anda sudah menginstal [Node.js](https://nodejs.org/) (versi 18 ke atas) dan npm.
+### 📋 Prasyarat Sistem
+Sebelum memulai, pastikan perangkat lokal Anda telah terpasang perangkat lunak pendukung berikut:
+- **Node.js** (Sangat disarankan Versi 18 LTS ke atas atau v20+)
+- **NPM** (Bawaan dari rilis instalasi Node.js)
+- **Git** (Opsional, untuk melakukan klon repositori)
 
-### Langkah-langkah
-1.  **Clone atau Unduh Proyek**  
-    Unduh source code aplikasi ini ke komputer Anda.
-2.  **Buka Terminal**  
-    Masuk ke direktori utama proyek (`smartwarga`).
-3.  **Instal Dependensi**  
-    Jalankan perintah berikut untuk mengunduh semua library yang dibutuhkan:
-    ```bash
-    npm install
-    ```
-4.  **Menjalankan Mode Pengembangan**  
-    Gunakan perintah berikut untuk menyalakan server lokal:
-    ```bash
-    npm run dev
-    ```
-5.  **Akses Aplikasi**  
-    Buka peramban (browser) Anda dan akses alamat:
-    `http://localhost:3000`
+---
+
+### 💻 Langkah-langkah Panduan Instalasi
+
+#### 1. Persiapan Direktori Proyek
+Unduh source-code atau lakukan kloning dari repositori Anda, kemudian masuk ke dalam direktori kerja:
+```bash
+# Clone menggunakan git
+git clone <URL_REPOSITORI_ANDA> smartwarga
+cd smartwarga
+
+# Atau jika berbentuk arsip zip, ekstrak lalu masuk ke folder:
+cd smartwarga
+```
+
+#### 2. Pemasangan Dependensi (Dependency Installation)
+Pasang semua paket library pihak ketiga yang terdaftar pada `package.json` secara otomatis melalui package manager:
+```bash
+npm install
+```
+
+#### 3. Konfigurasi Environment Variables (.env)
+Aplikasi ini memanfaatkan API eksternal (Google Gemini) untuk fitur cerdas auto-fill KTP (OCR). Konfigurasikan variabel lingkungan Anda dengan membuat berkas `.env` dari blueprint contoh:
+```bash
+cp .env.example .env
+```
+Buka berkas `.env` baru tersebut, lalu isi nilai kredensial Anda:
+```env
+# Port aplikasi server lokal dijalankan
+PORT=3000
+
+# Kunci API Google Gemini (Diperoleh dari Google AI Studio)
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+#### 4. Menjalankan Kode dalam Mode Pengembangan (Development Mode)
+Jalankan dev server lokal terintegrasi (Express backend & Vite HMR frontend) dengan perintah berikut:
+```bash
+npm run dev
+```
+
+#### 5. Akses Hasil Running Proyek
+Buka peramban web (Chrome/Firefox/Edge) lalu kendali diarahkan ke:
+- URL Lokal: **`http://localhost:3000`**
+
+---
+
+## 💾 Panduan Konfigurasi Backend & Database (Production Integration)
+
+Secara bawaan (*default*), aplikasi memuat data interaktif (Surat, Finansial, Riwayat Iuran, Laporan, UMKM) menggunakan **in-memory data store** (variabel array JavaScript global) di dalam berkas server utama `server.ts`. 
+
+Saat server dimatikan atau direstart pada komputer lokal, modifikasi data baru akan dikembalikan ke keadaan semula (*volatile*). Untuk implementasi produksi nyata, Anda dapat mengintegrasikan database menggunakan rekomendasi arsitektur berikut:
+
+### Opsi A: Integrasi Database Relasional (PostgreSQL / SQLite via Prisma ORM)
+Pilihan terbaik demi menjaga integritas data keuangan iuran, relasi kependudukan warga, serta penanganan berkas pengajuan surat resmi.
+
+1. **Pasang Prisma ORM pada Proyek:**
+   ```bash
+   npm install prisma @prisma/client
+   npx prisma init
+   ```
+2. **Definisikan Skema Model di `prisma/schema.prisma`:**
+   ```prisma
+   datasource db {
+     provider = "sqlite" // atau "postgresql"
+     url      = env("DATABASE_URL")
+   }
+
+   generator client {
+     provider = "prisma-client-js"
+   }
+
+   model Resident {
+     id        String   @id @default(uuid())
+     name      String
+     address   String
+     phone     String
+     dues      Due[]
+   }
+
+   model Due {
+     id         String   @id @default(uuid())
+     month      String
+     amount     Float
+     status     String   // "paid", "unpaid", "pending"
+     residentId String
+     resident   Resident @relation(fields: [residentId], references: [id])
+   }
+   ```
+3. **Migrasi Database:**
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+4. **Hubungkan di `server.ts`:**
+   Impor Prisma Client ke berkas `server.ts` Anda dan gantikan variabel in-memory dengan query DB nyata:
+   ```typescript
+   import { PrismaClient } from "@prisma/client";
+   const prisma = new PrismaClient();
+
+   // Ganti rute GET /api/admin/residents:
+   app.get("/api/admin/residents", async (req, res) => {
+     const residents = await prisma.resident.findMany({
+       include: { dues: true }
+     });
+     res.json(residents);
+   });
+   ```
+
+---
+
+### Opsi B: Integrasi Firebase (Firestore & Authentication)
+Sangat cocok untuk tim pengembang yang menginginkan infrastruktur serverless nir-kelola dengan sinkronisasi basis data real-time.
+
+1. **Pasang Firebase SDK:**
+   ```bash
+   npm install firebase-admin
+   ```
+2. **Inisialisasi Firebase Admin di `server.ts`:**
+   ```typescript
+   import admin from "firebase-admin";
+   
+   // Siapkan akun layanan (Service Account) Firebase dari Konsol Google Cloud/Firebase
+   const serviceAccount = require("./firebase-service-account.json");
+
+   admin.initializeApp({
+     credential: admin.credential.cert(serviceAccount)
+   });
+
+   const db = admin.firestore();
+   ```
+3. **Ubah Query Collection:**
+   Gunakan fungsi Firestore SDK untuk mengambil dan mengubah status iuran serta laporan e-reporting warga secara cloud:
+   ```typescript
+   // Contoh rute GET /api/user/letters
+   app.get("/api/user/letters", async (req, res) => {
+     const snapshot = await db.collection("letters").orderBy("date", "desc").get();
+     const letters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+     res.json(letters);
+   });
+   ```
+
+---
 
 ---
 
