@@ -2,16 +2,18 @@ import React from "react";
 import { motion } from "motion/react";
 import { 
   ArrowRight, Camera, FileText, PieChart, ShieldAlert, 
-  Cloud, Bell, Zap, CheckCircle2, UserPlus, LogIn 
+  Cloud, Bell, Zap, CheckCircle2, UserPlus, LogIn, Sun, Moon 
 } from "lucide-react";
 
 interface LandingViewProps {
   onStart: () => void;
   onLogin: () => void;
   onLoginUser?: () => void;
+  theme: "light" | "dark";
+  setTheme: React.Dispatch<React.SetStateAction<"light" | "dark">>;
 }
 
-export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps) => {
+export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: LandingViewProps) => {
   return (
     <div className="min-h-screen bg-canvas text-text-main overflow-x-hidden">
       {/* Navigation */}
@@ -19,11 +21,26 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
         <div className="flex items-center gap-2">
           <span className="font-serif-title text-2xl font-semibold tracking-tight">Smart<span className="text-accent">Warga</span></span>
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <button onClick={onLoginUser || onLogin} className="text-sm font-medium hover:text-accent transition-colors">Masuk</button>
+        <div className="flex items-center gap-3 md:gap-6">
+          {/* Theme Toggle Button */}
+          <button 
+            onClick={() => setTheme(prev => prev === "light" ? "dark" : "light")}
+            className="p-2.5 rounded-xl bg-surface/50 border border-border-weak text-text-main hover:bg-surface hover:scale-105 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-sm"
+            title={theme === "light" ? "Ganti ke Mode Gelap" : "Ganti ke Mode Terang"}
+          >
+            {theme === "light" ? <Moon size={18} className="text-accent" /> : <Sun size={18} className="text-accent-light" />}
+          </button>
+
+          <button 
+            onClick={onLoginUser || onLogin} 
+            className="text-xs md:text-sm font-medium hover:text-accent transition-colors cursor-pointer"
+          >
+            Masuk
+          </button>
+          
           <button 
             onClick={onStart}
-            className="bg-accent text-text-main px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-accent/20 hover:scale-105 active:scale-95 transition-all"
+            className="bg-accent text-white px-4 py-2 md:px-6 md:py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-lg shadow-accent/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             Daftar
           </button>
@@ -56,7 +73,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={onStart}
-                className="bg-accent text-text-main px-10 py-5 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-xl shadow-accent/20 hover:bg-accent-light hover:-translate-y-1 transition-all"
+                className="bg-accent text-white px-10 py-5 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-xl shadow-accent/20 hover:bg-accent-light hover:-translate-y-1 transition-all cursor-pointer"
               >
                 <Zap size={24} /> Mulai Sekarang
               </button>
@@ -167,7 +184,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser }: LandingViewProps)
           </p>
           <button 
             onClick={onStart}
-            className="bg-accent text-text-main px-12 py-5 rounded-2xl font-bold text-lg shadow-2xl shadow-accent/20 hover:bg-accent-light hover:scale-105 transition-all"
+            className="bg-accent text-white px-12 py-5 rounded-2xl font-bold text-lg shadow-2xl shadow-accent/20 hover:bg-accent-light hover:scale-105 transition-all cursor-pointer"
           >
             Daftar — Gratis
           </button>

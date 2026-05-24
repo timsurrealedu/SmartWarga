@@ -25,7 +25,7 @@ export function Header({ currentRole, toggleSidebar }: HeaderProps) {
         <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 mt-2 md:mt-0 w-full md:w-auto">
           <button 
             onClick={() => setShowPanicModal(true)}
-            className="bg-accent text-white border-none rounded-xl py-2 px-4 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,138,101,0.3)] transition-transform hover:scale-105 text-xs md:text-sm"
+            className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-2 px-4 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all hover:scale-105 text-xs md:text-sm"
           >
             <AlertTriangle size={18} fill="currentColor" className="md:w-5 md:h-5" />
             <span>PANIC</span>
@@ -47,8 +47,7 @@ export function Header({ currentRole, toggleSidebar }: HeaderProps) {
       {showPanicModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div 
-            className="bg-surface rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative animate-in fade-in zoom-in duration-300"
-            style={{ backgroundColor: '#0b110b' }}
+            className="bg-surface rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative animate-in fade-in zoom-in duration-300 border border-border-strong"
           >
             <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-6">
                <AlertTriangle size={40} className="text-accent animate-pulse" />

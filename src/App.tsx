@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar, Role } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { UserDashboard } from "./views/UserDashboard";
@@ -14,6 +14,21 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authConfig, setAuthConfig] = useState<{tab: "login"|"register", role: Role}>({tab: "login", role: "user"});
+
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    return (localStorage.getItem("theme") as "light" | "dark") || "light";
+  });
+
+  useEffect(() => {
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+      document.body.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.body.classList.remove("light");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const handleLogin = (role: Role) => {
     setCurrentRole(role);
@@ -39,6 +54,8 @@ export default function App() {
           onStart={() => handleOpenAuth("register", "user")} 
           onLogin={() => handleOpenAuth("login", "admin")} 
           onLoginUser={() => handleOpenAuth("login", "user")}
+          theme={theme}
+          setTheme={setTheme}
         />
       );
     }
@@ -60,6 +77,8 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        theme={theme}
+        setTheme={setTheme}
       />
 
       {isSidebarOpen && (

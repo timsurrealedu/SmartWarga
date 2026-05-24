@@ -6,28 +6,114 @@
   --font-display: "DM Sans", sans-serif;
   --font-serif: "Cormorant Garamond", serif;
 
-  --color-canvas: #0a1a16;
-  --color-sidebar: #060f0d;
-  --color-surface: rgba(255, 255, 255, 0.08);
-  --color-surface-hover: rgba(255, 255, 255, 0.12);
+  --color-canvas: var(--canvas);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
   
-  --color-text-main: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.8);
-  --color-text-inverse: #0a1a16;
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
   
-  --color-primary: #4ade80;
-  --color-accent: #f97316;
-  --color-accent-light: #fb923c;
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
   
-  --color-border-weak: rgba(255, 255, 255, 0.15);
-  --color-border-strong: rgba(255, 255, 255, 0.3);
+  --color-border-weak: var(--border-weak);
+  --color-border-strong: var(--border-strong);
+}
+
+:root {
+  /* Default: Dark Theme */
+  --canvas: #0a1311;
+  --sidebar: #050a09;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.1);
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.75);
+  --text-inverse: #0a1311;
+  --primary: #4ade80;
+  --accent: #f97316;
+  --accent-light: #fb923c;
+  --border-weak: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.25);
+}
+
+:root.light, .light {
+  /* Dynamic override: Light Theme (Terang) */
+  --canvas: #f4f6f5;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #eaf1ed;
+  --text-main: #0c1d19;
+  --text-muted: #3d534b; /* slightly darker for better readability */
+  --text-inverse: #ffffff;
+  --primary: #10b981;
+  --accent: #ea580c; /* higher contrast accent for panic etc. in light mode */
+  --accent-light: #f97316;
+  --border-weak: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-canvas);
-  color: var(--color-text-main);
+  background-color: var(--canvas);
+  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Custom welcome banner theme styling */
+.welcome-banner {
+  background: linear-gradient(135deg, #0a1f1a, #123e32);
+  border: 1px solid #1b4e41;
+  color: #ffffff;
+}
+
+.welcome-title {
+  color: #ffffff;
+}
+
+.welcome-subtitle {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.welcome-btn-second {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.welcome-btn-second:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Theme overrides */
+.light .welcome-banner {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-main);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.light .welcome-title {
+  color: var(--text-main);
+}
+
+.light .welcome-subtitle {
+  color: var(--text-muted);
+}
+
+.light .welcome-btn-second {
+  border-color: var(--border-strong);
+  color: var(--text-main);
+}
+
+.light .welcome-btn-second:hover {
+  background-color: var(--surface-hover);
+}
+
+.light .welcome-banner svg {
+  opacity: 0.04;
+  color: var(--text-main);
 }
 
 h1, h2, h3, h4, h5, h6 {

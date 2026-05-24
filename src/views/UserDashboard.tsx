@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Camera, FileCheck, CheckCircle2, AlertCircle, PhoneCall, 
   MapPin, Clock, Upload, Search, Download, Plus, MessageSquare, CreditCard,
-  Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert
+  Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert,
+  Newspaper, Store, Calendar, Tag, AlertTriangle, Building, Megaphone
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar,
@@ -33,6 +34,8 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
           transition={{ duration: 0.2 }}
         >
           {currentTab === "dashboard" && <OverviewTab letters={letters} setTab={setTab} />}
+          {currentTab === "news" && <NewsTab />}
+          {currentTab === "market" && <MarketTab />}
           {currentTab === "letters" && <LettersTab letters={letters} onLetterAdded={(l) => setLetters([l, ...letters])} />}
           {currentTab === "finance" && <FinanceTab data={finance} />}
           {currentTab === "reports" && <ReportingTab />}
@@ -50,23 +53,23 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
 
   return (
     <div className="space-y-6">
-      <div className="bg-primary text-text-inverse rounded-3xl p-8 relative overflow-hidden shadow-lg">
+      <div className="welcome-banner rounded-3xl p-8 relative overflow-hidden shadow-lg">
         <div className="relative z-10 w-full md:w-2/3">
-          <h1 className="text-3xl font-display font-bold mb-2 text-text-inverse">
+          <h1 className="text-3xl font-display font-bold mb-2 welcome-title">
             Selamat datang, Budi Santoso
           </h1>
-          <p className="opacity-80 mb-6 max-w-lg">
+          <p className="welcome-subtitle mb-6 max-w-lg">
             Sistem Digital SmartWarga siap membantu administrasi dan keamanan lingkungan Anda. Apa yang ingin Anda lakukan hari ini?
           </p>
           <div className="flex flex-wrap gap-3">
             <button 
               onClick={() => setTab("letters")}
-              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-accent-hover transition-colors shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-accent-hover transition-colors shadow-[0_10px_30px_rgba(0,0,0,0.25)] cursor-pointer">
               Buat Surat Pengantar
             </button>
             <button 
               onClick={() => setTab("dues")}
-              className="bg-transparent border border-white/30 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-white/10 transition-colors">
+              className="welcome-btn-second bg-transparent border px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
               Bayar Iuran
             </button>
           </div>
@@ -740,8 +743,8 @@ function PanicTab() {
           onTouchStart={handleStartHold}
           onTouchEnd={handleStopHold}
           className={cn(
-            "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-accent/40 select-none touch-none",
-            clicked ? "bg-red-600 scale-95" : "bg-accent hover:scale-105 active:scale-95"
+            "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-red-600/30 select-none touch-none",
+            clicked ? "bg-red-700 scale-95" : "bg-red-600 hover:bg-red-700 hover:scale-105 active:scale-95"
           )}
         >
           {clicked && (
@@ -983,83 +986,771 @@ function ReportingTab() {
     </div>
   );
 }
+
 function DuesTab() {
   const [dues, setDues] = useState<any[]>([]);
+  const [activeReminder, setActiveReminder] = useState<any>(null);
+  const [selectedDue, setSelectedDue] = useState<any>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+  
+  // Payment Form States
+  const [bankName, setBankName] = useState("BCA");
+  const [senderName, setSenderName] = useState("");
+  const [transferDate, setTransferDate] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   useEffect(() => {
-    fetch('/api/user/dues').then(r => r.json()).then(setDues);
+    fetch('/api/user/dues')
+      .then(r => r.json())
+      .then(data => {
+        setDues(data);
+      });
+    
+    // Check if we have reminders in the system (we will pull residents index RES-01 or residents reminders)
+    fetch('/api/admin/residents')
+      .then(r => r.json())
+      .then(resList => {
+        const userRes = resList.find((r: any) => r.id === "RES-01");
+        if (userRes && userRes.reminders && userRes.reminders.length > 0) {
+          setActiveReminder(userRes.reminders[0]);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const handlePay = async (id: string) => {
-    await fetch(`/api/user/dues/${id}/pay`, { method: 'POST' });
-    setDues(dues.map(d => d.id === id ? { ...d, status: "paid", date: "Hari ini" } : d));
-    alert("Pembayaran berhasil!");
+  const openPaymentForm = (due: any) => {
+    setSelectedDue(due);
+    setTransferAmount(due.amount.toString());
+    setTransferDate(new Date().toISOString().split('T')[0]);
+    setShowPayModal(true);
+  };
+
+  const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCancelPayment = () => {
+    setShowPayModal(false);
+    setSelectedDue(null);
+    setProofImage(null);
+    setSenderName("");
+  };
+
+  const submitPaymentProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDue) return;
+    if (!senderName) return alert("Mohon nama pengirim transfer diisi!");
+
+    setSubmittingPayment(true);
+    try {
+      const res = await fetch(`/api/user/dues/${selectedDue.id}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bank: bankName,
+          sender: senderName,
+          amount: Number(transferAmount),
+          date: transferDate,
+          image: proofImage
+        })
+      });
+      if (res.ok) {
+        // Reload dues
+        const updatedRes = await fetch('/api/user/dues');
+        const updatedDues = await updatedRes.json();
+        setDues(updatedDues);
+        alert("Bukti pembayaran telah berhasil dikirim! Menunggu konfirmasi verifikasi dari Pengurus RT.");
+        setShowPayModal(false);
+        setProofImage(null);
+        setSenderName("");
+      } else {
+        alert("Gagal mengirimkan pembayaran.");
+      }
+    } catch {
+      alert("Terjadi masalah jaringan.");
+    } finally {
+      setSubmittingPayment(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
       <div>
         <h2 className="text-2xl font-display font-semibold text-text-main">Iuran Warga</h2>
-        <p className="text-sm text-text-muted mt-1">Kelola dan bayar iuran bulanan RT/RW Anda dengan mudah.</p>
+        <p className="text-sm text-text-muted mt-1">Kelola, verifikasi, dan bayar iuran swadaya warga secara transparan.</p>
       </div>
+
+      {activeReminder && (
+        <div className="bg-accent/15 border-l-4 border-accent p-4 rounded-r-2xl flex items-start gap-3 shadow-sm animate-pulse">
+          <AlertTriangle className="text-accent shrink-0 mt-0.5" size={20} />
+          <div>
+            <h4 className="font-bold text-accent text-sm uppercase tracking-wider">Pengingat Tagihan Pengurus RT</h4>
+            <p className="text-xs text-text-main mt-0.5 leading-relaxed font-mono">{activeReminder.message}</p>
+            <span className="text-[10px] text-text-muted mt-1 block">Dikirimkan tanggal: {activeReminder.date}</span>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
-          {dues.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada tagihan.</p>}
+          {dues.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada tagihan iuran.</p>}
           {dues.map(due => (
-            <div key={due.id} className="bg-surface border border-border-weak p-6 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-4">
-                 <div className={cn(
-                   "w-12 h-12 rounded-full flex items-center justify-center",
-                   due.status === "paid" ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"
-                 )}>
-                   <CreditCard size={24} />
-                 </div>
-                 <div>
-                   <h4 className="font-semibold text-text-main">Iuran {due.month}</h4>
-                   <p className="text-sm text-text-muted mt-0.5">Rp {due.amount.toLocaleString('id-ID')}</p>
-                 </div>
-              </div>
-              <div className="text-right">
-                {due.status === "paid" ? (
-                  <div>
-                    <span className="text-xs font-bold text-primary flex items-center gap-1 justify-end"><CheckCircle2 size={14} /> LUNAS</span>
-                    <p className="text-xs text-text-muted mt-1 opacity-70">Dibayar: {due.date}</p>
+            <div key={due.id} className="bg-surface border border-border-weak p-6 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner",
+                    due.status === "paid" ? "bg-primary/20 text-primary" : due.status === "pending" ? "bg-accent/20 text-accent animate-pulse" : "bg-red-500/20 text-red-400"
+                  )}>
+                    <CreditCard size={24} />
                   </div>
-                ) : (
-                  <button 
-                    onClick={() => handlePay(due.id)}
-                    className="bg-primary text-text-inverse px-5 py-2 rounded-lg text-sm font-semibold hover:bg-primary/80 transition-colors shadow-sm"
-                  >
-                    Bayar Sekarang
-                  </button>
-                )}
+                  <div>
+                    <h4 className="font-semibold text-text-main text-lg">Tagihan Iuran {due.month}</h4>
+                    <p className="text-sm text-text-muted">Total: Rp {due.amount.toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  {due.status === "paid" ? (
+                    <div className="bg-primary/10 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">LUNAS</span>
+                    </div>
+                  ) : due.status === "pending" ? (
+                    <div className="bg-accent/10 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-accent animate-ping"></span>
+                      <span className="text-xs font-bold text-accent uppercase tracking-wider">PENDING VERIFIKASI</span>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => openPaymentForm(due)}
+                      className="bg-primary text-text-inverse px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-all hover:scale-[1.03] shadow-md shadow-primary/10"
+                    >
+                      Bayar & Upload Bukti
+                    </button>
+                  )}
+                  {due.status === "paid" && (
+                    <p className="text-[10px] text-text-muted mt-1 opacity-70">Verifikasi tanggal: {due.date}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Transparansi: Itemized breakdown showing transparent uses of collected money */}
+              <div className="border-t border-border-weak pt-4 bg-canvas/30 p-4 rounded-xl space-y-2">
+                <h5 className="text-xs uppercase tracking-wider font-bold text-text-muted flex items-center justify-between">
+                  <span>Rincian Penggunaan Iuran Bulanan</span>
+                  <span className="text-primary normal-case font-medium font-mono">Transparansi 100%</span>
+                </h5>
+                <div className="divide-y divide-border-weak/50">
+                  {due.categories?.map((cat: any, i: number) => (
+                    <div key={i} className="py-2 flex justify-between items-start text-xs text-text-main">
+                      <div className="max-w-[80%]">
+                        <span className="font-semibold">{cat.name}</span>
+                        <p className="text-[10px] text-text-muted leading-relaxed">{cat.desc}</p>
+                      </div>
+                      <span className="font-mono text-primary font-semibold shrink-0">Rp {cat.amount.toLocaleString('id-ID')}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
+        {/* Sidebar Summary Card */}
         <div className="md:col-span-1">
-          <div className="bg-primary text-text-inverse rounded-2xl p-6 shadow-lg border border-border-strong md:sticky top-28">
-             <h3 className="font-semibold mb-2">Total Tunggakan</h3>
-             <p className="text-3xl font-display font-bold mb-6">
+          <div className="bg-surface rounded-3xl p-6 border border-border-weak space-y-6 md:sticky top-28">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-text-muted">Ringkasan Keuangan Anda</h3>
+              <p className="text-xs text-text-muted mt-0.5">Pantau status kewajiban iuran lingkungan Anda.</p>
+            </div>
+
+            <div className="p-4 bg-canvas/50 border border-border-weak rounded-2xl flex flex-col justify-between">
+              <span className="text-xs text-text-muted">Total Belum Terbayar</span>
+              <p className="text-3xl font-display font-black text-accent mt-2 font-mono">
                 Rp {dues.filter(d => d.status === "unpaid").reduce((sum, d) => sum + d.amount, 0).toLocaleString('id-ID')}
-             </p>
-             <p className="text-xs opacity-80 mb-6">Harap lunasi tunggakan iuran sebelum tanggal 10 setiap bulannya untuk menghindari denda keterlambatan.</p>
-             
-             <div className="space-y-3">
-               <div className="flex justify-between items-center bg-black/10 px-4 py-3 rounded-xl">
-                 <span className="text-sm">Status Bulan Ini</span>
-                 {dues.find(d => d.month === "November 2023")?.status === "paid" ? (
-                    <span className="text-xs font-bold text-[#A8E6CF]">LUNAS</span>
-                 ) : (
-                    <span className="text-xs font-bold text-accent">BELUM LUNAS</span>
-                 )}
-               </div>
-             </div>
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-text-muted">Bulan Ini (November)</span>
+                {dues.find(d => d.month === "November 2023")?.status === "paid" ? (
+                  <span className="text-xs font-bold text-primary">LUNAS</span>
+                ) : dues.find(d => d.month === "November 2023")?.status === "pending" ? (
+                  <span className="text-xs font-bold text-accent">MENUNGGU VERIFIKASI</span>
+                ) : (
+                  <span className="text-xs font-bold text-red-400">TUNGGAKAN</span>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-text-muted">Bulan Lalu (Oktober)</span>
+                <span className="text-xs font-bold text-primary font-mono">LUNAS</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 text-xs text-text-muted leading-relaxed space-y-2">
+              <p className="font-semibold text-text-main">📌 Informasi Metode Pembayaran:</p>
+              <p>Pembayaran dapat dilakukan melalui transfer bank ke rekening warga:</p>
+              <div className="bg-canvas p-2.5 rounded-lg font-mono text-text-main border border-border-weak space-y-1">
+                <p>Bank: <strong>MANDIRI</strong></p>
+                <p>Rekening: <strong>123-0005-4321-00</strong></p>
+                <p>Atas Nama: <strong>Kas RT 05 RW 12</strong></p>
+              </div>
+              <p>Gunakan opsi upload bukti transfer di samping setelah melakukan pembayaran.</p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Form Khusus Bukti Pembayaran Modal Popup */}
+      {showPayModal && selectedDue && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-sidebar rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border border-border-weak overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-text-main mb-2 font-display">Kirim Bukti Pembayaran</h3>
+            <p className="text-xs text-text-muted mb-6 leading-relaxed">
+              Silakan lengkapi konfirmasi pembayaran di bawah ini agar Pengurus RT dapat memverifikasi transaksi iuran Anda.
+            </p>
+
+            <form onSubmit={submitPaymentProof} className="space-y-4">
+              <div className="p-3.5 bg-canvas rounded-xl text-xs space-y-1 border border-border-weak mb-2">
+                <p className="text-text-muted font-semibold">Mengonfirmasi Iuran:</p>
+                <p className="text-text-main text-sm font-bold">Tagihan {selectedDue.month}</p>
+                <p className="text-primary font-mono font-bold text-base">Total Tagihan: Rp {selectedDue.amount.toLocaleString('id-ID')}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Bank Tujuan Transfer</label>
+                <select 
+                  value={bankName}
+                  onChange={e => setBankName(e.target.value)}
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold"
+                >
+                  <option value="MANDIRI">MANDIRI (RT 05 Account)</option>
+                  <option value="BCA">BCA (Operasional)</option>
+                  <option value="BRI">BRI (Bantuan Sosial)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Nama Pemilik Rekening Pengirim</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Contoh: Budi Santoso"
+                  value={senderName}
+                  onChange={e => setSenderName(e.target.value)}
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-mono">Tanggal Layanan</label>
+                  <input 
+                    type="date"
+                    required
+                    value={transferDate}
+                    onChange={e => setTransferDate(e.target.value)}
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-mono">Jumlah Transfer (Rp)</label>
+                  <input 
+                    type="number"
+                    required
+                    value={transferAmount}
+                    onChange={e => setTransferAmount(e.target.value)}
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Bukti Foto / Capture Resi Transfer</label>
+                <div className="mt-1 flex justify-center px-4 py-8 border-2 border-border-strong border-dashed rounded-xl bg-canvas hover:bg-surface-hover transition-colors text-center cursor-pointer">
+                  <div className="space-y-1 text-center">
+                    {!proofImage ? (
+                      <>
+                        <Upload className="mx-auto h-8 w-8 text-primary animate-bounce mt-1" />
+                        <div className="flex text-xs text-text-muted mt-2 justify-center">
+                          <label className="relative cursor-pointer bg-transparent rounded-md font-bold text-primary hover:text-primary/80 focus-within:outline-none">
+                            <span>Sematkan File Resi</span>
+                            <input type="file" className="sr-only" accept="image/*" onChange={handleProofImageChange} />
+                          </label>
+                        </div>
+                        <p className="text-[10px] text-text-muted mt-1 leading-relaxed">PNG, JPG, Screen Capture Bank App up to 5MB</p>
+                      </>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img src={proofImage} alt="Receipt Preview" className="h-28 w-auto rounded-lg shadow-sm" />
+                        <button 
+                          type="button" 
+                          onClick={() => setProofImage(null)}
+                          className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
+                        >
+                          <Plus size={12} className="rotate-45" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border-weak mt-6">
+                <button 
+                  type="button"
+                  onClick={handleCancelPayment}
+                  className="px-5 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-main font-semibold"
+                >
+                  Gagal / Batalkan
+                </button>
+                <button 
+                  type="submit"
+                  disabled={submittingPayment}
+                  className="bg-primary text-text-inverse px-7 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  {submittingPayment ? "Mengirimkan..." : "Kirim Bukti Pembayaran"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-}  
+}
+
+function NewsTab() {
+  const [articles, setArticles] = useState<any[]>([]);
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/news')
+      .then(r => r.json())
+      .then(setArticles)
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Portal Berita RT 05</h2>
+        <p className="text-sm text-text-muted mt-1">Dapatkan pengumuman dan liputan penting terpercaya seputar lingkungan pemukiman.</p>
+      </div>
+
+      {articles.length > 0 && (
+        <div className="bg-surface border border-border-weak rounded-3xl overflow-hidden shadow-lg grid md:grid-cols-2 items-center">
+          <img 
+            src={articles[0].image} 
+            alt={articles[0].title}
+            className="w-full h-64 md:h-full object-cover"
+          />
+          <div className="p-6 md:p-8 space-y-4">
+            <span className="bg-primary/20 text-primary font-mono text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+              {articles[0].category}
+            </span>
+            <h3 className="text-2xl font-bold text-text-main line-clamp-2 leading-tight">
+              {articles[0].title}
+            </h3>
+            <p className="text-sm text-text-muted leading-relaxed font-sans line-clamp-3">
+              {articles[0].summary}
+            </p>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-xs text-text-muted font-mono">{articles[0].date} • Oleh: Pengurus RT</span>
+              <button 
+                onClick={() => setSelectedArticle(articles[0])}
+                className="text-primary font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                Baca Lengkap &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-6 pt-4">
+        {articles.slice(1).map(art => (
+          <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+            <div>
+              <img 
+                src={art.image} 
+                alt={art.title} 
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-5 space-y-2">
+                <span className="text-[10px] bg-primary/10 text-primary font-bold tracking-wider rounded px-2 py-0.5 uppercase">
+                  {art.category}
+                </span>
+                <h4 className="font-bold text-text-main text-base line-clamp-2">
+                  {art.title}
+                </h4>
+                <p className="text-xs text-text-muted line-clamp-3 leading-relaxed">
+                  {art.summary}
+                </p>
+              </div>
+            </div>
+            <div className="p-5 border-t border-border-weak/50 flex justify-between items-center text-xs text-text-muted">
+              <span>{art.date}</span>
+              <button 
+                onClick={() => setSelectedArticle(art)}
+                className="text-primary font-bold hover:underline"
+              >
+                Selengkapnya
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedArticle && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-sidebar border border-border-weak rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative overflow-y-auto max-h-[85vh] animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setSelectedArticle(null)}
+              className="absolute top-6 right-6 text-text-muted hover:text-text-main"
+            >
+              <Plus size={24} className="rotate-45" />
+            </button>
+            <span className="text-xs bg-primary/20 text-primary font-bold tracking-wide rounded-md px-2.5 py-1 uppercase">{selectedArticle.category}</span>
+            <h3 className="text-2xl font-bold text-text-main mt-4 mb-2 font-display">{selectedArticle.title}</h3>
+            <p className="text-xs text-text-muted font-mono mb-4">{selectedArticle.date} • Ditulis oleh: Kepala Humas RT 05</p>
+            <img 
+              src={selectedArticle.image} 
+              alt={selectedArticle.title} 
+              className="w-full h-64 object-cover rounded-2xl mb-6 shadow-sm border border-border-weak"
+            />
+            <div className="text-sm text-text-main leading-relaxed whitespace-pre-line space-y-4">
+              <p className="font-semibold">{selectedArticle.summary}</p>
+              <p>{selectedArticle.content || "Isi berita penting lingkungan perumahan warga sekitar. Selalu jaga ketertiban, keindahan, kelestarian dan kebersihan lingkungan kita bersama untuk keseriusan lingkungan yang murni dan sehat."}</p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-border-weak flex justify-end">
+              <button 
+                onClick={() => setSelectedArticle(null)}
+                className="bg-primary text-text-inverse px-6 py-2.5 rounded-xl text-sm font-bold"
+              >
+                Selesai Membaca
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MarketTab() {
+  const [subTab, setSubTab] = useState<"umkm" | "promo">("umkm");
+  const [listings, setListings] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Form States for user UMKM registration
+  const [name, setName] = useState("");
+  const [owner, setOwner] = useState("Bpk. Rahardian");
+  const [category, setCategory] = useState("Makanan & Minuman");
+  const [phone, setPhone] = useState("");
+  const [desc, setDesc] = useState("");
+  const [image, setImage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchUMKM = () => {
+    fetch('/api/umkm').then(r => r.json()).then(setListings);
+    fetch('/api/ads').then(r => r.json()).then(setAds);
+  };
+
+  useEffect(() => {
+    fetchUMKM();
+  }, []);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !phone || !desc) return alert("Mohon lengkapi Nama Usaha, Kontak WA, dan Deskripsi!");
+    setSubmitting(true);
+    
+    try {
+      const res = await fetch('/api/umkm', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner, name, category, phone, desc, image })
+      });
+      if (res.ok) {
+        alert("Pendaftaran UMKM berhasil! Usaha Anda kini terbit di portal pasar Warga.");
+        setShowAddModal(false);
+        setName("");
+        setPhone("");
+        setDesc("");
+        setImage(null);
+        fetchUMKM();
+      }
+    } catch {
+      alert("Terjadi kesalahan.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Pasar Warga & UMKM Mandiri</h2>
+          <p className="text-sm text-text-muted mt-1">Ekosistem ekonomi lokal, periklanan, dan promosi komersial kawasan hunian.</p>
+        </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-primary text-text-inverse px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/95 transition-all self-start md:self-auto h-11 shadow-md shadow-primary/10"
+        >
+          <Plus size={18} /> Daftarkan UMKM Saya
+        </button>
+      </div>
+
+      <div className="flex border-b border-border-weak">
+        <button 
+          onClick={() => setSubTab("umkm")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "umkm" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Direktori UMKM Lingkungan
+        </button>
+        <button 
+          onClick={() => setSubTab("promo")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "promo" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Sponsor, Promosi & Iklan
+        </button>
+      </div>
+
+      {subTab === "umkm" ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {listings.length === 0 && <p className="text-sm text-text-muted text-center py-8 col-span-full">Belum ada UMKM terdaftar.</p>}
+          {listings.map(umkm => (
+            <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+              <div>
+                <img 
+                  src={umkm.image} 
+                  alt={umkm.name} 
+                  className="w-full h-44 object-cover"
+                />
+                <div className="p-5 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] bg-primary/15 text-primary text-xs font-bold tracking-wider px-2 py-0.5 rounded uppercase">
+                      {umkm.category}
+                    </span>
+                    <span className="text-[10px] text-text-muted font-medium font-mono">Residen: {umkm.owner}</span>
+                  </div>
+                  <h4 className="font-bold text-text-main text-lg">{umkm.name}</h4>
+                  <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{umkm.desc}</p>
+                </div>
+              </div>
+              <div className="p-5 border-t border-border-weak/50">
+                <a 
+                  href={`https://wa.me/${umkm.phone.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full bg-[#25D366] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#20ba59] transition-colors"
+                >
+                  <PhoneCall size={14} fill="currentColor" /> Hubungi Toko Warga ({umkm.phone})
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Main big sponsor banner ad */}
+          <div className="bg-gradient-to-r from-accent/25 to-primary/10 border-2 border-accent/20 p-6 md:p-8 rounded-3xl flex flex-col md:flex-row gap-6 items-center justify-between shadow-md relative overflow-hidden">
+            <span className="absolute -top-1 right-2 bg-accent text-white uppercase text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-b">SPONSORED PLACEMENT</span>
+            <div className="space-y-4 max-w-lg">
+              <span className="text-xs font-bold uppercase tracking-widest bg-accent-light text-text-inverse px-3 py-1 rounded-full">{ads[0]?.sponsor || "OFFERING"}</span>
+              <h3 className="text-2xl font-black font-display text-text-main leading-tight">{ads[0]?.title || "Pasang IndiHome Free Pendaftaran"}</h3>
+              <p className="text-sm text-text-muted leading-relaxed">{ads[0]?.desc || "Nikmati kecepatan 50Mbps gratis pemasangan baru se-kawasan SmartWarga selama bulan ini."}</p>
+              <button 
+                onClick={() => alert(`Silakan hubungi admin lingkungan RT untuk promo: ${ads[0]?.sponsor}`)}
+                className="bg-accent text-white font-bold py-2.5 px-6 rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-accent/20"
+              >
+                {ads[0]?.cta || "Ambil Penawaran"}
+              </button>
+            </div>
+            {ads[0]?.image && (
+              <img 
+                src={ads[0].image} 
+                alt="Sponsor Ad" 
+                className="w-full md:w-64 h-40 object-cover rounded-2xl shadow-sm border border-border-weak"
+              />
+            )}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {ads.slice(1).map(ad => (
+              <div key={ad.id} className="bg-surface border border-border-weak rounded-2xl p-5 flex gap-4 items-center shadow-sm relative">
+                <span className="absolute top-2 right-2 text-[8px] font-bold tracking-widest text-[#fb923c] uppercase bg-accent-light/10 px-2 py-0.5 rounded">Ad</span>
+                <img 
+                  src={ad.image} 
+                  alt={ad.title} 
+                  className="w-24 h-24 object-cover rounded-xl shrink-0"
+                />
+                <div className="space-y-1">
+                  <span className="text-[10px] text-[#fb923c] font-black uppercase font-mono tracking-wide">{ad.sponsor}</span>
+                  <h4 className="font-bold text-sm text-text-main leading-snug">{ad.title}</h4>
+                  <p className="text-xs text-text-muted line-clamp-2">{ad.desc}</p>
+                  <button 
+                    onClick={() => alert(`Membuka sponsorship penawaran: ${ad.sponsor}`)}
+                    className="text-primary font-bold text-xs hover:underline decoration-primary pt-1 inline-block"
+                  >
+                    {ad.cta} &rarr;
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pendaftaran UMKM Popup Form */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-sidebar border border-border-weak rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative overflow-y-auto max-h-[85vh] animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-6 right-6 text-text-muted hover:text-text-main"
+            >
+              <Plus size={24} className="rotate-45" />
+            </button>
+            <h3 className="text-xl font-bold text-text-main mb-2 font-display">Daftarkan Toko UMKM Baru</h3>
+            <p className="text-xs text-text-muted mb-6 leading-relaxed">
+              Mulai perkenalkan usaha lokal Anda demi mempermudah warga lain mencari kuliner, sembako, servis, maupun jasa terdekat.
+            </p>
+
+            <form onSubmit={handleAddSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Nama Toko / UMKM</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Contoh: Catering Rini Sedap"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Kategori</label>
+                  <select 
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold"
+                  >
+                    <option value="Makanan & Minuman">Makanan & Minuman</option>
+                    <option value="Kebutuhan Pokok">Kebutuhan Pokok / Sembako</option>
+                    <option value="Jasa">Jasa Pelayanan</option>
+                    <option value="Kerajinan">Kerajinan / Atribut</option>
+                    <option value="Kesehatan">Kesehatan & Kecantikan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Nomor WhatsApp</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Contoh: 0812-2233-4455"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Deskripsi Usaha / Promo</label>
+                <textarea 
+                  required
+                  rows={3}
+                  placeholder="Masukkan rincian apa saja produk yang ditawarkan, diskon khusus warga perumahan..."
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Sediakan Gambar / Cover Banner Toko</label>
+                <div className="mt-1 flex justify-center px-4 py-6 border-2 border-border-strong border-dashed rounded-xl bg-canvas hover:bg-surface-hover transition-colors text-center cursor-pointer">
+                  <div className="space-y-1 text-center">
+                    {!image ? (
+                      <>
+                        <Upload className="mx-auto h-7 w-7 text-primary" />
+                        <div className="flex text-xs text-text-muted mt-2 justify-center">
+                          <label className="relative cursor-pointer bg-transparent rounded-md font-bold text-primary hover:text-primary/80">
+                            <span>Upload Banner Toko</span>
+                            <input type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                          </label>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img src={image} alt="UMKM Preview" className="h-24 w-auto rounded-lg shadow-sm" />
+                        <button 
+                          type="button" 
+                          onClick={() => setImage(null)}
+                          className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
+                        >
+                          <Plus size={12} className="rotate-45" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border-weak mt-6">
+                <button 
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-5 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-main font-semibold"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary text-text-inverse px-7 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  {submitting ? "Mendaftarkan..." : "Daftarkan Usaha"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
