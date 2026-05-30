@@ -19,7 +19,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-20 bg-canvas/80 backdrop-blur-xl border-b border-border-weak">
         <div className="flex items-center gap-2">
-          <span className="font-serif-title text-2xl font-semibold tracking-tight">Smart<span className="text-accent">Warga</span></span>
+          <span className="font-serif-title text-3xl md:text-4xl font-bold tracking-tight">Smart<span className="text-accent">Warga</span></span>
         </div>
         <div className="flex items-center gap-3 md:gap-6">
           {/* Theme Toggle Button */}

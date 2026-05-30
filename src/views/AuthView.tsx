@@ -49,6 +49,19 @@ export function AuthView({
         alert("Pendaftaran memerlukan NIK dan Nomor Telepon.");
         return;
       }
+      
+      // Simulate NIK validation against internal database
+      if (nik.length !== 16) {
+        alert("Kegagalan Registrasi: NIK harus 16 digit!");
+        return;
+      }
+      
+      // Mock validation checking
+      const registeredNIKs = ["3273112345678900", "1234567890123456"];
+      if (!registeredNIKs.includes(nik)) {
+        alert("Pendaftaran Ditolak: NIK (" + nik + ") belum terdaftar di database pengurus RT/RW. Silakan hubungi pengurus setempat untuk mendaftarkan NIK Anda terlebih dahulu sebelum menggunakan aplikasi.");
+        return;
+      }
     }
     onLogin(role);
   };

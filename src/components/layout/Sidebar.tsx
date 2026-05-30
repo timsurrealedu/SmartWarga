@@ -43,6 +43,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
     { id: "finance", label: "Transparansi Kas", icon: PieChart },
     { id: "reports", label: "E-Reporting", icon: MessageSquare },
     { id: "dues", label: "Iuran Warga", icon: CreditCard },
+    { id: "gotong_royong", label: "Gotong Royong", icon: Users },
     { id: "storage", label: "Brankas Digital", icon: FolderOpen },
   ];
 

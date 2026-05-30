@@ -377,7 +377,14 @@ function LettersApprovalTab() {
                     <FileText size={24} />
                  </div>
                  <div>
-                   <h3 className="font-semibold text-text-main">{letter.name}</h3>
+                   <h3 className="flex items-center gap-2 font-semibold text-text-main">
+                     {letter.name}
+                     {letter.status === "pending" && (
+                        <span className="text-[10px] bg-red-400/20 text-red-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider animate-pulse border border-red-400">
+                          Overdue (Lebih dari 2 Hari)
+                        </span>
+                     )}
+                   </h3>
                    <p className="text-sm text-text-muted">{letter.type}</p>
                    <p className="text-xs text-text-muted mt-1 uppercase tracking-wider font-semibold">{letter.id} — {letter.date}</p>
                  </div>

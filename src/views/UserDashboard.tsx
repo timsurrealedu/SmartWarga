@@ -5,7 +5,7 @@ import {
   Camera, FileCheck, CheckCircle2, AlertCircle, PhoneCall, 
   MapPin, Clock, Upload, Search, Download, Plus, MessageSquare, CreditCard,
   Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert,
-  Newspaper, Store, Calendar, Tag, AlertTriangle, Building, Megaphone
+  Newspaper, Store, Calendar, Tag, AlertTriangle, Building, Megaphone, Users
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar,
@@ -40,6 +40,7 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
           {currentTab === "finance" && <FinanceTab data={finance} />}
           {currentTab === "reports" && <ReportingTab />}
           {currentTab === "dues" && <DuesTab />}
+          {currentTab === "gotong_royong" && <GotongRoyongTab />}
           {currentTab === "storage" && <StorageTab />}
           {currentTab === "panic" && <PanicTab />}
         </motion.div>
@@ -64,13 +65,20 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
           <div className="flex flex-wrap gap-3">
             <button 
               onClick={() => setTab("letters")}
-              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-accent-hover transition-colors shadow-[0_10px_30px_rgba(0,0,0,0.25)] cursor-pointer">
+              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-red-500 transition-colors shadow-[0_10px_30px_rgba(0,0,0,0.25)] cursor-pointer">
               Buat Surat Pengantar
             </button>
             <button 
               onClick={() => setTab("dues")}
-              className="welcome-btn-second bg-transparent border px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
+              className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
               Bayar Iuran
+            </button>
+            <button 
+              onClick={() => {
+                alert("Memutar Video Tutorial Warga: 'Cara Lengkap Menggunakan SmartWarga dan Melakukan Verifikasi KTP'");
+              }}
+              className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer hover:bg-surface/20">
+              <span>▶ Bantuan / Tutorial</span>
             </button>
           </div>
         </div>
@@ -399,24 +407,39 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                  {letters.length === 0 && <p className="text-sm text-text-muted text-center py-4">Belum ada riwayat pengajuan.</p>}
                  {letters.map(letter => (
-                   <div key={letter.id} className="flex items-center justify-between p-3 border border-border-weak rounded-xl hover:bg-surface-hover transition-colors">
-                     <div className="flex-1">
-                       <p className="text-sm font-semibold text-text-main">{letter.type}</p>
-                       <p className="text-xs text-text-muted mt-0.5">{letter.date} — {letter.keperluan}</p>
+                   <div key={letter.id} className="flex flex-col p-4 border border-border-weak rounded-xl hover:bg-surface-hover transition-colors overflow-hidden relative">
+                     {/* Timeline Lead Time Visualization */}
+                     <div className="flex items-center justify-between">
+                       <div className="flex-1">
+                         <p className="text-sm font-semibold text-text-main">{letter.type}</p>
+                         <p className="text-xs text-text-muted mt-0.5">{letter.date} — {letter.keperluan}</p>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          {letter.status === 'approved' && (
+                            <button 
+                              onClick={() => handleDownloadPDF(letter)}
+                              className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                              title="Download PDF"
+                            >
+                              <Download size={14} />
+                            </button>
+                          )}
+                          {letter.status === 'approved' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-primary/20 text-primary rounded-md whitespace-nowrap">Selesai / QR Valid</span>}
+                          {letter.status === 'pending' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-accent/20 text-accent rounded-md whitespace-nowrap">Menunggu RT</span>}
+                          {letter.status === 'rejected' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-red-900/40 text-red-400 rounded-md whitespace-nowrap">Ditolak</span>}
+                       </div>
                      </div>
-                     <div className="flex items-center gap-2">
-                        {letter.status === 'approved' && (
-                          <button 
-                            onClick={() => handleDownloadPDF(letter)}
-                            className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
-                            title="Download PDF"
-                          >
-                            <Download size={14} />
-                          </button>
-                        )}
-                        {letter.status === 'approved' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-primary/20 text-primary rounded-md whitespace-nowrap">Selesai / QR Valid</span>}
-                        {letter.status === 'pending' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-accent/20 text-accent rounded-md whitespace-nowrap">Menunggu RT</span>}
-                        {letter.status === 'rejected' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-red-900/40 text-red-400 rounded-md whitespace-nowrap">Ditolak</span>}
+                     <div className="mt-4 pt-3 border-t border-border-weak flex justify-between items-center text-xs text-text-muted">
+                        <div className="flex gap-2">
+                          <span>Status Lead Time:</span>
+                          {letter.status === 'approved' ? (
+                            <span className="font-mono text-primary font-bold">1 Hari Kerja (Selesai pada {letter.date})</span>
+                          ) : letter.status === 'pending' ? (
+                            <span className="font-mono text-accent font-bold animate-pulse">Sedang ditinjau Pengurus RT (Estimasi Maksimal: 2 Hari Kerja)</span>
+                          ) : (
+                            <span className="font-mono text-red-400 font-bold">Ditolak - Pengecekan Sistem (0 Hari)</span>
+                          )}
+                        </div>
                      </div>
                    </div>
                  ))}
@@ -676,92 +699,124 @@ function StorageTab() {
 function PanicTab() {
   const [clicked, setClicked] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
-  const holdTimer = React.useRef<any>(null);
-  const HOLD_DURATION = 1500; // 1.5 seconds
+  const [isHolding, setIsHolding] = useState(false);
+  const holdIntervalRef = React.useRef<any>(null);
 
-  const handleStartHold = () => {
+  const startHolding = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     if (clicked) return;
+    setIsHolding(true);
+    setHoldProgress(0);
     const startTime = Date.now();
-    holdTimer.current = setInterval(() => {
+    holdIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+      const progress = Math.min((elapsed / 3000) * 100, 100);
       setHoldProgress(progress);
       if (progress >= 100) {
         setClicked(true);
-        if (holdTimer.current) clearInterval(holdTimer.current);
+        setIsHolding(false);
+        setHoldProgress(0);
+        if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
       }
-    }, 16);
+    }, 30);
   };
 
-  const handleStopHold = () => {
-    if (holdTimer.current) {
-      clearInterval(holdTimer.current);
-      holdTimer.current = null;
-    }
-    if (!clicked) {
-      setHoldProgress(0);
+  const stopHolding = () => {
+    setIsHolding(false);
+    setHoldProgress(0);
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
     }
   };
+
+  React.useEffect(() => {
+    return () => {
+      if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+    };
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-12rem)] max-h-[600px] border border-accent/20 bg-accent/5 rounded-3xl p-6">
+    <div className="flex flex-col items-center justify-center text-center h-[calc(100vh-12rem)] max-h-[600px] border border-accent/20 bg-accent/5 rounded-3xl p-6 animate-in fade-in duration-300">
       <h2 className="text-3xl font-display font-bold text-text-main mb-2">Darurat Lingkungan?</h2>
-      <p className="text-text-muted mb-12 max-w-md">Tahan tombol di bawah selama 1.5 detik untuk langsung memberikan notifikasi ke Petugas Keamanan dan broadcast ke seluruh warga.</p>
+      <p className="text-text-muted mb-12 max-w-md">Tahan tombol merah di bawah selama 3 detik untuk mengaktifkan sirine pos satpam dan mengirim broadcast darurat.</p>
       
       <div className="relative">
-        {/* Progress ring/border */}
-        {!clicked && holdProgress > 0 && (
-          <svg className="absolute -top-4 -left-4 w-[calc(100%+32px)] h-[calc(100%+32px)] -rotate-90 pointer-events-none">
-            <circle
-              cx="50%"
-              cy="50%"
-              r="48%"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="4"
-              className="text-accent/20"
-            />
-            <circle
-              cx="50%"
-              cy="50%"
-              r="48%"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeDasharray="100 100"
-              strokeDashoffset={100 - holdProgress}
-              className="text-accent transition-all duration-75"
-              pathLength="100"
-            />
-          </svg>
-        )}
-
         <button 
-          onMouseDown={handleStartHold}
-          onMouseUp={handleStopHold}
-          onMouseLeave={handleStopHold}
-          onTouchStart={handleStartHold}
-          onTouchEnd={handleStopHold}
+          onMouseDown={startHolding}
+          onMouseUp={stopHolding}
+          onMouseLeave={stopHolding}
+          onTouchStart={startHolding}
+          onTouchEnd={stopHolding}
+          disabled={clicked}
+          style={{
+            background: isHolding
+              ? `linear-gradient(135deg, #b91c1c ${holdProgress}%, #ef4444 ${holdProgress}%)`
+              : undefined
+          }}
           className={cn(
-            "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-red-600/30 select-none touch-none",
-            clicked ? "bg-red-700 scale-95" : "bg-red-600 hover:bg-red-700 hover:scale-105 active:scale-95"
+            "relative w-56 h-56 rounded-full flex items-center justify-center text-white transition-all shadow-xl shadow-red-600/30 select-none touch-none cursor-pointer",
+            clicked ? "bg-red-700 scale-95 cursor-default" : "bg-red-600 hover:scale-105 active:scale-95"
           )}
         >
           {clicked && (
-            <span className="absolute w-full h-full rounded-full border-4 border-red-500 animate-ping"></span>
+             <span className="absolute w-full h-full rounded-full border-4 border-red-500 animate-ping"></span>
           )}
-          <div className="flex flex-col items-center justify-center space-y-2">
-            {clicked ? <PhoneCall size={64} className="animate-bounce" /> : <AlertCircle size={64} />}
-            <span className="font-display font-bold text-2xl uppercase tracking-widest">
-              {clicked ? "Memanggil..." : holdProgress > 0 ? "Menahan..." : "TAHAN PANIC"}
+          {isHolding && (
+            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+              <circle
+                cx="50%"
+                cy="50%"
+                r="46%"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.2)"
+                strokeWidth="6"
+              />
+              <circle
+                cx="50%"
+                cy="50%"
+                r="46%"
+                fill="none"
+                stroke="white"
+                strokeWidth="6"
+                strokeDasharray="100 100"
+                strokeDashoffset={100 - holdProgress}
+                pathLength="100"
+                className="transition-all duration-75"
+              />
+            </svg>
+          )}
+          <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+            {clicked ? <PhoneCall size={64} className="animate-bounce" /> : <AlertCircle size={64} className={isHolding ? "animate-pulse" : ""} />}
+            <span className="font-display font-bold text-2.5xl uppercase tracking-widest leading-none">
+              {clicked ? "Terkirim!" : isHolding ? `${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC"}
             </span>
+            {!clicked && (
+              <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">
+                {isHolding ? "Jangan Lepas" : "Tahan 3 Detik"}
+              </span>
+            )}
           </div>
         </button>
       </div>
 
       {clicked && (
-        <div className="mt-8 px-6 py-3 bg-accent/20 text-accent font-semibold rounded-full text-sm flex items-center gap-2 animate-in fade-in zoom-in">
-           <MapPin size={18} /> Lokasi terkirim (Jl. Merdeka No. 45)
+        <div className="mt-8 space-y-2 border-t border-border-weak pt-8 w-full max-w-lg">
+          <div className="px-6 py-3 bg-red-600/20 border border-red-500 text-red-500 font-semibold rounded-full text-sm flex items-center justify-center gap-2 animate-in fade-in zoom-in shadow-xl shadow-red-500/20">
+             <AlertTriangle size={18} /> Sirine Pos Satpam Telah Diaktifkan Ke Poskamling RW 12!
+          </div>
+          <div className="px-6 py-3 bg-accent/20 border border-accent/50 text-accent font-semibold rounded-full text-sm flex items-center justify-center gap-2 animate-in fade-in zoom-in shadow-sm">
+             <MapPin size={18} /> Lokasi akurat (Jl. Merdeka No. 45) terkirim via Push Notifikasi WhatsApp Pengurus.
+          </div>
+          <div className="px-6 py-3 bg-primary/20 border border-primary/50 text-primary font-semibold rounded-full text-sm flex items-center justify-center gap-2 animate-in fade-in zoom-in shadow-sm">
+             <Camera size={18} /> Sistem mengaktifkan koneksi ke CCTV terdekat (CCTV-04 Blok B).
+          </div>
+          <button 
+            onClick={() => setClicked(false)} 
+            className="mt-6 inline-block text-xs font-bold text-text-muted hover:text-text-main hover:underline transition-colors cursor-pointer"
+          >
+            Mematikan Tanda Bahaya (Reset)
+          </button>
         </div>
       )}
     </div>
@@ -994,7 +1049,7 @@ function DuesTab() {
   const [showPayModal, setShowPayModal] = useState(false);
   
   // Payment Form States
-  const [bankName, setBankName] = useState("BCA");
+  const [bankName, setBankName] = useState("QRIS");
   const [senderName, setSenderName] = useState("");
   const [transferDate, setTransferDate] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
@@ -1197,17 +1252,6 @@ function DuesTab() {
                 <span className="text-xs font-bold text-primary font-mono">LUNAS</span>
               </div>
             </div>
-
-            <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 text-xs text-text-muted leading-relaxed space-y-2">
-              <p className="font-semibold text-text-main">📌 Informasi Metode Pembayaran:</p>
-              <p>Pembayaran dapat dilakukan melalui transfer bank ke rekening warga:</p>
-              <div className="bg-canvas p-2.5 rounded-lg font-mono text-text-main border border-border-weak space-y-1">
-                <p>Bank: <strong>MANDIRI</strong></p>
-                <p>Rekening: <strong>123-0005-4321-00</strong></p>
-                <p>Atas Nama: <strong>Kas RT 05 RW 12</strong></p>
-              </div>
-              <p>Gunakan opsi upload bukti transfer di samping setelah melakukan pembayaran.</p>
-            </div>
           </div>
         </div>
       </div>
@@ -1229,17 +1273,67 @@ function DuesTab() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Bank Tujuan Transfer</label>
+                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-sans">Metode Pembayaran & Tujuan</label>
                 <select 
                   value={bankName}
                   onChange={e => setBankName(e.target.value)}
                   className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold"
                 >
-                  <option value="MANDIRI">MANDIRI (RT 05 Account)</option>
-                  <option value="BCA">BCA (Operasional)</option>
-                  <option value="BRI">BRI (Bantuan Sosial)</option>
+                  <option value="QRIS">Scan QRIS Instan (RT 05 RW 12)</option>
+                  <option value="MANDIRI">Transfer MANDIRI (RT 05 Account)</option>
+                  <option value="BCA">Transfer BCA (Operasional)</option>
+                  <option value="BRI">Transfer BRI (Bantuan Sosial)</option>
                 </select>
               </div>
+
+              {/* Dynamic Payment Target Information Details Card */}
+              <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 text-xs text-text-main space-y-2 my-3 animate-in fade-in duration-200">
+                <p className="font-bold text-text-muted uppercase tracking-wider text-[10px]">Detail Tujuan Pembayaran:</p>
+                {bankName === "QRIS" && (
+                  <div className="space-y-1">
+                    <p className="font-extrabold text-[13px] text-primary">QRIS INSTAN RT 05 RW 12</p>
+                    <p className="text-text-muted text-[11px] leading-relaxed">Pindai kode QRIS di bawah ini dengan aplikasi perbankan (BCA, Mandiri, dll.) atau dompet digital (Gopay, OVO, Dana, LinkAja) Anda.</p>
+                  </div>
+                )}
+                {bankName === "MANDIRI" && (
+                  <div className="space-y-1">
+                    <p className="font-mono text-sm font-bold text-text-main">MANDIRI: <span className="text-primary font-extrabold">123-0005-4321-00</span></p>
+                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Kas RT 05 RW 12</span></p>
+                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Harap transfer sesuai nominal tagihan dan simpan bukti transfer untuk diunggah di bawah.</p>
+                  </div>
+                )}
+                {bankName === "BCA" && (
+                  <div className="space-y-1">
+                    <p className="font-mono text-sm font-bold text-text-main">BCA: <span className="text-primary font-extrabold font-mono">987-654-3210</span></p>
+                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Kas Operasional RT 05</span></p>
+                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Khusus transfer iuran kas operasional. Harap lampirkan bukti foto resi setelah transfer selesai.</p>
+                  </div>
+                )}
+                {bankName === "BRI" && (
+                  <div className="space-y-1">
+                    <p className="font-mono text-sm font-bold text-text-main">BRI: <span className="text-primary font-extrabold font-mono">0123-45-678901-23-4</span></p>
+                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Bantuan Sosial RT 05</span></p>
+                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Rekening khusus penyaluran bantuan sosial swadaya warga RT 05.</p>
+                  </div>
+                )}
+              </div>
+
+              {bankName === "QRIS" && (
+                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-border-strong my-2">
+                  <p className="text-sm font-bold text-black mb-2 uppercase tracking-wide">QRIS PEMBAYARAN IURAN</p>
+                  <div className="w-48 h-48 bg-gray-100 flex items-center justify-center border-4 border-black p-2">
+                    {/* Simulated QR Code using CSS grid blocks for visual effect */}
+                    <div className="grid grid-cols-4 grid-rows-4 gap-1 w-full h-full opacity-80">
+                      <div className="col-span-2 row-span-2 bg-black"></div>
+                      <div className="bg-black"></div><div className="bg-white"></div>
+                      <div className="bg-white"></div><div className="bg-black"></div>
+                      <div className="col-span-2 bg-black"></div>
+                      <div className="col-span-2 bg-black"></div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-3 font-mono">Scan menggunakan BCA/Gopay/OVO/Dana</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Nama Pemilik Rekening Pengirim</label>
@@ -1723,6 +1817,66 @@ function MarketTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function GotongRoyongTab() {
+  const gotongData = [
+    { id: 1, title: "Kerja Bakti Bersih Selokan", date: "Minggu, 12 Nov 2026", time: "07:00 - Selesai", location: "Sepanjang RT 05", participants: 15, joined: true },
+    { id: 2, title: "Persiapan Panggung 17-an", date: "Minggu, 14 Agu 2026", time: "08:00 - Selesai", location: "Lapangan Serbaguna RW 12", participants: 25, joined: false },
+    { id: 3, title: "Penyemprotan Disinfektan", date: "Sabtu, 21 Nov 2026", time: "09:00 - 12:00", location: "Fasilitas Umum & Musholla", participants: 8, joined: false },
+  ];
+
+  const [events, setEvents] = useState(gotongData);
+
+  const toggleJoin = (id: number) => {
+    setEvents(events.map(ev => {
+      if (ev.id === id) {
+        return { ...ev, joined: !ev.joined, participants: ev.joined ? ev.participants - 1 : ev.participants + 1 };
+      }
+      return ev;
+    }));
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Gotong Royong & Kegiatan</h2>
+          <p className="text-sm text-text-muted mt-1">Daftar kegiatan swadaya lingkungan. Mari berpartisipasi untuk RT kita.</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {events.map(ev => (
+          <div key={ev.id} className="bg-surface border border-border-weak p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all">
+            <div>
+              <div className="bg-primary/10 text-primary w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3">
+                Panggilan Terbuka
+              </div>
+              <h3 className="font-bold text-lg text-text-main leading-tight mb-2">{ev.title}</h3>
+              <div className="space-y-1.5 mb-4 text-xs text-text-muted">
+                <p className="flex items-center gap-2"><MapPin size={14} className="text-accent" /> {ev.location}</p>
+                <p className="flex items-center gap-2">⏱️ {ev.date} — {ev.time}</p>
+                <p className="flex items-center gap-2"><Users size={14} className="text-primary" /> {ev.participants} Warga Berpartisipasi</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => toggleJoin(ev.id)}
+              className={cn(
+                "w-full py-2.5 rounded-xl text-sm font-bold transition-all mt-4 cursor-pointer",
+                ev.joined 
+                  ? "bg-canvas border border-border-strong text-text-main hover:bg-surface-hover hover:text-accent" 
+                  : "bg-primary text-text-inverse hover:bg-primary/90 shadow-md shadow-primary/20"
+              )}
+            >
+              {ev.joined ? "Batal Ikut Serta" : "Yuk, Ikut Serta!"}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

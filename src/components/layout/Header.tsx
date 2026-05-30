@@ -9,6 +9,43 @@ interface HeaderProps {
 
 export function Header({ currentRole, toggleSidebar }: HeaderProps) {
   const [showPanicModal, setShowPanicModal] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+  const holdIntervalRef = React.useRef<any>(null);
+
+  const startHolding = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (showPanicModal) return;
+    setIsHolding(true);
+    setHoldProgress(0);
+    const startTime = Date.now();
+    holdIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / 3000) * 100, 100);
+      setHoldProgress(progress);
+      if (progress >= 100) {
+        setShowPanicModal(true);
+        setIsHolding(false);
+        setHoldProgress(0);
+        if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+      }
+    }, 30);
+  };
+
+  const stopHolding = () => {
+    setIsHolding(false);
+    setHoldProgress(0);
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
+    };
+  }, []);
 
   return (
     <>
@@ -22,14 +59,30 @@ export function Header({ currentRole, toggleSidebar }: HeaderProps) {
           </h1>
         </div>
 
-        <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 mt-2 md:mt-0 w-full md:w-auto">
-          <button 
-            onClick={() => setShowPanicModal(true)}
-            className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-2 px-4 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all hover:scale-105 text-xs md:text-sm"
-          >
-            <AlertTriangle size={18} fill="currentColor" className="md:w-5 md:h-5" />
-            <span>PANIC</span>
-          </button>
+        <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 mt-2 md:mt-0 w-full md:w-auto flex-wrap">
+          <div className="flex flex-col items-end">
+            <button 
+              onMouseDown={startHolding}
+              onMouseUp={stopHolding}
+              onMouseLeave={stopHolding}
+              onTouchStart={startHolding}
+              onTouchEnd={stopHolding}
+              style={{
+                background: isHolding 
+                  ? `linear-gradient(to right, #b91c1c ${holdProgress}%, #ef4444 ${holdProgress}%)`
+                  : undefined
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-2 px-4 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all hover:scale-102 text-xs md:text-sm select-none touch-none"
+            >
+              <AlertTriangle size={18} fill="currentColor" className="md:w-5 md:h-5" />
+              <span>{isHolding ? `HOLD: ${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC (TAHAN 3S)"}</span>
+            </button>
+            {isHolding && (
+              <span className="text-[10px] text-red-500 font-mono mt-1 font-bold animate-pulse">
+                Jangan lepas! Mengirim dalam {3 - Math.floor((holdProgress / 100) * 3)}s...
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-border-strong">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-text-main">

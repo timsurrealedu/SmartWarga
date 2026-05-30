@@ -86,34 +86,34 @@ body {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Light Theme overrides */
+/* Light Theme overrides - make banner colorful instead of plain white */
 .light .welcome-banner {
-  background: #ffffff;
-  border-color: var(--border-strong);
-  color: var(--text-main);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, #0f7a5d, #085a44);
+  border-color: #0d6b52;
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15);
 }
 
 .light .welcome-title {
-  color: var(--text-main);
+  color: #ffffff;
 }
 
 .light .welcome-subtitle {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .light .welcome-btn-second {
-  border-color: var(--border-strong);
-  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
 }
 
 .light .welcome-btn-second:hover {
-  background-color: var(--surface-hover);
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .light .welcome-banner svg {
-  opacity: 0.04;
-  color: var(--text-main);
+  opacity: 0.1;
+  color: #ffffff;
 }
 
 h1, h2, h3, h4, h5, h6 {
