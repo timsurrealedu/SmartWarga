@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "motion/react";
 import {
   FileText,
   FolderOpen,
@@ -45,16 +46,31 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
   ];
 
   const adminTabs = [
-    { id: "dashboard", label: "Admin Overview", icon: LayoutDashboard },
+    { id: "dashboard", label: "Pengurus Overview", icon: LayoutDashboard },
     { id: "news_manage", label: "Kelola Berita", icon: Newspaper },
     { id: "market_manage", label: "Kelola UMKM & Iklan", icon: Store },
-    { id: "validations", label: "Validasi Warga", icon: Users },
+    { id: "validations", label: "Administrasi Warga", icon: Users },
     { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
   ];
 
   const tabs = currentRole === "user" ? userTabs : currentRole === "admin" ? adminTabs : [
     { id: "docs", label: "Proposal & Dokumen", icon: BookOpen }
   ];
+
+  const [ads, setAds] = useState<any[]>([]);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/ads').then(r => r.json()).then(setAds);
+  }, []);
+
+  useEffect(() => {
+    if (ads.length === 0) return;
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % ads.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [ads.length]);
 
   return (
     <div className={cn(
@@ -101,14 +117,34 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
       </nav>
 
       <div className="px-4 py-3">
-        <div className="bg-surface border border-border-weak rounded-xl p-2 relative overflow-hidden group cursor-pointer shadow-sm">
-          <span className="absolute top-2 right-2 text-[8px] bg-black/50 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-widest z-10">Ad</span>
-          <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300&h=200" alt="Sponsor" className="w-full h-24 object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" />
-          <div className="mt-2 text-center">
-            <p className="text-xs font-bold text-text-main line-clamp-1">Promo Grosir Sembako</p>
-            <p className="text-[10px] text-text-muted">Toko Bu Ningsih RT 02</p>
+        {ads.length > 0 && (
+          <div 
+            onClick={() => {
+              if (ads[carouselIndex]?.link) {
+                window.open(ads[carouselIndex].link, '_blank');
+              }
+            }}
+            className="bg-surface border border-border-weak rounded-xl p-2 relative overflow-hidden group cursor-pointer shadow-sm h-[152px] hover:border-primary/50 transition-colors"
+          >
+            <span className="absolute top-2 right-2 text-[8px] bg-black/50 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-widest z-20">Ad</span>
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={carouselIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-2 z-10 flex flex-col"
+              >
+                <img src={ads[carouselIndex]?.image} referrerPolicy="no-referrer" alt={ads[carouselIndex]?.title} className="w-full h-24 object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" />
+                <div className="mt-2 text-center">
+                  <p className="text-xs font-bold text-text-main line-clamp-1">{ads[carouselIndex]?.title}</p>
+                  <p className="text-[10px] text-text-muted">{ads[carouselIndex]?.sponsor}</p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="p-4 border-t border-border-strong space-y-2">

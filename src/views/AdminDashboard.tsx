@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
-  Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall
+  Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall, LayoutDashboard
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -1007,13 +1007,17 @@ function AdminFinanceTab() {
 }
 
 function AdminTicketsTab() {
-  const [reports, setReports] = useState([
-    { id: "1", title: "Lampu Jalan Padam di Blok D", location: "Blok D2", sender: "Bpk. Rahardian", date: "Hari ini, 08:30", status: "pending", responses: [] as {text: string, date: string}[] },
-    { id: "2", title: "Selokan mampet dekat pos satpam", location: "Pos Utama", sender: "Ibu Sari", date: "Kemarin, 15:45", status: "progress", responses: [{text: "Sedang dikoordinasikan dengan petugas kebersihan desa", date: "Hari ini, 10:00"}] },
-    { id: "3", title: "Orang mencurigakan mondar-mandir", location: "Blok A ujung", sender: "Anonim", date: "10 Okt", status: "resolved", responses: [] },
-  ]);
+  const [reports, setReports] = useState<any[]>([]);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+
+  useEffect(() => {
+    fetch('/api/user/reports')
+      .then(res => res.json())
+      .then(data => {
+        setReports(data.map((r: any) => ({ ...r, responses: [] })));
+      });
+  }, []);
 
   const handleUpdateStatus = (id: string, newStatus: string) => {
     setReports(reports.map(r => r.id === id ? { ...r, status: newStatus } : r));
@@ -1023,6 +1027,7 @@ function AdminTicketsTab() {
     if (!replyText.trim()) return;
     setReports(reports.map(r => r.id === id ? {
       ...r,
+      status: r.status === "TERKIRIM" ? "PROSES" : r.status,
       responses: [...(r.responses || []), { text: replyText, date: "Baru saja" }]
     } : r));
     setReplyText("");
@@ -1037,22 +1042,24 @@ function AdminTicketsTab() {
       </div>
 
       <div className="space-y-4">
+        {reports.length === 0 && <p className="text-sm text-text-muted">Sedang memuat laporan...</p>}
         {reports.map(report => (
           <div key={report.id} className="bg-surface p-5 rounded-2xl shadow-sm border border-border-weak">
              <div className="flex flex-col md:flex-row justify-between gap-4">
-               <div>
+               <img src={report.image || 'https://images.unsplash.com/photo-1572005085731-bf36450f612d?auto=format&fit=crop&q=80&w=400'} alt={report.title} referrerPolicy="no-referrer" className="w-full md:w-40 h-32 object-cover rounded-xl shrink-0 border border-border-weak" />
+               <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                      <h3 className="font-semibold text-text-main">{report.title}</h3>
                      <span className={cn(
                        "text-[10px] uppercase font-bold px-2 py-0.5 rounded-md",
-                       report.status === 'pending' ? "bg-accent/20 text-accent" : 
-                       report.status === 'progress' ? "bg-blue-500/20 text-blue-500" : "bg-primary/20 text-primary"
+                       report.status === 'TERKIRIM' ? "bg-accent/20 text-accent" : 
+                       report.status === 'PROSES' ? "bg-blue-500/20 text-blue-500" : "bg-primary/20 text-primary"
                      )}>
                        {report.status}
                      </span>
                   </div>
                   <p className="text-sm text-text-muted mb-2">Pelapor: {report.sender} • {report.date} • {report.location}</p>
-                  {report.status !== 'resolved' && (
+                  {report.status !== 'SELESAI' && (
                     <p className="text-xs italic text-text-muted">Menunggu tindak lanjut pengurus...</p>
                   )}
                </div>
@@ -1067,17 +1074,17 @@ function AdminTicketsTab() {
                   >
                     Tanggapi
                   </button>
-                  {report.status === 'pending' && (
+                  {report.status === 'TERKIRIM' && (
                     <button 
-                      onClick={() => handleUpdateStatus(report.id, 'progress')}
+                      onClick={() => handleUpdateStatus(report.id, 'PROSES')}
                       className="px-3 py-1.5 bg-blue-500/10 text-blue-500 text-sm font-medium rounded-lg hover:bg-blue-500/20 transition-colors"
                     >
                       Proses
                     </button>
                   )}
-                  {(report.status === 'pending' || report.status === 'progress') && (
+                  {(report.status === 'TERKIRIM' || report.status === 'PROSES') && (
                     <button 
-                      onClick={() => handleUpdateStatus(report.id, 'resolved')}
+                      onClick={() => handleUpdateStatus(report.id, 'SELESAI')}
                       className="px-3 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-lg hover:bg-primary/20 transition-colors"
                     >
                       Selesai
@@ -1132,6 +1139,8 @@ export function AdminNewsTab() {
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
+  const [newsTab, setNewsTab] = useState<"umum" | "gotong_royong">("umum");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchNews = () => {
     fetch('/api/news')
@@ -1144,41 +1153,72 @@ export function AdminNewsTab() {
     fetchNews();
   }, []);
 
+  const handleEditClick = (item: any) => {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setCategory(item.category);
+    setSummary(item.summary || "");
+    setContent(item.content);
+    setImage(item.image || "");
+    setShowAdd(true);
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return alert("Judul dan isi berita wajib diisi!");
     
+    // Simulating save logic
     try {
-      const res = await fetch("/api/news", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category, summary, content, image })
-      });
-      if (res.ok) {
-        alert("Berita baru berhasil diterbitkan!");
-        setShowAdd(false);
-        setTitle("");
-        setSummary("");
-        setContent("");
-        setImage("");
-        fetchNews();
+      if (editingId) {
+        setNews(news.map(n => n.id === editingId ? { ...n, title, category, summary, content, image } : n));
+        alert("Berita berhasil diperbarui!");
+      } else {
+        const res = await fetch("/api/news", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, category, summary, content, image })
+        });
+        if (res.ok) {
+          alert("Berita baru berhasil diterbitkan!");
+          fetchNews();
+        }
       }
+      setShowAdd(false);
+      setEditingId(null);
+      setTitle("");
+      setSummary("");
+      setContent("");
+      setImage("");
     } catch {
-      alert("Gagal menerbitkan berita.");
+      alert("Gagal menyimpan berita.");
     }
   };
 
+  const filteredNews = news.filter(item => 
+    newsTab === "gotong_royong" ? item.category === "Gotong Royong" : item.category !== "Gotong Royong"
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex justify-between items-center bg-surface border border-border-weak p-5 rounded-3xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface border border-border-weak p-5 rounded-3xl gap-4">
         <div>
-          <h2 className="text-xl font-display font-semibold text-text-main">Kelola Berita & Informasi</h2>
-          <p className="text-xs text-text-muted mt-1">Terbitkan pengumuman, agenda kegiatan warga, dan kabar RT/RW terbaru.</p>
+          <h2 className="text-xl font-display font-semibold text-text-main">Kelola Berita & Gotong Royong</h2>
+          <p className="text-xs text-text-muted mt-1">Terbitkan pengumuman, perbarui agenda kerja bakti warga, dan kabar RT/RW terbaru.</p>
         </div>
         <button
-          onClick={() => setShowAdd(!showAdd)}
+          onClick={() => {
+            setShowAdd(!showAdd);
+            if (!showAdd && !editingId) {
+              setEditingId(null);
+              setTitle("");
+              setSummary("");
+              setContent("");
+              setImage("");
+              setCategory(newsTab === "gotong_royong" ? "Gotong Royong" : "Kegiatan RT");
+            }
+          }}
           className={cn(
-            "bg-primary text-text-inverse px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-primary/95 transition-colors cursor-pointer",
+            "bg-primary text-text-inverse px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-primary/95 transition-colors cursor-pointer whitespace-nowrap",
             showAdd && "bg-accent"
           )}
         >
@@ -1186,13 +1226,28 @@ export function AdminNewsTab() {
         </button>
       </div>
 
+      <div className="flex p-1 bg-canvas rounded-xl w-fit border border-border-weak">
+        <button 
+          onClick={() => setNewsTab("umum")}
+          className={cn("px-4 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer", newsTab === "umum" ? "bg-surface shadow-sm text-text-main" : "text-text-muted hover:text-text-main")}
+        >
+          Berita Umum
+        </button>
+        <button 
+          onClick={() => setNewsTab("gotong_royong")}
+          className={cn("px-4 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer", newsTab === "gotong_royong" ? "bg-surface shadow-sm text-text-main" : "text-text-muted hover:text-text-main")}
+        >
+          Gotong Royong
+        </button>
+      </div>
+
       {showAdd && (
         <form onSubmit={handleCreate} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
-          <h3 className="font-bold text-text-main text-base">Buat Berita / Pengumuman Baru</h3>
+          <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Berita" : "Buat Berita / Pengumuman Baru"}</h3>
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Judul Berita</label>
+              <label className="block text-xs font-bold uppercase text-text-muted mb-2">Judul Berita</label>
               <input
                 type="text"
                 value={title}
@@ -1202,7 +1257,7 @@ export function AdminNewsTab() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Kategori</label>
+              <label className="block text-xs font-bold uppercase text-text-muted mb-2">Kategori</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
@@ -1210,6 +1265,7 @@ export function AdminNewsTab() {
               >
                 <option value="Pengumuman">Pengumuman RT</option>
                 <option value="Kegiatan">Kegiatan Warga</option>
+                <option value="Gotong Royong">Agenda Gotong Royong</option>
                 <option value="Himbauan">Himbauan</option>
                 <option value="Pembangunan">Pembangunan</option>
               </select>
@@ -1217,7 +1273,7 @@ export function AdminNewsTab() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Ringkasan Singkat (Summary)</label>
+            <label className="block text-xs font-bold uppercase text-text-muted mb-2">Ringkasan Singkat (Summary)</label>
             <input
               type="text"
               value={summary}
@@ -1228,7 +1284,7 @@ export function AdminNewsTab() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Isi Berita Lengkap</label>
+            <label className="block text-xs font-bold uppercase text-text-muted mb-2">Isi Berita Lengkap</label>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
@@ -1239,7 +1295,7 @@ export function AdminNewsTab() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">URL Gambar Ilustrasi</label>
+            <label className="block text-xs font-bold uppercase text-text-muted mb-2">URL Gambar Ilustrasi</label>
             <input
               type="text"
               value={image}
@@ -1252,7 +1308,10 @@ export function AdminNewsTab() {
           <div className="flex justify-end gap-3 pt-4 border-t border-border-weak">
             <button
               type="button"
-              onClick={() => setShowAdd(false)}
+              onClick={() => {
+                 setShowAdd(false);
+                 setEditingId(null);
+              }}
               className="px-5 py-2 text-xs text-text-muted hover:text-text-main font-medium"
             >
               Batal
@@ -1261,32 +1320,42 @@ export function AdminNewsTab() {
               type="submit"
               className="bg-primary text-text-inverse px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-primary/10 cursor-pointer"
             >
-              Terbitkan Berita
+              {editingId ? "Simpan Perubahan" : "Terbitkan Berita"}
             </button>
           </div>
         </form>
       )}
 
       <div className="grid md:grid-cols-2 gap-6">
-        {news.map((item: any) => (
-          <div key={item.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden flex flex-col md:flex-row shadow-sm hover:border-border-strong transition-all">
-            {item.image && (
-              <img
-                src={item.image}
-                alt={item.title}
-                referrerPolicy="no-referrer"
-                className="w-full md:w-36 h-32 md:h-auto object-cover shrink-0 text-text-main text-xs"
-              />
-            )}
-            <div className="p-5 flex flex-col justify-between flex-1">
-              <div>
-                <span className="text-[10px] bg-primary/10 border border-primary/20 px-2 py-0.5 rounded text-primary font-bold uppercase font-sans mb-2 inline-block">
-                  {item.category}
-                </span>
-                <h3 className="font-bold text-text-main text-base line-clamp-1">{item.title}</h3>
-                <p className="text-xs text-text-muted mt-2 line-clamp-2 leading-relaxed">{item.summary || item.content}</p>
+        {filteredNews.map((item: any) => (
+          <div key={item.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
+            <div className="flex flex-col md:flex-row">
+              {item.image && (
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  referrerPolicy="no-referrer"
+                  className="w-full md:w-36 h-32 md:h-auto object-cover shrink-0 text-text-main text-xs"
+                />
+              )}
+              <div className="p-5 flex flex-col justify-between flex-1">
+                <div>
+                  <span className="text-[10px] bg-primary/10 border border-primary/20 px-2 py-0.5 rounded text-primary font-bold uppercase font-sans mb-2 inline-block">
+                    {item.category}
+                  </span>
+                  <h3 className="font-bold text-text-main text-base line-clamp-1">{item.title}</h3>
+                  <p className="text-xs text-text-muted mt-2 line-clamp-2 leading-relaxed">{item.summary || item.content}</p>
+                </div>
+                <p className="text-[10px] text-text-muted font-mono mt-4">Tanggal: {item.date}</p>
               </div>
-              <p className="text-[10px] text-text-muted font-mono mt-4">Tanggal: {item.date}</p>
+            </div>
+            <div className="p-3 bg-canvas/30 border-t border-border-weak">
+              <button 
+                onClick={() => handleEditClick(item)}
+                className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+              >
+                Edit
+              </button>
             </div>
           </div>
         ))}
@@ -1300,6 +1369,7 @@ export function AdminMarketTab() {
   const [ads, setAds] = useState<any[]>([]);
   const [subTab, setSubTab] = useState<"umkm" | "ads">("umkm");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // UMKM form states
   const [owner, setOwner] = useState("");
@@ -1325,28 +1395,68 @@ export function AdminMarketTab() {
     fetchData();
   }, []);
 
+  const handleEditUMKM = (item: any) => {
+    setEditingId(item.id);
+    setOwner(item.owner);
+    setName(item.name);
+    setCategory(item.category);
+    setPhone(item.phone || "");
+    setDesc(item.desc || "");
+    setImage(item.image || "");
+    setShowAdd(true);
+  };
+
+  const handleEditAd = (item: any) => {
+    setEditingId(item.id);
+    setSponsor(item.sponsor);
+    setAdTitle(item.title);
+    setAdDesc(item.desc || "");
+    setAdImage(item.image || "");
+    setCta(item.cta || "");
+    setShowAdd(true);
+  };
+
+  const resetUMKM = () => {
+    setOwner("");
+    setName("");
+    setPhone("");
+    setDesc("");
+    setImage("");
+    setCategory("Makanan & Minuman");
+  };
+
+  const resetAd = () => {
+    setSponsor("");
+    setAdTitle("");
+    setAdDesc("");
+    setAdImage("");
+    setCta("");
+  };
+
   const handleCreateUMKM = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !owner) return alert("Nama usaha dan pemilik wajib diisi!");
     
     try {
-      const res = await fetch("/api/umkm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner, name, category, phone, desc, image })
-      });
-      if (res.ok) {
-        alert("Pendaftaran UMKM Warga sukses dicatat!");
-        setShowAdd(false);
-        setOwner("");
-        setName("");
-        setPhone("");
-        setDesc("");
-        setImage("");
-        fetchData();
+      if (editingId) {
+        setUmkm(umkm.map(u => u.id === editingId ? { ...u, owner, name, category, phone, desc, image } : u));
+        alert("UMKM berhasil diperbarui!");
+      } else {
+        const res = await fetch("/api/umkm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owner, name, category, phone, desc, image })
+        });
+        if (res.ok) {
+          alert("Pendaftaran UMKM Warga sukses dicatat!");
+          fetchData();
+        }
       }
+      setShowAdd(false);
+      setEditingId(null);
+      resetUMKM();
     } catch {
-      alert("Gagal menambahkan UMKM.");
+      alert("Gagal menyimpan UMKM.");
     }
   };
 
@@ -1355,23 +1465,25 @@ export function AdminMarketTab() {
     if (!sponsor || !adTitle) return alert("Nama sponsor dan judul iklan wajib diisi!");
     
     try {
-      const res = await fetch("/api/ads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsor, title: adTitle, desc: adDesc, image: adImage, cta })
-      });
-      if (res.ok) {
-        alert("Iklan sponsor berhasil diunggah dan aktif!");
-        setShowAdd(false);
-        setSponsor("");
-        setAdTitle("");
-        setAdDesc("");
-        setAdImage("");
-        setCta("");
-        fetchData();
+      if (editingId) {
+        setAds(ads.map(a => a.id === editingId ? { ...a, sponsor, title: adTitle, desc: adDesc, image: adImage, cta } : a));
+        alert("Iklan berhasil diperbarui!");
+      } else {
+        const res = await fetch("/api/ads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sponsor, title: adTitle, desc: adDesc, image: adImage, cta })
+        });
+        if (res.ok) {
+          alert("Iklan sponsor berhasil diunggah dan aktif!");
+          fetchData();
+        }
       }
+      setShowAdd(false);
+      setEditingId(null);
+      resetAd();
     } catch {
-      alert("Gagal mengunggah iklan.");
+      alert("Gagal menyimpan iklan.");
     }
   };
 
@@ -1385,7 +1497,7 @@ export function AdminMarketTab() {
 
         <div className="flex bg-surface rounded-xl p-1 border border-border-weak shrink-0">
           <button 
-            onClick={() => { setSubTab("umkm"); setShowAdd(false); }}
+            onClick={() => { setSubTab("umkm"); setShowAdd(false); setEditingId(null); resetUMKM(); }}
             className={cn(
               "px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
               subTab === "umkm" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
@@ -1394,7 +1506,7 @@ export function AdminMarketTab() {
             Daftar UMKM Warga
           </button>
           <button 
-            onClick={() => { setSubTab("ads"); setShowAdd(false); }}
+            onClick={() => { setSubTab("ads"); setShowAdd(false); setEditingId(null); resetAd(); }}
             className={cn(
               "px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
               subTab === "ads" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
@@ -1413,8 +1525,15 @@ export function AdminMarketTab() {
           </p>
         </div>
         <button 
-          onClick={() => setShowAdd(!showAdd)}
-          className={cn("bg-primary text-text-inverse px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-primary/95 transition-colors cursor-pointer", showAdd && "bg-accent")}
+          onClick={() => {
+            setShowAdd(!showAdd);
+            if (!showAdd && !editingId) {
+               setEditingId(null);
+               if (subTab === "umkm") resetUMKM();
+               else resetAd();
+            }
+          }}
+          className={cn("bg-primary text-text-inverse px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-primary/95 transition-colors cursor-pointer whitespace-nowrap", showAdd && "bg-accent")}
         >
           {showAdd ? <X size={16} /> : <Plus size={16} />} {showAdd ? "Batal" : "Tambah Baru"}
         </button>
@@ -1422,7 +1541,7 @@ export function AdminMarketTab() {
 
       {showAdd && subTab === "umkm" && (
         <form onSubmit={handleCreateUMKM} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
-          <h3 className="font-bold text-text-main text-base">Daftarkan Toko / Lapak Baru</h3>
+          <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Toko / Lapak" : "Daftarkan Toko / Lapak Baru"}</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Nama Pemilik (Warga)</label>
@@ -1448,7 +1567,7 @@ export function AdminMarketTab() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold font-semibold font-semibold font-semibold font-semibold font-semibold">Kategori Bidang</label>
+              <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Kategori Bidang</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
@@ -1497,8 +1616,12 @@ export function AdminMarketTab() {
           <div className="flex justify-end gap-3 pt-4 border-t border-border-weak">
             <button
               type="button"
-              onClick={() => setShowAdd(false)}
-              className="px-5 py-2 text-xs text-text-muted hover:text-text-main font-medium"
+              onClick={() => {
+                 setShowAdd(false);
+                 setEditingId(null);
+                 resetUMKM();
+              }}
+              className="px-5 py-2 text-xs text-text-muted hover:text-text-main font-medium cursor-pointer"
             >
               Batal
             </button>
@@ -1506,7 +1629,7 @@ export function AdminMarketTab() {
               type="submit"
               className="bg-primary text-text-inverse px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-primary/10 cursor-pointer"
             >
-              Simpan UMKM Warga
+              {editingId ? "Simpan Perubahan" : "Simpan UMKM Warga"}
             </button>
           </div>
         </form>
@@ -1514,7 +1637,7 @@ export function AdminMarketTab() {
 
       {showAdd && subTab === "ads" && (
         <form onSubmit={handleCreateAd} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
-          <h3 className="font-bold text-text-main text-base">Pasang Banner Promo Sponsor</h3>
+          <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Banner Promo" : "Pasang Banner Promo Sponsor"}</h3>
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -1576,8 +1699,12 @@ export function AdminMarketTab() {
           <div className="flex justify-end gap-3 pt-4 border-t border-border-weak">
             <button
               type="button"
-              onClick={() => setShowAdd(false)}
-              className="px-5 py-2 text-xs text-text-muted hover:text-text-main font-medium"
+              onClick={() => {
+                 setShowAdd(false);
+                 setEditingId(null);
+                 resetAd();
+              }}
+              className="px-5 py-2 text-xs text-text-muted hover:text-text-main font-medium cursor-pointer"
             >
               Batal
             </button>
@@ -1585,7 +1712,7 @@ export function AdminMarketTab() {
               type="submit"
               className="bg-primary text-text-inverse px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-primary/10 cursor-pointer"
             >
-              Terbitkan Iklan
+              {editingId ? "Simpan Perubahan" : "Terbitkan Iklan"}
             </button>
           </div>
         </form>
@@ -1605,9 +1732,17 @@ export function AdminMarketTab() {
                   <p className="text-xs text-text-muted mt-2 line-clamp-3 leading-relaxed">{u.desc}</p>
                 </div>
               </div>
-              <div className="p-5 bg-canvas/30 border-t border-border-weak text-xs text-text-main font-semibold flex justify-between items-center">
-                <span>Milik: {u.owner}</span>
-                {u.phone && <span className="font-mono text-text-muted">{u.phone}</span>}
+              <div className="p-5 bg-canvas/30 border-t border-border-weak flex flex-col gap-3">
+                <div className="text-xs text-text-main font-semibold flex justify-between items-center">
+                  <span>Milik: {u.owner}</span>
+                  {u.phone && <span className="font-mono text-text-muted">{u.phone}</span>}
+                </div>
+                <button 
+                  onClick={() => handleEditUMKM(u)} 
+                  className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+                >
+                  Edit
+                </button>
               </div>
             </div>
           ))}
@@ -1615,18 +1750,28 @@ export function AdminMarketTab() {
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {ads.map((ad: any) => (
-            <div key={ad.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col md:flex-row">
-              {ad.image && <img src={ad.image} alt={ad.title} referrerPolicy="no-referrer" className="w-full md:w-48 h-40 md:h-auto object-cover shrink-0 text-text-main text-xs" />}
-              <div className="p-5 flex flex-col justify-between flex-1">
-                <div>
-                  <span className="text-[10px] bg-primary/15 border border-primary/20 text-primary font-bold px-2 py-0.5 rounded uppercase font-sans mb-2 inline-block">
-                    {ad.sponsor}
-                  </span>
-                  <h4 className="font-bold text-text-main text-base">{ad.title}</h4>
-                  <p className="text-xs text-text-muted mt-2 leading-relaxed">{ad.desc}</p>
+            <div key={ad.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
+              <div className="flex flex-col md:flex-row flex-1">
+                {ad.image && <img src={ad.image} alt={ad.title} referrerPolicy="no-referrer" className="w-full md:w-48 h-40 md:h-auto object-cover shrink-0 text-text-main text-xs" />}
+                <div className="p-5 flex flex-col justify-between flex-1">
+                  <div>
+                    <span className="text-[10px] bg-primary/15 border border-primary/20 text-primary font-bold px-2 py-0.5 rounded uppercase font-sans mb-2 inline-block">
+                      {ad.sponsor}
+                    </span>
+                    <h4 className="font-bold text-text-main text-base">{ad.title}</h4>
+                    <p className="text-xs text-text-muted mt-2 leading-relaxed">{ad.desc}</p>
+                  </div>
+                  <button className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-text-inverse font-bold py-2 rounded-xl text-xs transition-all">
+                    {ad.cta || "Informasi Detail"} &rarr;
+                  </button>
                 </div>
-                <button className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-text-inverse font-bold py-2 rounded-xl text-xs transition-all cursor-pointer">
-                  {ad.cta || "Informasi Detail"} &rarr;
+              </div>
+              <div className="p-3 bg-canvas/30 border-t border-border-weak">
+                <button 
+                  onClick={() => handleEditAd(ad)} 
+                  className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+                >
+                  Edit
                 </button>
               </div>
             </div>
@@ -1636,3 +1781,5 @@ export function AdminMarketTab() {
     </div>
   );
 }
+
+

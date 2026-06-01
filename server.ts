@@ -102,11 +102,11 @@ async function startServer() {
     {
       id: "NEWS-2",
       title: "Kerja Bakti Akbar & Revitalisasi Gapura",
-      category: "Kegiatan Sosial",
+      category: "Gotong Royong",
       date: "19 Mei 2026",
       summary: "Bergabung bersama dalam memperindah gapura akses utama dan membersihkan saluran air penyumbat banjir.",
       content: "Gotong royong akan difokuskan pada pembersihan selokan utama jalan Merdeka guna menghindari genangan air, serta pengecatan ulang gapura penyambutan warga agar terlihat asri dan modern. Konsumsi disediakan oleh ibu-ibu PKK.",
-      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400"
+      image: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&q=80&w=400"
     }
   ];
 
@@ -127,33 +127,35 @@ async function startServer() {
       category: "Jasa",
       phone: "0816-1212-3434",
       desc: "Servis motor, ganti oli, ban bocor, tambal ban, kelistrikan roda dua. Diskon khusus warga RT sekitar 10%.",
-      image: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&q=80&w=300"
+      image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&q=80&w=400"
     }
   ];
 
   let adsData = [
     {
       id: "AD-1",
-      sponsor: "IndiHome internet super",
-      title: "Pasang WiFi Rumah Warga Pintar",
-      desc: "Paket khusus warga SmartWarga! Nikmati kecepatan hingga 100Mbps hanya Rp 250rb/bulan dengan pendaftaran gratis secara eksklusif.",
-      image: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=500",
-      cta: "Hubungi RT untuk Formulir"
+      sponsor: "Minecraft Official",
+      title: "Minecraft Realms RT 04",
+      desc: "Dapatkan diskon berlangganan Minecraft Realms khusus untuk warga RT yang suka main bareng.",
+      image: "https://images.unsplash.com/photo-1605379399642-870262d3d051?auto=format&fit=crop&q=80&w=500",
+      cta: "Main Sekarang",
+      link: "https://www.minecraft.net"
     },
     {
       id: "AD-2",
-      sponsor: "Air Minum Le Minerale",
-      title: "Dukungan Sosial Galon Higienis",
-      desc: "Setiap pembelian 2 galon isi ulang gratis 1 botol kecil. Toko Berkah Blok B2, melayani antar jemput bebas ongkir kawasan perumahan.",
-      image: "https://images.unsplash.com/photo-1608889175123-8ee362201f81?auto=format&fit=crop&q=80&w=500",
-      cta: "Hubungi Toko Berkah"
+      sponsor: "DC Comics",
+      title: "Streaming DC Universe",
+      desc: "Nobar akhir pekan makin seru bareng warga dengan langganan VIP film-film dari DC Universe.",
+      image: "https://images.unsplash.com/photo-1611604548018-d56bbd85d681?auto=format&fit=crop&q=80&w=500",
+      cta: "Berlangganan",
+      link: "https://www.dc.com"
     }
   ];
 
   let reportsData = [
-    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=200", sender: "Bpk. Rahardian", isPublic: true },
-    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: null, sender: "Ibu Sari", isPublic: true },
-    { id: "REP-03", title: "Parkir Liar", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: null, sender: "Budi Santoso", isPublic: false }
+    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1496661415325-ef8d16f39650?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: true },
+    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400", sender: "Ibu Sari", isPublic: true },
+    { id: "REP-03", title: "Parkir Liar", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1544465544-1b71aee9dfa3?auto=format&fit=crop&q=80&w=400", sender: "Budi Santoso", isPublic: false }
   ];
 
   let financeDetails = [

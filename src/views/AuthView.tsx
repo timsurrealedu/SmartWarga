@@ -41,8 +41,8 @@ export function AuthView({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === "register") {
-      if (role === "user" && !ocrResult) {
-        alert("Warga wajib mengunggah KTP untuk verifikasi NIK!");
+      if (!ocrResult) {
+        alert("Wajib mengunggah KTP untuk verifikasi NIK!");
         return;
       }
       if (!nik || !phone) {
@@ -114,14 +114,14 @@ export function AuthView({
               <button
                 type="button"
                 onClick={() => setRole("user")}
-                className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", role === "user" ? "bg-surface text-text-main shadow-sm" : "text-text-muted")}
+                className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200", role === "user" ? "bg-primary text-white shadow-md scale-[1.02]" : "text-text-muted hover:bg-surface/50")}
               >
                 Warga
               </button>
               <button
                 type="button"
                 onClick={() => setRole("admin")}
-                className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", role === "admin" ? "bg-surface text-text-main shadow-sm" : "text-text-muted")}
+                className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-200", role === "admin" ? "bg-primary text-white shadow-md scale-[1.02]" : "text-text-muted hover:bg-surface/50")}
               >
                 Pengurus
               </button>
@@ -145,22 +145,6 @@ export function AuthView({
               </div>
             ) : (
               <div className="space-y-4">
-                {role === "admin" && (
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor NIK</label>
-                    <div className="relative">
-                      <ShieldAlert size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input 
-                        type="text" 
-                        value={nik}
-                        onChange={(e) => setNik(e.target.value)}
-                        placeholder="Masukkan 16 digit NIK"
-                        className="w-full bg-canvas border border-border-strong rounded-lg pl-10 pr-4 py-3 text-sm text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors" 
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Nomor Telepon (WhatsApp)</label>
                   <div className="relative">
@@ -194,7 +178,7 @@ export function AuthView({
             </div>
 
             {/* Registration Additional Fields */}
-            {activeTab === "register" && role === "user" && (
+            {activeTab === "register" && (
               <div className="bg-surface border border-border-strong rounded-xl p-4 mt-6">
                 <div className="flex items-center justify-between mb-4">
                    <h3 className="text-sm font-semibold text-text-main">Validasi KTP Pintar (AI OCR)</h3>

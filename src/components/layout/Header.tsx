@@ -89,7 +89,7 @@ export function Header({ currentRole, toggleSidebar }: HeaderProps) {
                 {currentRole === "user" ? "Bpk. Rahardian" : "Ketua RT 04"}
               </p>
               <p className="text-xs text-text-muted">
-                {currentRole === "user" ? "Warga RT 05 / RW 12" : "Administrator"}
+                {currentRole === "user" ? "Warga RT 05 / RW 12" : "Pengurus"}
               </p>
             </div>
             <UserCircle size={32} className="text-text-muted" />
@@ -100,7 +100,8 @@ export function Header({ currentRole, toggleSidebar }: HeaderProps) {
       {showPanicModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div 
-            className="bg-surface rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative animate-in fade-in zoom-in duration-300 border border-border-strong"
+            className="rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative animate-in fade-in zoom-in duration-300 border border-border-strong"
+            style={{ backgroundColor: 'var(--canvas)' }}
           >
             <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-6">
                <AlertTriangle size={40} className="text-accent animate-pulse" />

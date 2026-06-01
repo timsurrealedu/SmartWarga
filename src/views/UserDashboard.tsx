@@ -376,10 +376,10 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
                         <select 
                           value={type} 
                           onChange={e => setType(e.target.value)}
-                          className="w-full bg-canvas border-2 border-primary/30 rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main [&>option]:bg-canvas [&>option]:text-text-main"
+                          className="w-full bg-canvas border-2 border-primary/30 rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
                         >
                            {otherLetterTypes.map(ot => (
-                             <option key={ot} value={ot}>{ot}</option>
+                             <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} key={ot} value={ot}>{ot}</option>
                            ))}
                         </select>
                       </div>
@@ -669,7 +669,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                         dataKey="value"
                       >
                         {chartData.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--border-strong)" strokeWidth={2} />
                         ))}
                       </Pie>
                       <RechartsTooltip 
@@ -854,11 +854,12 @@ function FinanceDuesTab({ data }: { data: any }) {
                   <select 
                     value={bankName}
                     onChange={e => setBankName(e.target.value)}
-                    className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary cursor-pointer font-semibold shadow-sm [&>option]:bg-canvas [&>option]:text-text-main"
+                    style={{ background: 'var(--canvas)', color: 'var(--text-main)' }}
+                    className="w-full border border-border-strong rounded-xl p-3 text-sm outline-none focus:border-primary cursor-pointer font-semibold shadow-sm"
                   >
-                    <option value="QRIS">QRIS Auto-Scan (Semua Bank & E-Wallet)</option>
-                    <option value="BCA">Transfer Rekening BCA</option>
-                    <option value="MANDIRI">Transfer Rekening MANDIRI</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="QRIS">QRIS Auto-Scan (Semua Bank & E-Wallet)</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="BCA">Transfer Rekening BCA</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="MANDIRI">Transfer Rekening MANDIRI</option>
                   </select>
                </div>
 
@@ -1192,7 +1193,10 @@ function ReportingTab() {
   const [viewMode, setViewMode] = useState<"mine" | "public">("mine");
 
   useEffect(() => {
-    fetch('/api/user/reports').then(r => r.json()).then(setReports);
+    fetch('/api/user/reports').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setReports(data);
+      else setReports([]);
+    }).catch(() => setReports([]));
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1229,9 +1233,9 @@ function ReportingTab() {
     }
   };
 
-  const filteredReports = viewMode === "mine" 
+  const filteredReports = Array.isArray(reports) ? (viewMode === "mine" 
     ? reports.filter(r => r.sender === "Budi Santoso")
-    : reports.filter(r => r.isPublic);
+    : reports.filter(r => r.isPublic)) : [];
 
   return (
     <div className="space-y-6">
@@ -1266,12 +1270,13 @@ function ReportingTab() {
                 <select 
                   value={category}
                   onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main [&>option]:bg-canvas [&>option]:text-text-main"
+                  style={{ background: 'var(--canvas)', color: 'var(--text-main)' }}
+                  className="w-full border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary"
                 >
-                   <option value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
-                   <option value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
-                   <option value="Keamanan">Keamanan & Ketertiban</option>
-                   <option value="Lainnya">Lainnya</option>
+                   <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
+                   <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
+                   <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Keamanan">Keamanan & Ketertiban</option>
+                   <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Lainnya">Lainnya</option>
                 </select>
               </div>
               <div>
@@ -1376,7 +1381,7 @@ function ReportingTab() {
                   </div>
                   {report.image && (
                     <div className="ml-16">
-                      <img src={report.image} alt="Report attachment" className="h-40 w-auto rounded-lg shadow-sm border border-border-weak" />
+                      <img src={report.image} alt="Report attachment" referrerPolicy="no-referrer" className="h-40 w-auto rounded-lg shadow-sm border border-border-weak" />
                     </div>
                   )}
                   {report.status === "SELESAI" && (
@@ -1478,6 +1483,7 @@ function NewsGotongRoyongTab() {
                   <img 
                     src={art.image} 
                     alt={art.title} 
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                 </div>
@@ -1552,6 +1558,7 @@ function NewsGotongRoyongTab() {
             <img 
               src={selectedArticle.image} 
               alt={selectedArticle.title} 
+              referrerPolicy="no-referrer"
               className="w-full h-64 object-cover rounded-2xl mb-6 shadow-sm border border-border-weak"
             />
             <div className="text-sm text-text-main leading-relaxed whitespace-pre-line space-y-4">
@@ -1586,6 +1593,7 @@ function MarketTab() {
   const [desc, setDesc] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const fetchUMKM = () => {
     fetch('/api/umkm').then(r => r.json()).then(setListings);
@@ -1595,6 +1603,14 @@ function MarketTab() {
   useEffect(() => {
     fetchUMKM();
   }, []);
+
+  useEffect(() => {
+    if (ads.length === 0) return;
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % ads.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [ads.length]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1652,13 +1668,16 @@ function MarketTab() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
         {listings.length === 0 && <p className="text-sm text-text-muted text-center py-8 col-span-full">Belum ada UMKM terdaftar.</p>}
         {listings.map(umkm => (
-          <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between">
+          <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between hover:border-primary/50 hover:shadow-lg transition-all duration-300 group cursor-pointer">
             <div>
-              <img 
-                src={umkm.image} 
-                alt={umkm.name} 
-                className="w-full h-44 object-cover"
-              />
+              <div className="overflow-hidden">
+                <img 
+                  src={umkm.image} 
+                  alt={umkm.name} 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
               <div className="p-5 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] bg-primary/15 text-primary text-xs font-bold tracking-wider px-2 py-0.5 rounded uppercase">
@@ -1717,13 +1736,14 @@ function MarketTab() {
                   <select 
                     value={category}
                     onChange={e => setCategory(e.target.value)}
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold [&>option]:bg-canvas [&>option]:text-text-main"
+                    style={{ background: 'var(--canvas)', color: 'var(--text-main)' }}
+                    className="w-full border border-border-strong rounded-xl p-3 text-sm outline-none focus:border-primary font-bold"
                   >
-                    <option value="Makanan & Minuman">Makanan & Minuman</option>
-                    <option value="Kebutuhan Pokok">Kebutuhan Pokok / Sembako</option>
-                    <option value="Jasa">Jasa Pelayanan</option>
-                    <option value="Kerajinan">Kerajinan / Atribut</option>
-                    <option value="Kesehatan">Kesehatan & Kecantikan</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Makanan & Minuman">Makanan & Minuman</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Kebutuhan Pokok">Kebutuhan Pokok / Sembako</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Jasa">Jasa Pelayanan</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Kerajinan">Kerajinan / Atribut</option>
+                    <option style={{ background: 'var(--canvas)', color: 'var(--text-main)' }} value="Kesehatan">Kesehatan & Kecantikan</option>
                   </select>
                 </div>
                 <div>
