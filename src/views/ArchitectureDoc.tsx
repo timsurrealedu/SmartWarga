@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 export function ArchitectureDoc() {
-  const [activeSubTab, setActiveSubTab] = useState<"business" | "offering" | "im_paper" | "costing" | "tech">("business");
+  const [activeSubTab, setActiveSubTab] = useState<"business" | "offering" | "im_paper" | "costing" | "tech" | "video_script">("business");
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-16 animate-in fade-in duration-300">
@@ -16,10 +16,10 @@ export function ArchitectureDoc() {
           <span className="text-[10px] bg-accent/20 text-accent font-bold uppercase px-3 py-1 rounded-full tracking-wider">Proposal & Dokumen Resmi</span>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-text-main mt-2 tracking-tight">SmartWarga Digital Ecosystem</h1>
           <p className="text-sm text-text-muted mt-1 leading-relaxed max-w-2xl">
-            Dokumentasi komprehensif rancangan model bisnis, rincian biaya, paper manajemen informasi, dan arsitektur teknis prototype untuk pengajuan dukungan/subsidi pemerintah.
+            Dokumentasi komprehensif rancangan model bisnis, rincian biaya, paper manajemen informasi, arsitektur teknis prototype, dan script presentasi/video penjelasan fitur.
           </p>
         </div>
-        <div className="flex bg-surface p-1.5 rounded-2xl border border-border-weak shrink-0">
+        <div className="flex bg-surface p-1.5 rounded-2xl border border-border-weak shrink-0 flex-wrap gap-1">
           <button
             onClick={() => setActiveSubTab("business")}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeSubTab === "business" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"}`}
@@ -31,6 +31,12 @@ export function ArchitectureDoc() {
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeSubTab === "offering" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"}`}
           >
             Premium Offering
+          </button>
+          <button
+            onClick={() => setActiveSubTab("video_script")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeSubTab === "video_script" ? "bg-accent text-white shadow-sm" : "text-text-muted hover:text-text-main"}`}
+          >
+            Video Script
           </button>
         </div>
       </div>
@@ -71,6 +77,13 @@ export function ArchitectureDoc() {
         >
           <Layers size={16} />
           <span>Arsitektur Blueprint</span>
+        </button>
+        <button
+          onClick={() => setActiveSubTab("video_script")}
+          className={`flex items-center gap-2 px-5 py-4 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${activeSubTab === "video_script" ? "border-accent text-accent" : "border-transparent text-text-muted hover:text-text-main"}`}
+        >
+          <CheckCircle size={16} />
+          <span>Video Flow Script</span>
         </button>
       </div>
 
@@ -493,6 +506,115 @@ export function ArchitectureDoc() {
             </section>
           </div>
         )}
+        {/* ================= TAB 6: VIDEO SCRIPT ================= */}
+        {activeSubTab === "video_script" && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="bg-surface p-8 rounded-3xl border border-border-weak shadow-sm space-y-8">
+              
+              <div className="text-center space-y-3 pb-8 border-b border-border-weak">
+                <span className="font-sans text-[10px] font-bold tracking-widest text-accent uppercase block">SmartWarga Presentasi Visual</span>
+                <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-text-main leading-snug">
+                  Skrip & Flow Video Penjelasan Produk (1-2 Menit)
+                </h2>
+                <p className="text-sm font-sans text-text-muted">
+                  Panduan narasi visual dan scene-by-scene UI untuk keperluan demonstrasi atau materi komersial.
+                </p>
+              </div>
+
+              {/* Scene 1 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">1</span>
+                  [00:00 - 00:15] Pembukaan & Landing Page
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Masih sering antre untuk urus surat pengantar RT? Atau bingung dengan transparansi uang kas lingkungan? Kenalkan, SmartWarga — platform yang membawa pelayanan RT/RW langsung ke genggaman Anda, 24 jam sehari."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Menampilkan halaman awal (Landing Page) SmartWarga yang bersih dan elegan, menyoroti teks besar 'Lingkungan Cerdas Dimulai dari Sini' kemudian di-scroll perlahan menunjukkan fitur 24/7 dan 0 Antri.</p>
+                  <p><strong>Aksi User:</strong> Kursor bergerak menekan tombol 'Mulai Sekarang' yang diarahkan menuju halaman pendaftaran.</p>
+                </div>
+              </div>
+
+              {/* Scene 2 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">2</span>
+                  [00:15 - 00:30] Pendaftaran Cerdas (OCR & AI)
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Lupakan mengisi formulir data diri yang panjang. Dengan teknologi cerdas SmartWarga, Anda cukup mengambil foto E-KTP. Sistem OCR secara otomatis membaca nama, NIK, dan alamat Anda tanpa salah ketik."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Layar pendaftaran SmartWarga. Memilih opsi 'Gunakan KTP dengan AI'. Tampil animasi loading/scan singkat, diikuti semua kolom (Nama, NIK, Kelurahan) yang terisi penuh secara magis.</p>
+                  <p><strong>Aksi User:</strong> User mengunggah gambar KTP, AI mengisi data, dan user menekan 'Daftar sebagai Warga'.</p>
+                </div>
+              </div>
+
+              {/* Scene 3 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">3</span>
+                  [00:30 - 00:50] Dashboard Warga & Pengajuan E-Surat
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Setelah login, warga langsung disajikan berbagai menu lengkap. Perlu surat pengantar? Cukup pilih menu E-Surat, tentukan keperluannya, dan ajukan. Pengurus RT akan menerima notifikasi secara langsung ke WhatsApp mereka untuk segera ditandatangani secara digital."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Memperlihatkan tampilan Overview Dashboard (menampilkan nama user dan ringkasan notifikasi). Berpindah ke menu 'E-Surat & QR', user memilih jenis surat 'Surat Pengantar Pembuatan KTP', mengisi deskripsi singkat, lalu menekan 'Ajukan Surat'."</p>
+                  <p><strong>Aksi User:</strong> Navigasi dari Sidebar Dashboard {'->'} Menu E-Surat {'->'} Mengisi form surat {'->'} Submit.</p>
+                </div>
+              </div>
+
+              {/* Scene 4 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">4</span>
+                  [00:50 - 01:10] Transparansi Iuran & Pembayaran QRIS Instan
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Warga seringkali bertanya-tanya pemakaian uang kas. Di fitur Bayar Iuran bulanan, Anda tidak perlu transfer dan mengirim resi secara manual. Cukup pilih bayar dengan QRIS, pindai, selesai! Laporan pemasukan dan pengeluaran pun bisa diakses semua warga dengan transparan."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Mengklik tab/menu 'Iuran Warga'. Layar menampilkan ringkasan tagihan, user memilih tujuan pembayaran 'Transfer MANDIRI' lalu diubah ke opsi 'QRIS'. Tampil stiker barcode QRIS, menunjukkan alur sematkan resi, kemudian 'Kirim Pembayaran'."</p>
+                  <p><strong>Aksi User:</strong> Mengisi detail pembayaran pada modal, memilih fitur Dropdown 'Metode Pembayaran', tampil instruksi QRIS.</p>
+                </div>
+              </div>
+
+              {/* Scene 5 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-red-500">
+                  <span className="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center text-xs">5</span>
+                  [01:10 - 01:25] Panic Button (Keamanan Lingkungan)
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Keamanan adalah prioritas. Dalam situasi darurat, tahan Panic Button selama 3 detik. Seketika sirine pos satpam menyala dan pesan darurat dikirim otomatis ke grup pengurus."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Dari header navigasi bar atap, kursor menekan dan menahan tombol darurat 'PANIC (TAHAN 3S)'. Indikator loading progress bar muncul selama 3 detik menutupi sisi tombol hingga layar menampilkan modal merah pemberitahuan besar sirine aktif.</p>
+                  <p><strong>Aksi User:</strong> User melakukan klik tahan pada button Panic merah di pojok kanan atas Header hingga modal darurat terbuka.</p>
+                </div>
+              </div>
+
+              {/* Scene 6 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">6</span>
+                  [01:25 - 01:45] Dashboard Admin & Approval Instan
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Di sisi kepengurusan, Admin Dashboard memantau segalanya dalam satu jendela kerja. Cukup 1 klik, pengurus dapat membubuhkan tanda tangan elektronik untuk keabsahan dokumen. Semua arsip warga yang ditolak maupun diterima terdokumentasi terpusat."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Login/Berganti Role sebagai Admin (Logo User Header berganti ke Pengurus). Tampil Dashboard Pengurus dengan riwayat E-Surat pending. Pengurus menekan tombol 'Approve', notifikasi hijau muncul. Tampilan chart demografi warga atau list pengajuan diperlihatkan."</p>
+                  <p><strong>Aksi User:</strong> Berpindah ke menu Admin Dashboard. Melihat daftar warga yang belum dikonfirmasi atau pengajuan surat, melakukan klik pada 'Approve & Tanda Tangani'."</p>
+                </div>
+              </div>
+
+              {/* Scene 7 */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-display font-bold text-sm uppercase tracking-widest text-primary">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">7</span>
+                  [01:45 - 02:00] Penutup
+                </h4>
+                <div className="p-4 bg-surface-hover rounded-xl border border-border-weak space-y-3 text-sm">
+                  <p><strong>Narator:</strong> "Tingkatkan harmonisasi lingkungan, kurangi birokrasi yang membebankan. Mulai dari pendaftaran surat, kas terbuka, hingga keamanan. Semua lengkap dalam satu platform modern. Gunakan SmartWarga, inovasi RT/RW masa depan Indonesia."</p>
+                  <p><strong>Visual (Screenshot/Record):</strong> Layar transisi memperlihatkan logo utuh "SmartWarga" dengan background pola dot modern. Tulisan tagline 'Hubungi tim sales kami / Daftar sekarang'.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

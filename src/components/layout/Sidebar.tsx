@@ -37,14 +37,11 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
 
   const userTabs = [
     { id: "dashboard", label: "Overview", icon: LayoutDashboard },
-    { id: "news", label: "Portal Berita", icon: Newspaper },
+    { id: "news_gotong_royong", label: "Portal Berita", icon: Newspaper },
     { id: "market", label: "Pasar & UMKM", icon: Store },
     { id: "letters", label: "E-Surat & QR", icon: FileText },
-    { id: "finance", label: "Transparansi Kas", icon: PieChart },
+    { id: "finance_dues", label: "Keuangan & Iuran", icon: PieChart },
     { id: "reports", label: "E-Reporting", icon: MessageSquare },
-    { id: "dues", label: "Iuran Warga", icon: CreditCard },
-    { id: "gotong_royong", label: "Gotong Royong", icon: Users },
-    { id: "storage", label: "Brankas Digital", icon: FolderOpen },
   ];
 
   const adminTabs = [
@@ -102,6 +99,17 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
           </button>
         ))}
       </nav>
+
+      <div className="px-4 py-3">
+        <div className="bg-surface border border-border-weak rounded-xl p-2 relative overflow-hidden group cursor-pointer shadow-sm">
+          <span className="absolute top-2 right-2 text-[8px] bg-black/50 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-widest z-10">Ad</span>
+          <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300&h=200" alt="Sponsor" className="w-full h-24 object-cover rounded-lg group-hover:scale-105 transition-transform duration-500" />
+          <div className="mt-2 text-center">
+            <p className="text-xs font-bold text-text-main line-clamp-1">Promo Grosir Sembako</p>
+            <p className="text-[10px] text-text-muted">Toko Bu Ningsih RT 02</p>
+          </div>
+        </div>
+      </div>
 
       <div className="p-4 border-t border-border-strong space-y-2">
         <button

@@ -34,14 +34,11 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
           transition={{ duration: 0.2 }}
         >
           {currentTab === "dashboard" && <OverviewTab letters={letters} setTab={setTab} />}
-          {currentTab === "news" && <NewsTab />}
+          {currentTab === "news_gotong_royong" && <NewsGotongRoyongTab />}
           {currentTab === "market" && <MarketTab />}
           {currentTab === "letters" && <LettersTab letters={letters} onLetterAdded={(l) => setLetters([l, ...letters])} />}
-          {currentTab === "finance" && <FinanceTab data={finance} />}
+          {currentTab === "finance_dues" && <FinanceDuesTab data={finance} />}
           {currentTab === "reports" && <ReportingTab />}
-          {currentTab === "dues" && <DuesTab />}
-          {currentTab === "gotong_royong" && <GotongRoyongTab />}
-          {currentTab === "storage" && <StorageTab />}
           {currentTab === "panic" && <PanicTab />}
         </motion.div>
       </AnimatePresence>
@@ -51,6 +48,7 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
 
 function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string) => void }) {
   const activeLettersCount = letters.filter(l => l.status === "pending").length;
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -69,14 +67,12 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
               Buat Surat Pengantar
             </button>
             <button 
-              onClick={() => setTab("dues")}
+              onClick={() => setTab("finance_dues")}
               className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
               Bayar Iuran
             </button>
             <button 
-              onClick={() => {
-                alert("Memutar Video Tutorial Warga: 'Cara Lengkap Menggunakan SmartWarga dan Melakukan Verifikasi KTP'");
-              }}
+              onClick={() => setShowVideo(true)}
               className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer hover:bg-surface/20">
               <span>▶ Bantuan / Tutorial</span>
             </button>
@@ -89,13 +85,39 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
         </div>
       </div>
 
+      {showVideo && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-canvas w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl relative">
+            <div className="flex items-center justify-between p-4 bg-sidebar border-b border-border-weak">
+              <h3 className="font-bold text-text-main text-lg">Platform Video Edukasi warga</h3>
+              <button onClick={() => setShowVideo(false)} className="text-text-muted hover:text-text-main p-1">
+                <Plus size={24} className="rotate-45" />
+              </button>
+            </div>
+            <div className="relative pt-[56.25%] bg-black">
+              <iframe 
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                title="Video Bantuan" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen>
+              </iframe>
+            </div>
+            <div className="p-4 bg-surface text-sm text-text-muted">
+              Pusat Edukasi SmartWarga: Cara verifikasi, login, mengajukan surat, dan membayar QRIS.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 text-text-main flex items-center justify-center mb-4">
              <FileCheck size={24} />
           </div>
           <h3 className="font-semibold font-display text-text-main">Surat Aktif</h3>
-          <p className="text-3xl font-light text-text-main mt-2">{activeLettersCount}</p>
+          <p className="text-3xl font-bold text-text-main mt-2">{activeLettersCount}</p>
           <span className="text-xs text-text-muted mt-1 uppercase tracking-wider">Menunggu RT</span>
         </div>
         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
@@ -103,7 +125,7 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
              <AlertCircle size={24} />
           </div>
           <h3 className="font-semibold font-display text-text-main">Laporan Terbuka</h3>
-          <p className="text-3xl font-light text-text-main mt-2">0</p>
+          <p className="text-3xl font-bold text-text-main mt-2">0</p>
           <span className="text-xs text-text-muted mt-1 uppercase tracking-wider">Aman Terselesaikan</span>
         </div>
         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
@@ -113,6 +135,10 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
           <h3 className="font-semibold font-display text-text-main">Status Iuran</h3>
           <p className="text-xl font-medium text-primary mt-3 bg-primary/20 px-3 py-1 rounded-full">Lunas (Okt)</p>
         </div>
+      </div>
+
+      <div className="pt-8">
+        <StorageTab />
       </div>
     </div>
   );
@@ -350,7 +376,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
                         <select 
                           value={type} 
                           onChange={e => setType(e.target.value)}
-                          className="w-full bg-canvas border-2 border-primary/30 rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+                          className="w-full bg-canvas border-2 border-primary/30 rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main [&>option]:bg-canvas [&>option]:text-text-main"
                         >
                            {otherLetterTypes.map(ot => (
                              <option key={ot} value={ot}>{ot}</option>
@@ -492,114 +518,440 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
   );
 }
 
-function FinanceTab({ data }: { data: any }) {
+function FinanceDuesTab({ data }: { data: any }) {
+  const [subTab, setSubTab] = useState<"finance" | "dues">("finance");
   const chartData = data.summary || [];
   const details = data.details || [];
   const totalExpense = chartData.reduce((sum: number, item: any) => sum + item.value, 0);
 
+  const [dues, setDues] = useState<any[]>([]);
+  const [activeReminder, setActiveReminder] = useState<any>(null);
+  const [selectedDue, setSelectedDue] = useState<any>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+  
+  // Payment Form States
+  const [bankName, setBankName] = useState("QRIS");
+  const [senderName, setSenderName] = useState("");
+  const [transferDate, setTransferDate] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/user/dues')
+      .then(r => r.json())
+      .then(data => {
+        setDues(data);
+      });
+    
+    // Check if we have reminders in the system
+    fetch('/api/admin/residents')
+      .then(r => r.json())
+      .then(resList => {
+        const userRes = resList.find((r: any) => r.id === "RES-01");
+        if (userRes && userRes.reminders && userRes.reminders.length > 0) {
+          setActiveReminder(userRes.reminders[0]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const openPaymentForm = (due: any) => {
+    setSelectedDue(due);
+    setTransferAmount(due.amount.toString());
+    setTransferDate(new Date().toISOString().split('T')[0]);
+    setShowPayModal(true);
+  };
+
+  const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCancelPayment = () => {
+    setShowPayModal(false);
+    setSelectedDue(null);
+    setProofImage(null);
+    setSenderName("");
+  };
+
+  const handleSubmitPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bankName) return alert("Pilih bank pengirim!");
+    if (!senderName) return alert("Isi nama pengirim!");
+    if (!transferDate) return alert("Pilih tanggal transfer!");
+    if (!transferAmount) return alert("Nominal tidak valid!");
+    
+    setSubmittingPayment(true);
+    setTimeout(() => {
+      setSubmittingPayment(false);
+      setShowPayModal(false);
+      setSelectedDue(null);
+      setProofImage(null);
+      
+      fetch('/api/user/dues').then(r => r.json()).then(setDues);
+      alert("Pembayaran berhasil disubmit dan menunggu validasi Bendahara/Admin!");
+    }, 1500);
+  };
+
+  const allPaid = dues.every(d => d.status === "paid");
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-display font-semibold text-text-main">Transparansi Dana Warga</h2>
-          <p className="text-sm text-text-muted mt-1">Laporan real-time pemasukan dan pengeluaran kas RT/RW.</p>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Keuangan & Iuran</h2>
+          <p className="text-sm text-text-muted mt-1">Laporan transparansi kas warga dan pembayaran iuran bulanan.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Saldo Kas Saat Ini</p>
-            <p className="text-2xl font-display font-bold text-text-main">Rp 12.550.000</p>
-         </div>
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-primary">
-            <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pemasukan (Okt)</p>
-            <p className="text-2xl font-display font-bold">+ Rp 2.400.000</p>
-         </div>
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-accent">
-            <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pengeluaran (Okt)</p>
-            <p className="text-2xl font-display font-bold">- Rp {totalExpense.toLocaleString('id-ID')}</p>
-         </div>
-         <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Warga Terdaftar</p>
-            <p className="text-2xl font-display font-bold text-text-main">120 KK</p>
-         </div>
+      <div className="flex border-b border-border-weak">
+        <button 
+          onClick={() => setSubTab("finance")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "finance" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Transparansi Kas 
+        </button>
+        <button 
+          onClick={() => setSubTab("dues")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "dues" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Iuran Warga
+        </button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
-            <div className="h-[300px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={110}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {chartData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                    formatter={(value: number) => {
-                      const percent = ((value / totalExpense) * 100).toFixed(1);
-                      return [`${percent}%`, "Persentase"];
-                    }}
-                  />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-center pointer-events-none">
-                 <p className="text-[10px] uppercase font-bold text-text-muted">Total Pengeluaran</p>
-                 <p className="text-lg font-bold text-text-main">Rp {(totalExpense/1000).toFixed(0)}k</p>
+      {subTab === "finance" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Saldo Kas Saat Ini</p>
+                <p className="text-2xl font-display font-bold text-text-main">Rp 12.550.000</p>
+             </div>
+             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-primary">
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pemasukan (Okt)</p>
+                <p className="text-2xl font-display font-bold">+ Rp 2.400.000</p>
+             </div>
+             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-accent">
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pengeluaran (Okt)</p>
+                <p className="text-2xl font-display font-bold">- Rp {totalExpense.toLocaleString('id-ID')}</p>
+             </div>
+             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Warga Terdaftar</p>
+                <p className="text-2xl font-display font-bold text-text-main">120 KK</p>
+             </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+             <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+                <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
+                <div className="h-[300px] relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        formatter={(value: number) => {
+                          const percent = ((value / totalExpense) * 100).toFixed(1);
+                          return [`${percent}%`, "Persentase"];
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" height={36}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-center pointer-events-none">
+                     <p className="text-[10px] uppercase font-bold text-text-muted">Total Pengeluaran</p>
+                     <p className="text-lg font-bold text-text-main">Rp {(totalExpense/1000).toFixed(0)}k</p>
+                  </div>
+                </div>
+             </div>
+
+             <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+                <h3 className="font-semibold text-text-main mb-4">Rincian Pengeluaran Bulanan</h3>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                   {chartData.map((item: any, idx: number) => (
+                     <div key={idx} className="flex items-center justify-between p-3 border border-border-weak rounded-xl">
+                        <div className="flex items-center gap-3">
+                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                           <span className="text-sm font-medium text-text-main">{item.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-text-main">Rp {item.value.toLocaleString('id-ID')}</span>
+                     </div>
+                   ))}
+                   <div className="pt-4 border-t border-border-strong flex justify-between items-center">
+                      <span className="font-bold text-text-main uppercase text-xs">Total Dana Operasional</span>
+                      <span className="font-bold text-accent">Rp {totalExpense.toLocaleString('id-ID')}</span>
+                   </div>
+                </div>
+             </div>
+          </div>
+
+          <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+             <h3 className="font-semibold text-text-main mb-6">Bukti Pengeluaran (Kwitansi Digital)</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {details.map((item: any) => (
+                   <div key={item.id} className="border border-border-weak rounded-xl overflow-hidden hover:border-primary transition-all group">
+                      <div className="relative h-32 overflow-hidden bg-canvas">
+                         <img src={item.proof} alt="Proof" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                         <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded uppercase">Kwitansi Valid</div>
+                      </div>
+                      <div className="p-4">
+                         <div className="flex justify-between items-start mb-1">
+                            <h4 className="font-semibold text-sm text-text-main">{item.desc}</h4>
+                            <span className="text-[10px] font-bold text-accent">-{item.amount/1000}k</span>
+                         </div>
+                         <p className="text-[10px] text-text-muted uppercase tracking-wider">{item.category} • {item.date}</p>
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+        </div>
+      )}
+
+      {subTab === "dues" && (
+        <div className="space-y-6">
+          {activeReminder && (
+            <div className="bg-accent/10 border border-accent/20 p-5 rounded-2xl flex gap-4 items-start shadow-sm mt-4">
+              <div className="bg-white/20 p-2 rounded-full text-accent shrink-0">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-1 pt-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-accent">Notifikasi dari Admin RT: {activeReminder.title}</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-white px-2 py-0.5 rounded-full">{activeReminder.date}</span>
+                </div>
+                <p className="text-sm text-text-main/80 pt-1 leading-relaxed">Pesan: "{activeReminder.message}"</p>
+                <div className="pt-3">
+                   <button className="bg-surface border border-border-strong px-4 py-2 text-xs font-bold rounded-lg hover:bg-surface-hover text-text-main shadow-sm" onClick={() => setActiveReminder(null)}>Tutup Pemberitahuan</button>
+                </div>
               </div>
             </div>
-         </div>
+          )}
 
-         <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-            <h3 className="font-semibold text-text-main mb-4">Rincian Pengeluaran Bulanan</h3>
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-               {chartData.map((item: any, idx: number) => (
-                 <div key={idx} className="flex items-center justify-between p-3 border border-border-weak rounded-xl">
-                    <div className="flex items-center gap-3">
-                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                       <span className="text-sm font-medium text-text-main">{item.name}</span>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+            {dues.map((due: any) => (
+              <div key={due.id} className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak relative overflow-hidden group hover:border-primary/50 transition-colors">
+                {due.status === "paid" && (
+                  <div className="absolute top-0 right-0 bg-primary text-text-inverse px-4 py-1.5 rounded-bl-2xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 size={12} /> Lunas
+                  </div>
+                )}
+                {due.status === "unpaid" && (
+                  <div className="absolute top-0 right-0 bg-accent text-text-inverse px-4 py-1.5 rounded-bl-2xl text-[10px] font-bold uppercase tracking-wider shadow-sm animate-pulse">
+                    Jatuh Tempo
+                  </div>
+                )}
+                
+                <p className="text-[#fb923c] font-black uppercase text-[10px] tracking-widest bg-accent-light/10 w-fit px-2 py-0.5 rounded">Tagihan Iuran</p>
+                <h3 className="text-xl font-display font-bold text-text-main mt-2 border-b border-border-weak pb-4">
+                  Bulan {due.month} {due.year}
+                </h3>
+                
+                <div className="py-4 space-y-2 text-sm text-text-muted">
+                  <p className="flex justify-between items-center bg-canvas p-2 rounded border border-border-weak"><span>Kode Tagihan:</span> <span className="font-mono text-text-main font-bold">INV-{due.month.substring(0,3).toUpperCase()}{due.year}</span></p>
+                  
+                  {due.categories && due.categories.length > 0 && (
+                    <div className="bg-canvas border border-border-weak rounded p-3 mt-2 space-y-2">
+                      <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider border-b border-border-weak pb-1">Rincian Iuran</p>
+                      <div className="space-y-1">
+                        {due.categories.map((cat: any, i: number) => (
+                          <div key={i} className="flex justify-between items-center text-xs">
+                            <span>{cat.name}</span>
+                            <span className="font-mono font-bold">Rp {cat.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-text-main">Rp {item.value.toLocaleString('id-ID')}</span>
-                 </div>
-               ))}
-               <div className="pt-4 border-t border-border-strong flex justify-between items-center">
-                  <span className="font-bold text-text-main uppercase text-xs">Total Dana Operasional</span>
-                  <span className="font-bold text-accent">Rp {totalExpense.toLocaleString('id-ID')}</span>
+                  )}
+
+                  <p className="flex justify-between items-center text-lg mt-3 text-text-main border-t border-border-weak pt-3"><span className="font-semibold text-sm">Total Tagihan:</span> <span className="font-bold font-display">Rp {due.amount.toLocaleString('id-ID')}</span></p>
+                </div>
+                
+                {due.status === "unpaid" ? (
+                  <button 
+                    onClick={() => openPaymentForm(due)}
+                    className="w-full bg-accent text-text-inverse py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 mt-2 hover:bg-accent/90 shadow-lg shadow-accent/20 cursor-pointer"
+                  >
+                    <CreditCard size={18} /> Bayar Tagihan
+                  </button>
+                ) : (
+                  <button disabled className="w-full bg-canvas text-primary font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 mt-2 border border-primary/20 opacity-80">
+                    <CheckCircle2 size={18} /> Tagihan Selesai
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-primary/10 border border-primary/20 p-5 text-sm rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between text-text-main shadow-sm">
+            <div className="flex gap-4 items-center">
+               <div className="bg-primary p-2 rounded-full text-white">
+                  <ShieldAlert size={20} />
+               </div>
+               <div>
+                 <p className="font-bold underline decoration-primary underline-offset-4">Tata Cara Pembayaran</p>
+                 <p className="text-text-muted mt-1 text-xs">Simpan bukti transfer dan unggah pada menu pembayaran. Proses validasi oleh RT/Bendahara memakan waktu maks. 1x24 jam kerja.</p>
                </div>
             </div>
-         </div>
-      </div>
+          </div>
+        </div>
+      )}
 
-      <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-         <h3 className="font-semibold text-text-main mb-6">Bukti Pengeluaran (Kwitansi Digital)</h3>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {details.map((item: any) => (
-               <div key={item.id} className="border border-border-weak rounded-xl overflow-hidden hover:border-primary transition-all group">
-                  <div className="relative h-32 overflow-hidden bg-canvas">
-                     <img src={item.proof} alt="Proof" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                     <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded uppercase">Kwitansi Valid</div>
-                  </div>
-                  <div className="p-4">
-                     <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-semibold text-sm text-text-main">{item.desc}</h4>
-                        <span className="text-[10px] font-bold text-accent">-{item.amount/1000}k</span>
+      {showPayModal && selectedDue && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-sidebar border border-border-weak rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={handleCancelPayment}
+              className="absolute top-6 right-6 text-text-muted hover:text-text-main"
+            >
+              <Plus size={24} className="rotate-45" />
+            </button>
+            <h3 className="text-xl font-bold text-text-main mb-1 font-display">Bayar Iuran {selectedDue.month} {selectedDue.year}</h3>
+            <p className="text-xs text-text-muted font-mono bg-canvas inline-block px-2 py-1 rounded border border-border-weak mt-1">INV-{selectedDue.month.substring(0,3).toUpperCase()}{selectedDue.year}</p>
+            
+            <form onSubmit={handleSubmitPayment} className="mt-6 space-y-4">
+               <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Informasi Rekening Tujuan</label>
+                  <div className="bg-canvas border border-border-strong rounded-xl p-4 flex flex-col gap-3">
+                     <div>
+                       <p className="text-xs text-text-muted font-bold">Bank BCA</p>
+                       <p className="text-lg font-mono font-bold text-text-main bg-primary/10 py-1 px-2 rounded w-fit">832-123-4567</p>
+                       <p className="text-xs text-text-main font-semibold mt-1">a.n Bendahara RT 05 - Budi Santoso</p>
                      </div>
-                     <p className="text-[10px] text-text-muted uppercase tracking-wider">{item.category} • {item.date}</p>
+                     <div className="border-t border-border-weak pt-3">
+                       <p className="text-xs text-text-muted font-bold">Bank Mandiri</p>
+                       <p className="text-lg font-mono font-bold text-text-main bg-primary/10 py-1 px-2 rounded w-fit">130-00-1234567-8</p>
+                       <p className="text-xs text-text-main font-semibold mt-1">a.n Kas RT 05 / SmartWarga</p>
+                     </div>
                   </div>
                </div>
-            ))}
-         </div>
-      </div>
+
+               <div>
+                  <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Pilih Metode Pembayaran Anda</label>
+                  <select 
+                    value={bankName}
+                    onChange={e => setBankName(e.target.value)}
+                    className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary cursor-pointer font-semibold shadow-sm [&>option]:bg-canvas [&>option]:text-text-main"
+                  >
+                    <option value="QRIS">QRIS Auto-Scan (Semua Bank & E-Wallet)</option>
+                    <option value="BCA">Transfer Rekening BCA</option>
+                    <option value="MANDIRI">Transfer Rekening MANDIRI</option>
+                  </select>
+               </div>
+
+               {bankName === "QRIS" && (
+                 <div className="bg-canvas border border-border-strong rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <p className="text-xs font-bold text-text-muted mb-4 uppercase tracking-widest">Pindai QR Dibawah Ini</p>
+                    <img src="https://images.unsplash.com/photo-1613994344079-c5bda29c4263?auto=format&fit=crop&q=80&w=200&h=200" alt="QRIS" className="w-40 h-40 object-cover rounded-lg border-4 border-white shadow-lg mb-4" />
+                    <p className="text-sm font-bold text-text-main">MANDIRI - RT 05 SMARTWARGA</p>
+                    <p className="text-xs text-text-muted font-mono mt-1">NMID: ID203912039103901</p>
+                 </div>
+               )}
+
+               {bankName !== "QRIS" && (
+                 <div>
+                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Nama Pengirim (A.N. Rekening Anda)</label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="Contoh: Budi Santoso"
+                      value={senderName}
+                      onChange={e => setSenderName(e.target.value)}
+                      className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
+                    />
+                 </div>
+               )}
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Tgl Transfer</label>
+                    <input 
+                      type="date"
+                      required
+                      value={transferDate}
+                      onChange={e => setTransferDate(e.target.value)}
+                      className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Nominal transfer (Rp)</label>
+                    <input 
+                      type="number"
+                      required
+                      readOnly
+                      value={transferAmount}
+                      className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono shadow-sm opacity-80"
+                    />
+                 </div>
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Unggah Resi / Bukti Transfer</label>
+                 <div className="w-full bg-surface border-2 border-dashed border-border-strong rounded-xl p-4 text-center hover:bg-surface-hover transition-colors cursor-pointer relative">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProofImageChange}
+                      required
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    {proofImage ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <CheckCircle2 className="text-primary" />
+                        <span className="text-xs text-text-main font-bold">Bukti Tembahan (Berhasil)</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-text-muted">
+                        <Upload size={20} />
+                        <span className="text-xs font-bold">Tap untuk pilih foto/gambar.</span>
+                      </div>
+                    )}
+                 </div>
+               </div>
+
+               <div className="pt-4 flex gap-3">
+                 <button 
+                  type="button"
+                  onClick={handleCancelPayment}
+                  className="w-full border border-border-strong py-2.5 rounded-xl font-bold text-text-main hover:bg-surface-hover transition-colors shadow-sm"
+                 >
+                   Batal
+                 </button>
+                 <button 
+                  type="submit"
+                  disabled={submittingPayment}
+                  className="w-full bg-primary py-2.5 rounded-xl font-bold text-text-inverse shadow-primary/20 shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                 >
+                   {submittingPayment ? "Mengunggah..." : "Kirim Resi"}
+                 </button>
+               </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -914,7 +1266,7 @@ function ReportingTab() {
                 <select 
                   value={category}
                   onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main"
+                  className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm outline-none focus:border-primary text-text-main [&>option]:bg-canvas [&>option]:text-text-main"
                 >
                    <option value="Infrastruktur">Infrastruktur (Lampu, Jalan)</option>
                    <option value="Kebersihan">Kebersihan (Sampah, Selokan)</option>
@@ -1042,442 +1394,148 @@ function ReportingTab() {
   );
 }
 
-function DuesTab() {
-  const [dues, setDues] = useState<any[]>([]);
-  const [activeReminder, setActiveReminder] = useState<any>(null);
-  const [selectedDue, setSelectedDue] = useState<any>(null);
-  const [showPayModal, setShowPayModal] = useState(false);
+
+
+function NewsGotongRoyongTab() {
+  const [subTab, setSubTab] = useState<"news" | "gotong_royong">("news");
   
-  // Payment Form States
-  const [bankName, setBankName] = useState("QRIS");
-  const [senderName, setSenderName] = useState("");
-  const [transferDate, setTransferDate] = useState("");
-  const [transferAmount, setTransferAmount] = useState("");
-  const [proofImage, setProofImage] = useState<string | null>(null);
-  const [submittingPayment, setSubmittingPayment] = useState(false);
+  const newsData = [
+    { 
+      id: 1, 
+      category: "KESEHATAN", 
+      title: "Jadwal Fogging Lingkungan DBD Pekan Ini", 
+      desc: "Mengantisipasi peningkatan demam berdarah dengue (DBD) di pancaroba, RT akan melakukan penyemprotan asap fogging pelindung jentik...", 
+      date: "23 Mei 2026", 
+      image: "https://images.unsplash.com/photo-1584634731339-252c581abfc5?auto=format&fit=crop&q=80&w=600" 
+    },
+    { 
+      id: 2, 
+      category: "KEGIATAN SOSIAL", 
+      title: "Kerja Bakti Akbar & Revitalisasi Gapura", 
+      desc: "Bergabung bersama dalam memperindah gapura akses utama dan membersihkan saluran air penyumbat banjir.", 
+      date: "19 Mei 2026", 
+      image: "https://images.unsplash.com/photo-1592861115865-c8bc0cb43c74?auto=format&fit=crop&q=80&w=600" 
+    }
+  ];
+  
+  const [articles, setArticles] = useState<any[]>(newsData);
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+
+  const gotongData = [
+    { id: 1, title: "Kerja Bakti Bersih Selokan", date: "Minggu, 12 Nov 2026", time: "07:00 - Selesai", location: "Sepanjang RT 05", participants: 15, joined: true },
+    { id: 2, title: "Persiapan Panggung 17-an", date: "Minggu, 14 Agu 2026", time: "08:00 - Selesai", location: "Lapangan Serbaguna RW 12", participants: 25, joined: false },
+    { id: 3, title: "Penyemprotan Disinfektan", date: "Sabtu, 21 Nov 2026", time: "09:00 - 12:00", location: "Fasilitas Umum & Musholla", participants: 8, joined: false },
+  ];
+  const [events, setEvents] = useState(gotongData);
+
+  const toggleJoin = (id: number) => {
+    setEvents(events.map(ev => {
+      if (ev.id === id) {
+        return { ...ev, joined: !ev.joined, participants: ev.joined ? ev.participants - 1 : ev.participants + 1 };
+      }
+      return ev;
+    }));
+  };
 
   useEffect(() => {
-    fetch('/api/user/dues')
-      .then(r => r.json())
-      .then(data => {
-        setDues(data);
-      });
-    
-    // Check if we have reminders in the system (we will pull residents index RES-01 or residents reminders)
-    fetch('/api/admin/residents')
-      .then(r => r.json())
-      .then(resList => {
-        const userRes = resList.find((r: any) => r.id === "RES-01");
-        if (userRes && userRes.reminders && userRes.reminders.length > 0) {
-          setActiveReminder(userRes.reminders[0]);
-        }
-      })
-      .catch(() => {});
+    // using static newsData
   }, []);
-
-  const openPaymentForm = (due: any) => {
-    setSelectedDue(due);
-    setTransferAmount(due.amount.toString());
-    setTransferDate(new Date().toISOString().split('T')[0]);
-    setShowPayModal(true);
-  };
-
-  const handleProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCancelPayment = () => {
-    setShowPayModal(false);
-    setSelectedDue(null);
-    setProofImage(null);
-    setSenderName("");
-  };
-
-  const submitPaymentProof = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedDue) return;
-    if (!senderName) return alert("Mohon nama pengirim transfer diisi!");
-
-    setSubmittingPayment(true);
-    try {
-      const res = await fetch(`/api/user/dues/${selectedDue.id}/pay`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bank: bankName,
-          sender: senderName,
-          amount: Number(transferAmount),
-          date: transferDate,
-          image: proofImage
-        })
-      });
-      if (res.ok) {
-        // Reload dues
-        const updatedRes = await fetch('/api/user/dues');
-        const updatedDues = await updatedRes.json();
-        setDues(updatedDues);
-        alert("Bukti pembayaran telah berhasil dikirim! Menunggu konfirmasi verifikasi dari Pengurus RT.");
-        setShowPayModal(false);
-        setProofImage(null);
-        setSenderName("");
-      } else {
-        alert("Gagal mengirimkan pembayaran.");
-      }
-    } catch {
-      alert("Terjadi masalah jaringan.");
-    } finally {
-      setSubmittingPayment(false);
-    }
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">Iuran Warga</h2>
-        <p className="text-sm text-text-muted mt-1">Kelola, verifikasi, dan bayar iuran swadaya warga secara transparan.</p>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Portal Berita & Gotong Royong</h2>
+        <p className="text-sm text-text-muted mt-1">Dapatkan pengumuman penting lingkungan dan daftar kegiatan swadaya.</p>
       </div>
 
-      {activeReminder && (
-        <div className="bg-accent/15 border-l-4 border-accent p-4 rounded-r-2xl flex items-start gap-3 shadow-sm animate-pulse">
-          <AlertTriangle className="text-accent shrink-0 mt-0.5" size={20} />
-          <div>
-            <h4 className="font-bold text-accent text-sm uppercase tracking-wider">Pengingat Tagihan Pengurus RT</h4>
-            <p className="text-xs text-text-main mt-0.5 leading-relaxed font-mono">{activeReminder.message}</p>
-            <span className="text-[10px] text-text-muted mt-1 block">Dikirimkan tanggal: {activeReminder.date}</span>
-          </div>
-        </div>
-      )}
+      <div className="flex border-b border-border-weak">
+        <button 
+          onClick={() => setSubTab("news")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "news" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Portal Berita RT 05
+        </button>
+        <button 
+          onClick={() => setSubTab("gotong_royong")}
+          className={cn(
+            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            subTab === "gotong_royong" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
+          )}
+        >
+          Kegiatan Gotong Royong
+        </button>
+      </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-4">
-          {dues.length === 0 && <p className="text-sm text-text-muted text-center py-8">Belum ada tagihan iuran.</p>}
-          {dues.map(due => (
-            <div key={due.id} className="bg-surface border border-border-weak p-6 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner",
-                    due.status === "paid" ? "bg-primary/20 text-primary" : due.status === "pending" ? "bg-accent/20 text-accent animate-pulse" : "bg-red-500/20 text-red-400"
-                  )}>
-                    <CreditCard size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-text-main text-lg">Tagihan Iuran {due.month}</h4>
-                    <p className="text-sm text-text-muted">Total: Rp {due.amount.toLocaleString('id-ID')}</p>
-                  </div>
+      {subTab === "news" ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+          {articles.map(art => (
+            <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between hover:border-primary/30 transition-all duration-300">
+              <div>
+                <div className="relative h-48 w-full overflow-hidden bg-canvas">
+                  <img 
+                    src={art.image} 
+                    alt={art.title} 
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
-
-                <div className="text-right">
-                  {due.status === "paid" ? (
-                    <div className="bg-primary/10 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <span className="text-xs font-bold text-primary uppercase tracking-wider">LUNAS</span>
-                    </div>
-                  ) : due.status === "pending" ? (
-                    <div className="bg-accent/10 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-accent animate-ping"></span>
-                      <span className="text-xs font-bold text-accent uppercase tracking-wider">PENDING VERIFIKASI</span>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => openPaymentForm(due)}
-                      className="bg-primary text-text-inverse px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-all hover:scale-[1.03] shadow-md shadow-primary/10"
-                    >
-                      Bayar & Upload Bukti
-                    </button>
-                  )}
-                  {due.status === "paid" && (
-                    <p className="text-[10px] text-text-muted mt-1 opacity-70">Verifikasi tanggal: {due.date}</p>
-                  )}
+                <div className="p-5 space-y-2">
+                  <span className="text-[10px] bg-primary/10 text-primary font-bold tracking-wider rounded px-2.5 py-1 uppercase">
+                    {art.category}
+                  </span>
+                  <h4 className="font-bold text-text-main text-base line-clamp-2 pt-1">
+                    {art.title}
+                  </h4>
+                  <p className="text-xs text-text-muted line-clamp-3 leading-relaxed">
+                    {art.summary}
+                  </p>
                 </div>
               </div>
-
-              {/* Transparansi: Itemized breakdown showing transparent uses of collected money */}
-              <div className="border-t border-border-weak pt-4 bg-canvas/30 p-4 rounded-xl space-y-2">
-                <h5 className="text-xs uppercase tracking-wider font-bold text-text-muted flex items-center justify-between">
-                  <span>Rincian Penggunaan Iuran Bulanan</span>
-                  <span className="text-primary normal-case font-medium font-mono">Transparansi 100%</span>
-                </h5>
-                <div className="divide-y divide-border-weak/50">
-                  {due.categories?.map((cat: any, i: number) => (
-                    <div key={i} className="py-2 flex justify-between items-start text-xs text-text-main">
-                      <div className="max-w-[80%]">
-                        <span className="font-semibold">{cat.name}</span>
-                        <p className="text-[10px] text-text-muted leading-relaxed">{cat.desc}</p>
-                      </div>
-                      <span className="font-mono text-primary font-semibold shrink-0">Rp {cat.amount.toLocaleString('id-ID')}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="p-5 border-t border-border-weak/50 flex justify-between items-center text-xs text-text-muted">
+                <span>{art.date}</span>
+                <button 
+                  onClick={() => setSelectedArticle(art)}
+                  className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  Selengkapnya &rarr;
+                </button>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Sidebar Summary Card */}
-        <div className="md:col-span-1">
-          <div className="bg-surface rounded-3xl p-6 border border-border-weak space-y-6 md:sticky top-28">
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-text-muted">Ringkasan Keuangan Anda</h3>
-              <p className="text-xs text-text-muted mt-0.5">Pantau status kewajiban iuran lingkungan Anda.</p>
-            </div>
-
-            <div className="p-4 bg-canvas/50 border border-border-weak rounded-2xl flex flex-col justify-between">
-              <span className="text-xs text-text-muted">Total Belum Terbayar</span>
-              <p className="text-3xl font-display font-black text-accent mt-2 font-mono">
-                Rp {dues.filter(d => d.status === "unpaid").reduce((sum, d) => sum + d.amount, 0).toLocaleString('id-ID')}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-text-muted">Bulan Ini (November)</span>
-                {dues.find(d => d.month === "November 2023")?.status === "paid" ? (
-                  <span className="text-xs font-bold text-primary">LUNAS</span>
-                ) : dues.find(d => d.month === "November 2023")?.status === "pending" ? (
-                  <span className="text-xs font-bold text-accent">MENUNGGU VERIFIKASI</span>
-                ) : (
-                  <span className="text-xs font-bold text-red-400">TUNGGAKAN</span>
-                )}
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-text-muted">Bulan Lalu (Oktober)</span>
-                <span className="text-xs font-bold text-primary font-mono">LUNAS</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Form Khusus Bukti Pembayaran Modal Popup */}
-      {showPayModal && selectedDue && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-sidebar rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border border-border-weak overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-text-main mb-2 font-display">Kirim Bukti Pembayaran</h3>
-            <p className="text-xs text-text-muted mb-6 leading-relaxed">
-              Silakan lengkapi konfirmasi pembayaran di bawah ini agar Pengurus RT dapat memverifikasi transaksi iuran Anda.
-            </p>
-
-            <form onSubmit={submitPaymentProof} className="space-y-4">
-              <div className="p-3.5 bg-canvas rounded-xl text-xs space-y-1 border border-border-weak mb-2">
-                <p className="text-text-muted font-semibold">Mengonfirmasi Iuran:</p>
-                <p className="text-text-main text-sm font-bold">Tagihan {selectedDue.month}</p>
-                <p className="text-primary font-mono font-bold text-base">Total Tagihan: Rp {selectedDue.amount.toLocaleString('id-ID')}</p>
-              </div>
-
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+          {events.map(ev => (
+            <div key={ev.id} className="bg-surface border border-border-weak p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all">
               <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-sans">Metode Pembayaran & Tujuan</label>
-                <select 
-                  value={bankName}
-                  onChange={e => setBankName(e.target.value)}
-                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold"
-                >
-                  <option value="QRIS">Scan QRIS Instan (RT 05 RW 12)</option>
-                  <option value="MANDIRI">Transfer MANDIRI (RT 05 Account)</option>
-                  <option value="BCA">Transfer BCA (Operasional)</option>
-                  <option value="BRI">Transfer BRI (Bantuan Sosial)</option>
-                </select>
-              </div>
-
-              {/* Dynamic Payment Target Information Details Card */}
-              <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 text-xs text-text-main space-y-2 my-3 animate-in fade-in duration-200">
-                <p className="font-bold text-text-muted uppercase tracking-wider text-[10px]">Detail Tujuan Pembayaran:</p>
-                {bankName === "QRIS" && (
-                  <div className="space-y-1">
-                    <p className="font-extrabold text-[13px] text-primary">QRIS INSTAN RT 05 RW 12</p>
-                    <p className="text-text-muted text-[11px] leading-relaxed">Pindai kode QRIS di bawah ini dengan aplikasi perbankan (BCA, Mandiri, dll.) atau dompet digital (Gopay, OVO, Dana, LinkAja) Anda.</p>
-                  </div>
-                )}
-                {bankName === "MANDIRI" && (
-                  <div className="space-y-1">
-                    <p className="font-mono text-sm font-bold text-text-main">MANDIRI: <span className="text-primary font-extrabold">123-0005-4321-00</span></p>
-                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Kas RT 05 RW 12</span></p>
-                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Harap transfer sesuai nominal tagihan dan simpan bukti transfer untuk diunggah di bawah.</p>
-                  </div>
-                )}
-                {bankName === "BCA" && (
-                  <div className="space-y-1">
-                    <p className="font-mono text-sm font-bold text-text-main">BCA: <span className="text-primary font-extrabold font-mono">987-654-3210</span></p>
-                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Kas Operasional RT 05</span></p>
-                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Khusus transfer iuran kas operasional. Harap lampirkan bukti foto resi setelah transfer selesai.</p>
-                  </div>
-                )}
-                {bankName === "BRI" && (
-                  <div className="space-y-1">
-                    <p className="font-mono text-sm font-bold text-text-main">BRI: <span className="text-primary font-extrabold font-mono">0123-45-678901-23-4</span></p>
-                    <p className="text-[11px] font-semibold text-text-muted">Atas Nama: <span className="text-text-main">Bantuan Sosial RT 05</span></p>
-                    <p className="text-text-muted text-[10px] leading-relaxed mt-1">Rekening khusus penyaluran bantuan sosial swadaya warga RT 05.</p>
-                  </div>
-                )}
-              </div>
-
-              {bankName === "QRIS" && (
-                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-border-strong my-2">
-                  <p className="text-sm font-bold text-black mb-2 uppercase tracking-wide">QRIS PEMBAYARAN IURAN</p>
-                  <div className="w-48 h-48 bg-gray-100 flex items-center justify-center border-4 border-black p-2">
-                    {/* Simulated QR Code using CSS grid blocks for visual effect */}
-                    <div className="grid grid-cols-4 grid-rows-4 gap-1 w-full h-full opacity-80">
-                      <div className="col-span-2 row-span-2 bg-black"></div>
-                      <div className="bg-black"></div><div className="bg-white"></div>
-                      <div className="bg-white"></div><div className="bg-black"></div>
-                      <div className="col-span-2 bg-black"></div>
-                      <div className="col-span-2 bg-black"></div>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-gray-500 mt-3 font-mono">Scan menggunakan BCA/Gopay/OVO/Dana</p>
+                <div className="bg-primary/10 text-primary w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3">
+                  Panggilan Terbuka
                 </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Nama Pemilik Rekening Pengirim</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="Contoh: Budi Santoso"
-                  value={senderName}
-                  onChange={e => setSenderName(e.target.value)}
-                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-mono">Tanggal Layanan</label>
-                  <input 
-                    type="date"
-                    required
-                    value={transferDate}
-                    onChange={e => setTransferDate(e.target.value)}
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-mono">Jumlah Transfer (Rp)</label>
-                  <input 
-                    type="number"
-                    required
-                    value={transferAmount}
-                    onChange={e => setTransferAmount(e.target.value)}
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-mono"
-                  />
+                <h3 className="font-bold text-lg text-text-main leading-tight mb-2">{ev.title}</h3>
+                <div className="space-y-1.5 mb-4 text-xs text-text-muted">
+                  <p className="flex items-center gap-2"><MapPin size={14} className="text-accent" /> {ev.location}</p>
+                  <p className="flex items-center gap-2">⏱️ {ev.date} — {ev.time}</p>
+                  <p className="flex items-center gap-2"><Users size={14} className="text-primary" /> {ev.participants} Warga Berpartisipasi</p>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Bukti Foto / Capture Resi Transfer</label>
-                <div className="mt-1 flex justify-center px-4 py-8 border-2 border-border-strong border-dashed rounded-xl bg-canvas hover:bg-surface-hover transition-colors text-center cursor-pointer">
-                  <div className="space-y-1 text-center">
-                    {!proofImage ? (
-                      <>
-                        <Upload className="mx-auto h-8 w-8 text-primary animate-bounce mt-1" />
-                        <div className="flex text-xs text-text-muted mt-2 justify-center">
-                          <label className="relative cursor-pointer bg-transparent rounded-md font-bold text-primary hover:text-primary/80 focus-within:outline-none">
-                            <span>Sematkan File Resi</span>
-                            <input type="file" className="sr-only" accept="image/*" onChange={handleProofImageChange} />
-                          </label>
-                        </div>
-                        <p className="text-[10px] text-text-muted mt-1 leading-relaxed">PNG, JPG, Screen Capture Bank App up to 5MB</p>
-                      </>
-                    ) : (
-                      <div className="relative inline-block">
-                        <img src={proofImage} alt="Receipt Preview" className="h-28 w-auto rounded-lg shadow-sm" />
-                        <button 
-                          type="button" 
-                          onClick={() => setProofImage(null)}
-                          className="absolute -top-2 -right-2 bg-accent text-white p-1 rounded-full shadow-md"
-                        >
-                          <Plus size={12} className="rotate-45" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-border-weak mt-6">
-                <button 
-                  type="button"
-                  onClick={handleCancelPayment}
-                  className="px-5 py-2.5 rounded-xl text-sm text-text-muted hover:text-text-main font-semibold"
-                >
-                  Gagal / Batalkan
-                </button>
-                <button 
-                  type="submit"
-                  disabled={submittingPayment}
-                  className="bg-primary text-text-inverse px-7 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-                >
-                  {submittingPayment ? "Mengirimkan..." : "Kirim Bukti Pembayaran"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NewsTab() {
-  const [articles, setArticles] = useState<any[]>([]);
-  const [selectedArticle, setSelectedArticle] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/api/news')
-      .then(r => r.json())
-      .then(setArticles)
-      .catch(() => {});
-  }, []);
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">Portal Berita RT 05</h2>
-        <p className="text-sm text-text-muted mt-1">Dapatkan pengumuman dan liputan penting terpercaya seputar lingkungan pemukiman.</p>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-        {articles.map(art => (
-          <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all duration-300">
-            <div>
-              <div className="relative h-48 w-full overflow-hidden bg-canvas">
-                <img 
-                  src={art.image} 
-                  alt={art.title} 
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-5 space-y-2">
-                <span className="text-[10px] bg-primary/10 text-primary font-bold tracking-wider rounded px-2.5 py-1 uppercase">
-                  {art.category}
-                </span>
-                <h4 className="font-bold text-text-main text-base line-clamp-2 pt-1">
-                  {art.title}
-                </h4>
-                <p className="text-xs text-text-muted line-clamp-3 leading-relaxed">
-                  {art.summary}
-                </p>
-              </div>
-            </div>
-            <div className="p-5 border-t border-border-weak/50 flex justify-between items-center text-xs text-text-muted">
-              <span>{art.date}</span>
+              
               <button 
-                onClick={() => setSelectedArticle(art)}
-                className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+                onClick={() => toggleJoin(ev.id)}
+                className={cn(
+                  "w-full py-2.5 rounded-xl text-sm font-bold transition-all mt-4 cursor-pointer",
+                  ev.joined 
+                    ? "bg-canvas border border-border-strong text-text-main hover:bg-surface-hover hover:text-accent" 
+                    : "bg-primary text-text-inverse hover:bg-primary/90 shadow-md shadow-primary/20"
+                )}
               >
-                Selengkapnya &rarr;
+                {ev.joined ? "Batal Ikut Serta" : "Yuk, Ikut Serta!"}
               </button>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {selectedArticle && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
@@ -1516,7 +1574,6 @@ function NewsTab() {
 }
 
 function MarketTab() {
-  const [subTab, setSubTab] = useState<"umkm" | "promo">("umkm");
   const [listings, setListings] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -1592,113 +1649,40 @@ function MarketTab() {
         </button>
       </div>
 
-      <div className="flex border-b border-border-weak">
-        <button 
-          onClick={() => setSubTab("umkm")}
-          className={cn(
-            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
-            subTab === "umkm" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
-          )}
-        >
-          Direktori UMKM Lingkungan
-        </button>
-        <button 
-          onClick={() => setSubTab("promo")}
-          className={cn(
-            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
-            subTab === "promo" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
-          )}
-        >
-          Sponsor, Promosi & Iklan
-        </button>
-      </div>
-
-      {subTab === "umkm" ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.length === 0 && <p className="text-sm text-text-muted text-center py-8 col-span-full">Belum ada UMKM terdaftar.</p>}
-          {listings.map(umkm => (
-            <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-              <div>
-                <img 
-                  src={umkm.image} 
-                  alt={umkm.name} 
-                  className="w-full h-44 object-cover"
-                />
-                <div className="p-5 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] bg-primary/15 text-primary text-xs font-bold tracking-wider px-2 py-0.5 rounded uppercase">
-                      {umkm.category}
-                    </span>
-                    <span className="text-[10px] text-text-muted font-medium font-mono">Residen: {umkm.owner}</span>
-                  </div>
-                  <h4 className="font-bold text-text-main text-lg">{umkm.name}</h4>
-                  <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{umkm.desc}</p>
-                </div>
-              </div>
-              <div className="p-5 border-t border-border-weak/50">
-                <a 
-                  href={`https://wa.me/${umkm.phone.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full bg-[#25D366] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#20ba59] transition-colors"
-                >
-                  <PhoneCall size={14} fill="currentColor" /> Hubungi Toko Warga ({umkm.phone})
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Main big sponsor banner ad */}
-          <div className="bg-gradient-to-r from-accent/25 to-primary/10 border-2 border-accent/20 p-6 md:p-8 rounded-3xl flex flex-col md:flex-row gap-6 items-center justify-between shadow-md relative overflow-hidden">
-            <span className="absolute -top-1 right-2 bg-accent text-white uppercase text-[8px] font-bold tracking-widest px-2.5 py-1 rounded-b">SPONSORED PLACEMENT</span>
-            <div className="space-y-4 max-w-lg">
-              <span className="text-xs font-bold uppercase tracking-widest bg-accent-light text-text-inverse px-3 py-1 rounded-full">{ads[0]?.sponsor || "OFFERING"}</span>
-              <h3 className="text-2xl font-black font-display text-text-main leading-tight">{ads[0]?.title || "Pasang IndiHome Free Pendaftaran"}</h3>
-              <p className="text-sm text-text-muted leading-relaxed">{ads[0]?.desc || "Nikmati kecepatan 50Mbps gratis pemasangan baru se-kawasan SmartWarga selama bulan ini."}</p>
-              <button 
-                onClick={() => alert(`Silakan hubungi admin lingkungan RT untuk promo: ${ads[0]?.sponsor}`)}
-                className="bg-accent text-white font-bold py-2.5 px-6 rounded-xl text-xs hover:scale-105 transition-all shadow-md shadow-accent/20"
-              >
-                {ads[0]?.cta || "Ambil Penawaran"}
-              </button>
-            </div>
-            {ads[0]?.image && (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        {listings.length === 0 && <p className="text-sm text-text-muted text-center py-8 col-span-full">Belum ada UMKM terdaftar.</p>}
+        {listings.map(umkm => (
+          <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between">
+            <div>
               <img 
-                src={ads[0].image} 
-                alt="Sponsor Ad" 
-                className="w-full md:w-64 h-40 object-cover rounded-2xl shadow-sm border border-border-weak"
+                src={umkm.image} 
+                alt={umkm.name} 
+                className="w-full h-44 object-cover"
               />
-            )}
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {ads.slice(1).map(ad => (
-              <div key={ad.id} className="bg-surface border border-border-weak rounded-2xl p-5 flex gap-4 items-center shadow-sm relative">
-                <span className="absolute top-2 right-2 text-[8px] font-bold tracking-widest text-[#fb923c] uppercase bg-accent-light/10 px-2 py-0.5 rounded">Ad</span>
-                <img 
-                  src={ad.image} 
-                  alt={ad.title} 
-                  className="w-24 h-24 object-cover rounded-xl shrink-0"
-                />
-                <div className="space-y-1">
-                  <span className="text-[10px] text-[#fb923c] font-black uppercase font-mono tracking-wide">{ad.sponsor}</span>
-                  <h4 className="font-bold text-sm text-text-main leading-snug">{ad.title}</h4>
-                  <p className="text-xs text-text-muted line-clamp-2">{ad.desc}</p>
-                  <button 
-                    onClick={() => alert(`Membuka sponsorship penawaran: ${ad.sponsor}`)}
-                    className="text-primary font-bold text-xs hover:underline decoration-primary pt-1 inline-block"
-                  >
-                    {ad.cta} &rarr;
-                  </button>
+              <div className="p-5 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] bg-primary/15 text-primary text-xs font-bold tracking-wider px-2 py-0.5 rounded uppercase">
+                    {umkm.category}
+                  </span>
+                  <span className="text-[10px] text-text-muted font-medium font-mono">Residen: {umkm.owner}</span>
                 </div>
+                <h4 className="font-bold text-text-main text-lg">{umkm.name}</h4>
+                <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{umkm.desc}</p>
               </div>
-            ))}
+            </div>
+            <div className="p-5 border-t border-border-weak/50">
+              <a 
+                href={`https://wa.me/${umkm.phone.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full bg-[#25D366] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#20ba59] transition-colors"
+              >
+                <PhoneCall size={14} fill="currentColor" /> Hubungi Toko Warga ({umkm.phone})
+              </a>
+            </div>
           </div>
-        </div>
-      )}
-
+        ))}
+      </div>
       {/* Pendaftaran UMKM Popup Form */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
@@ -1733,7 +1717,7 @@ function MarketTab() {
                   <select 
                     value={category}
                     onChange={e => setCategory(e.target.value)}
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold"
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary font-bold [&>option]:bg-canvas [&>option]:text-text-main"
                   >
                     <option value="Makanan & Minuman">Makanan & Minuman</option>
                     <option value="Kebutuhan Pokok">Kebutuhan Pokok / Sembako</option>
@@ -1821,62 +1805,4 @@ function MarketTab() {
   );
 }
 
-function GotongRoyongTab() {
-  const gotongData = [
-    { id: 1, title: "Kerja Bakti Bersih Selokan", date: "Minggu, 12 Nov 2026", time: "07:00 - Selesai", location: "Sepanjang RT 05", participants: 15, joined: true },
-    { id: 2, title: "Persiapan Panggung 17-an", date: "Minggu, 14 Agu 2026", time: "08:00 - Selesai", location: "Lapangan Serbaguna RW 12", participants: 25, joined: false },
-    { id: 3, title: "Penyemprotan Disinfektan", date: "Sabtu, 21 Nov 2026", time: "09:00 - 12:00", location: "Fasilitas Umum & Musholla", participants: 8, joined: false },
-  ];
 
-  const [events, setEvents] = useState(gotongData);
-
-  const toggleJoin = (id: number) => {
-    setEvents(events.map(ev => {
-      if (ev.id === id) {
-        return { ...ev, joined: !ev.joined, participants: ev.joined ? ev.participants - 1 : ev.participants + 1 };
-      }
-      return ev;
-    }));
-  };
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h2 className="text-2xl font-display font-semibold text-text-main">Gotong Royong & Kegiatan</h2>
-          <p className="text-sm text-text-muted mt-1">Daftar kegiatan swadaya lingkungan. Mari berpartisipasi untuk RT kita.</p>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map(ev => (
-          <div key={ev.id} className="bg-surface border border-border-weak p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all">
-            <div>
-              <div className="bg-primary/10 text-primary w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3">
-                Panggilan Terbuka
-              </div>
-              <h3 className="font-bold text-lg text-text-main leading-tight mb-2">{ev.title}</h3>
-              <div className="space-y-1.5 mb-4 text-xs text-text-muted">
-                <p className="flex items-center gap-2"><MapPin size={14} className="text-accent" /> {ev.location}</p>
-                <p className="flex items-center gap-2">⏱️ {ev.date} — {ev.time}</p>
-                <p className="flex items-center gap-2"><Users size={14} className="text-primary" /> {ev.participants} Warga Berpartisipasi</p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => toggleJoin(ev.id)}
-              className={cn(
-                "w-full py-2.5 rounded-xl text-sm font-bold transition-all mt-4 cursor-pointer",
-                ev.joined 
-                  ? "bg-canvas border border-border-strong text-text-main hover:bg-surface-hover hover:text-accent" 
-                  : "bg-primary text-text-inverse hover:bg-primary/90 shadow-md shadow-primary/20"
-              )}
-            >
-              {ev.joined ? "Batal Ikut Serta" : "Yuk, Ikut Serta!"}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
