@@ -24,10 +24,13 @@ async function startServer() {
 
   // Dummy Data
   let letters = [
-    { id: "SRT-01", name: "Budi Santoso", type: "Surat Pengantar Domisili", date: "Hari ini, 09:30", status: "pending", keperluan: "Bank" },
-    { id: "SRT-02", name: "Siti Aminah", type: "Surat Keterangan Tidak Mampu", date: "Hari ini, 08:15", status: "pending", keperluan: "Sekolah" },
-    { id: "SRT-03", name: "Ahmad Dahlan", type: "Surat Keterangan Usaha", date: "Kemarin, 14:20", status: "approved", keperluan: "Pinjaman" },
-    { id: "SRT-04", name: "Joko", type: "Surat Pengantar Domisili", date: "Hari ini, 10:00", status: "rejected", keperluan: "KTP Baru" }
+    { id: "SRT-01", name: "Budi Santoso", type: "Surat Pengantar Domisili", date: "Hari ini, 09:30", status: "pending", keperluan: "Pembukaan Rekening Bank" },
+    { id: "SRT-02", name: "Siti Aminah", type: "Surat Keterangan Tidak Mampu (SKTM)", date: "Hari ini, 08:15", status: "pending", keperluan: "Keringanan SPP Sekolah" },
+    { id: "SRT-03", name: "Ahmad Dahlan", type: "Surat Keterangan Usaha", date: "Kemarin, 14:20", status: "approved", keperluan: "Pengajuan Pinjaman KUR" },
+    { id: "SRT-04", name: "Joko", type: "Surat Pengantar Domisili", date: "Kemarin, 10:00", status: "rejected", keperluan: "Perpanjangan KTP" },
+    { id: "SRT-05", name: "Ibu Dewi Lestari", type: "Surat Keterangan Usaha", date: "2 hari yang lalu, 11:45", status: "approved", keperluan: "Pengajuan Kredit Usaha Rakyat" },
+    { id: "SRT-06", name: "Bpk. Firmansyah", type: "Surat Pengantar Nikah (N1-N4)", date: "3 hari yang lalu, 09:00", status: "approved", keperluan: "Persyaratan Nikah di KUA" },
+    { id: "SRT-07", name: "Kak Rizky Pratama", type: "Surat Keterangan Belum Menikah", date: "3 hari yang lalu, 15:30", status: "pending", keperluan: "Syarat Beasiswa S2" }
   ];
 
   let financeData = [
@@ -100,6 +103,34 @@ async function startServer() {
       reminders: [
         { id: "REM-1", date: "24 Mei 2026", message: "Yth. Ibu Siti Aminah, tagihan iuran November belum terlunasi. Mohon segera melakukan transfer." }
       ]
+    },
+    {
+      id: "RES-05",
+      name: "Bpk. Firmansyah",
+      address: "Jl. Kenanga No. 33, RT 05 / RW 12",
+      phone: "0857-9900-1122",
+      dues: [
+        { id: "DUE-FI1", month: "Oktober 2023", amount: 150000, status: "paid", date: "07 Okt 2023", categories: defaultCategories, proof: null },
+        { id: "DUE-FI2", month: "November 2023", amount: 150000, status: "paid", date: "03 Nov 2023", categories: defaultCategories, proof: null }
+      ],
+      reminders: []
+    },
+    {
+      id: "RES-06",
+      name: "Ibu Dewi Lestari",
+      address: "Jl. Melati No. 8, RT 05 / RW 12",
+      phone: "0819-4444-5555",
+      dues: [
+        { id: "DUE-DL1", month: "Oktober 2023", amount: 150000, status: "paid", date: "05 Okt 2023", categories: defaultCategories, proof: null },
+        { id: "DUE-DL2", month: "November 2023", amount: 150000, status: "pending", date: "Hari ini", categories: defaultCategories, proof: {
+          bank: "BCA",
+          sender: "Ibu Dewi Lestari",
+          amount: 150000,
+          date: "24 Mei 2026",
+          image: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&q=80&w=400"
+        }}
+      ],
+      reminders: []
     }
   ];
 
@@ -121,6 +152,33 @@ async function startServer() {
       summary: "Bergabung bersama dalam memperindah gapura akses utama dan membersihkan saluran air penyumbat banjir.",
       content: "Gotong royong akan difokuskan pada pembersihan selokan utama jalan Merdeka guna menghindari genangan air, serta pengecatan ulang gapura penyambutan warga agar terlihat asri dan modern. Konsumsi disediakan oleh ibu-ibu PKK.",
       image: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      id: "NEWS-3",
+      title: "Pemasangan CCTV Baru Blok D & E Selesai",
+      category: "Keamanan",
+      date: "12 Mei 2026",
+      summary: "4 unit kamera CCTV 2MP night-vision berhasil dipasang di titik strategis Blok D dan E. Sistem terhubung ke dashboard monitoring admin SmartWarga.",
+      content: "RT 05 bekerjasama dengan PT. Sekuritas Prima berhasil memasang 4 unit CCTV night-vision di Gang Melati, persimpangan Blok D-E, area parkir, dan depan lapangan. Rekaman dapat dipantau pengurus via dashboard admin SmartWarga secara real-time. Warga yang melihat aktivitas mencurigakan diimbau segera melapor melalui menu E-Reporting atau menekan Tombol Darurat.",
+      image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      id: "NEWS-4",
+      title: "Pembukaan Pendaftaran UMKM Digital RT 05",
+      category: "Ekonomi",
+      date: "8 Mei 2026",
+      summary: "Program digitalisasi UMKM warga RT 05 resmi dibuka. Daftarkan usaha Anda di portal Pasar & UMKM untuk jangkauan promosi lebih luas.",
+      content: "Dalam rangka mendukung pemulihan ekonomi warga pasca pandemi, RT 05 membuka program pendaftaran UMKM digital. Usaha yang terdaftar akan tampil di portal SmartWarga dan mendapat bantuan promosi digital dari pengurus RT. Pendaftaran gratis dan tanpa biaya apapun. Hubungi Sekretaris RT untuk info lebih lanjut.",
+      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      id: "NEWS-5",
+      title: "Hasil Rapat Bulanan: Komponen Iuran Pembangunan Disesuaikan",
+      category: "Administrasi",
+      date: "5 Mei 2026",
+      summary: "Rapat warga menyepakati kenaikan komponen iuran Pembangunan dari Rp 15.000 menjadi Rp 20.000 mulai bulan ini untuk mempercepat perbaikan jalan RT.",
+      content: "Rapat warga yang dihadiri 87 KK (dari total 120 KK) menyepakati peningkatan komponen tabungan pembangunan sebesar Rp 5.000/bulan guna mengakselerasi proyek perbaikan jalan internal RT yang telah tertunda. Dana akan mulai dikumpulkan bulan ini dan laporan progres diterbitkan di SmartWarga setiap bulan secara transparan.",
+      image: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&q=80&w=600"
     }
   ];
 
@@ -142,6 +200,33 @@ async function startServer() {
       phone: "0816-1212-3434",
       desc: "Servis motor, ganti oli, ban bocor, tambal ban, kelistrikan roda dua. Diskon khusus warga RT sekitar 10%.",
       image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&q=80&w=400"
+    },
+    {
+      id: "UMKM-3",
+      owner: "Ibu Dewi Lestari",
+      name: "Konveksi & Jahit Kilat Dewi",
+      category: "Fashion & Kerajinan",
+      phone: "0819-4444-5555",
+      desc: "Jahit baju, rok sekolah, baju koko, seragam RT/kantor, dan bordir nama. Pengerjaan kilat 1-3 hari. Diskon 15% untuk seragam RT.",
+      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=300"
+    },
+    {
+      id: "UMKM-4",
+      owner: "Bpk. Deden Suherman",
+      name: "Warung Sembako Pak Deden",
+      category: "Sembako & Grocery",
+      phone: "0817-6677-8899",
+      desc: "Lengkap: beras, minyak goreng, gas elpiji, sayuran segar harian. Buka 06:00–21:00. Layanan antar ke rumah minimal belanja Rp 50.000.",
+      image: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=300"
+    },
+    {
+      id: "UMKM-5",
+      owner: "Kak Rizky Pratama",
+      name: "Les Privat & Bimbel Rizky",
+      category: "Pendidikan",
+      phone: "0823-1122-3344",
+      desc: "Bimbingan belajar SD–SMA: Matematika, IPA, Bahasa Inggris, dan persiapan UTBK. Jadwal fleksibel, biaya terjangkau khusus warga RT.",
+      image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=300"
     }
   ];
 
@@ -169,7 +254,10 @@ async function startServer() {
   let reportsData = [
     { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1509021436665-8f37df706533?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: true },
     { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=400", sender: "Ibu Sari", isPublic: true },
-    { id: "REP-03", title: "Parkir Liar", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: false }
+    { id: "REP-03", title: "Parkir Liar Motor Tidak Dikenal", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: false },
+    { id: "REP-04", title: "Got Tersumbat Sampah Plastik", location: "Gang Melati Blok A2", date: "Kemarin, 13:00", status: "PROSES", image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400", sender: "Ibu Siti Aminah", isPublic: true },
+    { id: "REP-05", title: "Pagar Fasilitas Umum Rusak", location: "Area Lapangan Blok D", date: "3 hari yang lalu", status: "TERKIRIM", image: "https://images.unsplash.com/photo-1580828343064-fde4fc206bc6?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Firmansyah", isPublic: true },
+    { id: "REP-06", title: "Pohon Tumbang Tutup Jalan", location: "Jl. Kenanga depan No. 28", date: "4 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400", sender: "Ibu Dewi Lestari", isPublic: true }
   ];
 
   let financeDetails = [
@@ -626,7 +714,25 @@ async function startServer() {
           return "👥 **Data Profil Keluarga Anda (Database RT 05)**:\n\n* **Kepala Keluarga**: Bpk. Rahardian\n* **Alamat Terdaftar**: Jl. Merdeka No. 45, RT 05 / RW 12\n* **No. Telepon**: 0812-3456-7890\n* **Anggota Keluarga Tercatat**:\n  - Ibu Siti (Istri)\n  - Agus (Anak)\n  - Rani (Anak)\n\n*Catatan*: Sinkronisasi data keluarga terpusat secara resmi dengan kependudukan. Untuk penambahan/perubahan anggota keluarga, silakan bawa berkas Kartu Keluarga fisik ke Ketua RT.";
         }
         if (query.includes("kerja bakti") || query.includes("gotong royong") || query.includes("agenda") || query.includes("kegiatan") || query.includes("gapura")) {
-          return "🧹 **Agenda Gotong Royong RT 05 Terdekat**:\n\n* **Nama Kegiatan**: Kerja Bakti Akbar & Revitalisasi Gapura\n* **Waktu**: Minggu ini, Pukul 07:00 WIB s/d selesai\n* **Lokasi**: Area Pintu Masuk Gapura RT 05\n* **Fokus Kerja**: Pembersihan saluran air dari sumbatan sampah, pengecatan ulang gapura utama, dan merapikan taman sosial.\n\n*Ayo bergabung!* Silakan daftarkan anggota keluarga Anda sebagai relawan melalui menu **Portal Berita & Gotong Royong**.";
+          return "🧹 **Agenda Gotong Royong RT 05 Terdekat**:\n\n* **Nama Kegiatan**: Kerja Bakti Akbar & Revitalisasi Gapura\n* **Waktu**: Minggu ini, Pukul 07:00 WIB s/d selesai\n* **Lokasi**: Area Pintu Masuk Gapura RT 05\n* **Fokus Kerja**: Pembersihan selokan utama Jl. Merdeka, pengecatan ulang gapura, dan penataan taman sosial.\n\n*Ayo bergabung!* Silakan daftarkan anggota keluarga Anda sebagai relawan melalui menu **Portal Berita & Gotong Royong**.";
+        }
+        if (query.includes("umkm") || query.includes("toko") || query.includes("pasar") || query.includes("warung") || query.includes("jual") || query.includes("usaha warga") || query.includes("beli")) {
+          return "🏪 **Direktori UMKM Warga RT 05 (5 Usaha Terdaftar)**:\n\n* 🍱 **Catering Rini Sedap** (Ibu Rini) — Nasi kotak, snack box, kue basah. 📞 0812-2233-4455\n* 🔧 **Bengkel Motor Berkah** (Pak Joko) — Servis motor & ganti oli, diskon 10% warga RT. 📞 0816-1212-3434\n* 👗 **Konveksi & Jahit Kilat Dewi** (Ibu Dewi) — Baju, seragam, bordir. Selesai 1-3 hari. 📞 0819-4444-5555\n* 🛒 **Warung Sembako Pak Deden** — Sembako lengkap, buka 06:00-21:00, antar ke rumah. 📞 0817-6677-8899\n* 📚 **Bimbel Rizky** (Kak Rizky) — Les privat SD-SMA, Math/IPA/B.Inggris/UTBK. 📞 0823-1122-3344\n\nLihat detail lengkap & daftarkan usaha Anda di menu **Pasar & UMKM** (gratis!).";
+        }
+        if (query.includes("berita") || query.includes("pengumuman") || query.includes("info") || query.includes("kabar") || query.includes("warta") || query.includes("cctv") || query.includes("fogging") || query.includes("dbd")) {
+          return "📰 **Berita & Pengumuman Terkini RT 05**:\n\n1. 🦟 **Fogging DBD** (23 Mei) — Penyemprotan nyamuk Sabtu pagi 07:00 WIB. Tutup makanan, anak tetap di rumah.\n2. 🧹 **Kerja Bakti Akbar** (19 Mei) — Revitalisasi gapura & bersih selokan. Konsumsi dari PKK.\n3. 📷 **CCTV Baru Blok D & E** (12 Mei) — 4 unit terpasang, terhubung ke monitoring admin RT.\n4. 🏪 **UMKM Digital Dibuka** (8 Mei) — Daftarkan usaha warga Anda, gratis dan mudah.\n5. 📋 **Penyesuaian Iuran Pembangunan** (5 Mei) — Komponen pembangunan naik Rp 5.000/bulan mulai Juni.\n\nBaca artikel lengkap di menu **Portal Berita**.";
+        }
+        if (query.includes("donasi") || query.includes("bantuan") || query.includes("sosial") || query.includes("banjir") || query.includes("sedekah") || query.includes("zakat")) {
+          return "❤️ **Program Donasi & Bantuan Sosial RT 05**:\n\n**Donasi Aktif Saat Ini:**\n* 🌊 **Donasi Musibah Banjir Subang** — Terkumpul Rp 3.200.000 dari target Rp 5.000.000 *(64%)*. Ayo tambah donasi!\n* 🏠 **Pembangunan Pos Ronda Blok D** — Terkumpul Rp 1.500.000 dari target Rp 4.000.000 *(37%)*.\n\n**Cara Berdonasi:**\n1. Buka menu **Keuangan & Iuran** → tab **Donasi & Bantuan Sosial**.\n2. Pilih program, masukkan nama dan nominal Anda.\n3. Konfirmasi — bukti donasi tercatat otomatis.\n\n*Semua donasi disalurkan transparan dan dilaporkan di laporan keuangan RT.*";
+        }
+        if (query.includes("darurat") || query.includes("bahaya") || query.includes("tolong") || query.includes("maling") || query.includes("pencuri") || query.includes("kebakaran") || query.includes("panic") || query.includes("sos")) {
+          return "🚨 **Panduan Tombol Darurat (Panic Button) SmartWarga**:\n\nUntuk situasi darurat nyata (pencurian, kebakaran, ancaman fisik):\n1. Buka menu **Darurat** di sidebar.\n2. **Tahan tombol PANIC selama 3 detik** penuh.\n3. Sistem otomatis:\n   - 📡 Sirine pos satpam RW 12 aktif\n   - 📱 Push notifikasi WhatsApp ke seluruh pengurus RT\n   - 📷 CCTV terdekat (CCTV-04 Blok B) aktif\n   - 📍 Lokasi GPS akurat Anda terkirim ke pengurus\n\n⚠️ *Hanya gunakan untuk situasi darurat nyata. Penyalahgunaan dikenai sanksi peraturan RT.*";
+        }
+        if (query.includes("daftar") || query.includes("pendaftaran") || query.includes("warga baru") || query.includes("pindah") || query.includes("registrasi") || query.includes("ktp") || query.includes("kk") || query.includes("ocr")) {
+          return "📝 **Panduan Pendaftaran Warga Baru RT 05**:\n\n1. Klik **Daftar** di halaman utama SmartWarga.\n2. Pilih **Scan KTP / Kartu Keluarga** — AI OCR kami otomatis membaca NIK, nama, dan alamat.\n3. Periksa dan lengkapi data yang belum terisi.\n4. Submit → status menjadi **Menunggu Verifikasi Ketua RT** (1-2 hari kerja).\n\n**Syarat Warga Baru:**\n* KTP/KK dengan alamat RT 05 / RW 12\n* Jika pindahan luar kota, sertakan **Surat Keterangan Pindah** dari RT asal\n\n💡 Dokumen yang diunggah tersimpan aman di **Brankas Digital** SmartWarga.";
+        }
+        if (query.includes("sampah") || query.includes("truk sampah") || query.includes("jadwal sampah") || query.includes("kebersihan lingkungan") || query.includes("petugas kebersihan")) {
+          return "🗑️ **Jadwal Kebersihan Lingkungan RT 05**:\n\n* 🚛 **Pengambilan Sampah Rumah Tangga**: Setiap **Senin & Kamis** pagi (06:00-08:00 WIB). Pastikan sampah sudah di depan pagar sebelum jam tersebut.\n* 🧹 **Kerja Bakti Rutin**: Setiap Minggu ke-3 per bulan. Jadwal terbaru lihat di Portal Berita.\n* 🦟 **Fogging DBD**: Insidental, sesuai koordinasi Puskesmas. Pengumuman via grup WhatsApp RT & Portal Berita.\n* 🌿 **Pemangkasan Taman Sosial**: Minggu ke-1 per bulan oleh petugas RT.\n\nBiaya petugas kebersihan dari iuran komponen Kebersihan (Rp 30.000/KK/bulan).";
         }
         return null;
       };
@@ -635,7 +741,7 @@ async function startServer() {
       const demoReply = getDemoReply(queryLower);
       if (!process.env.GEMINI_API_KEY || demoReply !== null) {
         // If there is a direct keyword match, prioritize the clean demo reply!
-        const reply = demoReply || "Halo! Saya adalah WargaAI, asisten pintar RT 05. Untuk kemudahan demo, silakan coba tanyakan seputar topik berikut:\n\n1. 📊 **Cek Saldo Kas RT** / Keuangan\n2. 📄 Info Cara Mengajukan **E-Surat**\n3. 🚨 Cara Membuat Laporan **E-Reporting**\n4. 👥 **Profil Keluarga** Bpk. Rahardian\n5. 🧹 Jadwal **Kerja Bakti** & Gotong Royong\n6. 💳 Aturan dan Nominal **Iuran Bulanan**\n\nSilakan ketik pertanyaan Anda seputar topik di atas!";
+        const reply = demoReply || "Halo! Saya adalah WargaAI, asisten pintar RT 05. Silakan tanyakan seputar:\n\n1. 📊 **Cek Saldo Kas RT** — transparansi keuangan\n2. 💳 **Iuran Bulanan** — nominal dan cara bayar\n3. 📄 **E-Surat** — cara pengajuan surat pengantar\n4. 🚨 **E-Reporting** — cara melapor masalah lingkungan\n5. 👥 **Profil Keluarga** — data KK Bpk. Rahardian\n6. 🧹 **Kerja Bakti** & jadwal gotong royong\n7. 🏪 **UMKM Warga** — direktori toko & usaha RT\n8. 📰 **Berita RT** — pengumuman & info terkini\n9. ❤️ **Donasi** — program bantuan sosial aktif\n10. 🚨 **Tombol Darurat** — panduan panic button\n11. 📝 **Warga Baru** — cara pendaftaran & OCR KTP\n12. 🗑️ **Jadwal Sampah** — jadwal kebersihan lingkungan\n\nKetik pertanyaan Anda!";
         return res.json({ text: reply, reply: reply });
       }
 

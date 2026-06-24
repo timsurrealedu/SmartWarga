@@ -3830,7 +3830,13 @@ function AIChatbot() {
     { label: "📄 Cara E-Surat", query: "Cara Mengajukan E-Surat" },
     { label: "🚨 Cara Melapor", query: "Cara Membuat Laporan" },
     { label: "👥 Profil Keluarga", query: "Data Profil Keluarga" },
-    { label: "🧹 Kerja Bakti", query: "Jadwal Kerja Bakti" }
+    { label: "🧹 Kerja Bakti", query: "Jadwal Kerja Bakti" },
+    { label: "🏪 UMKM Warga", query: "Info UMKM dan toko warga RT" },
+    { label: "📰 Berita RT", query: "Berita dan pengumuman terbaru RT" },
+    { label: "❤️ Donasi", query: "Program donasi aktif RT" },
+    { label: "🚨 Tombol Darurat", query: "Panduan tombol darurat panic button" },
+    { label: "📝 Warga Baru", query: "Cara pendaftaran warga baru dan OCR KTP" },
+    { label: "🗑️ Jadwal Sampah", query: "Jadwal sampah dan kebersihan lingkungan" }
   ];
 
   const sendMessage = async (userText: string) => {
