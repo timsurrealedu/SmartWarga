@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "DM Sans", sans-serif;
+  --font-serif: "Plus Jakarta Sans", sans-serif;
+  --font-serif-title: "Plus Jakarta Sans", sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+  
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  
+  --color-border-weak: var(--border-weak);
+  --color-border-strong: var(--border-strong);
+}
+
+:root {
+  /* Default: Dark Theme */
+  color-scheme: dark;
+  --canvas: #0a1311;
+  --sidebar: #050a09;
+  --surface: #12211e;
+  --surface-hover: #192e2a;
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.75);
+  --text-inverse: #0a1311;
+  --primary: #4ade80;
+  --accent: #f97316;
+  --accent-light: #fb923c;
+  --border-weak: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.25);
+}
+
+:root.light, .light {
+  /* Dynamic override: Light Theme (Terang) */
+  color-scheme: light;
+  --canvas: #f4f6f5;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #eaf1ed;
+  --text-main: #0c1d19;
+  --text-muted: #3d534b; /* slightly darker for better readability */
+  --text-inverse: #ffffff;
+  --primary: #10b981;
+  --accent: #ea580c; /* higher contrast accent for panic etc. in light mode */
+  --accent-light: #f97316;
+  --border-weak: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.2);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--canvas);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom welcome banner theme styling */
+.welcome-banner {
+  background: linear-gradient(135deg, #0a1f1a, #123e32);
+  border: 1px solid #1b4e41;
+  color: #ffffff;
+}
+
+.welcome-title {
+  color: #ffffff;
+}
+
+.welcome-subtitle {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.welcome-btn-second {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.welcome-btn-second:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Theme overrides - make banner colorful instead of plain white */
+.light .welcome-banner {
+  background: linear-gradient(135deg, #0f7a5d, #085a44);
+  border-color: #0d6b52;
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15);
+}
+
+.light .welcome-title {
+  color: #ffffff;
+}
+
+.light .welcome-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.light .welcome-btn-second {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+.light .welcome-btn-second:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.light .welcome-banner svg {
+  opacity: 0.1;
+  color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+.font-serif-title {
+  font-family: var(--font-serif);
+}

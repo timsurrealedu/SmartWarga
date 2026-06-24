@@ -1,0 +1,6 @@
+{
+  "name": "SmartWarga",
+  "description": "Platform digital pintar gotong royong, laporan AI, donasi warga, dan pelayanan administrasi RT/RW.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
