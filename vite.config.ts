@@ -7,7 +7,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
-    base: "/SmartWarga/", // Ensure this matches your repository name exactly
+    base: process.env.VERCEL ? "/" : "/SmartWarga/",
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
