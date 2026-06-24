@@ -1,3 +1,4 @@
+
 # SmartWarga: Dokumentasi & Panduan Fitur Komprehensif
 
 SmartWarga adalah platform digital terintegrasi yang dirancang khusus untuk memodernisasi tata kelola lingkungan di tingkat RT/RW. Aplikasi ini menghubungkan pengurus dan warga dalam satu ekosistem transparan, efisien, dan responsif. Berfokus pada kemudahan akses (mobile-first) dan keandalan data, SmartWarga mengubah administrasi tradisional yang lambat menjadi layanan digital instan.
@@ -18,12 +19,14 @@ Mengurangi human error dan mempercepat proses pendaftaran warga melalui otomatis
 -   **Verifikasi NIK**: Validasi format NIK 16 digit untuk memastikan keaslian data kependudukan.
 -   **Status Menunggu**: Sistem secara otomatis menempatkan pendaftar baru dalam daftar tunggu untuk diverifikasi oleh Ketua RT.
 
-### 3. E-Reporting & Tiketing Lingkungan (Pengaduan Warga)
-Solusi digital untuk menggantikan laporan lisan yang sering terlupakan atau tidak terdokumentasi.
+### 3. E-Reporting & Tiketing Lingkungan (Pengaduan Warga) Berbasis AI
+Solusi digital interaktif untuk mengirim pengaduan lingkungan yang didukung asisten kecerdasan buatan.
 -   **Kategorisasi Laporan**: Pilihan kategori seperti Infrastruktur (lampu jalan, lubang), Kebersihan (sampah menumpuk), dan Keamanan (parkir liar).
 -   **Alur Privasi Ganda**:
     -   **Laporan Saya**: Ruang bagi warga untuk membuat laporan baru dan memantau progresnya secara eksklusif.
     -   **Laporan Publik**: Daftar laporan yang telah dipublikasikan agar warga lain tidak melaporkan masalah yang sama dan dapat memantau transparansi penanganan masalah lingkungan.
+-   **AI Photo Analysis**: Warga dapat mengunggah foto permasalahan, lalu sistem AI akan melakukan analisis foto secara cerdas untuk memindai jenis kerusakan, memperkirakan lokasi koordinat, mengidentifikasi tingkat urgensi, serta merumuskan deskripsi laporan otomatis.
+-   **Interactive Multi-Step Stepper**: Proses pelaporan dipandu dengan stepper interaktif 5-langkah yang memvisualisasikan progress analisis gambar, penentuan kategori, konfirmasi lokasi, hingga sinkronisasi data ke server RT secara dramatis dan interaktif.
 -   **Tracking Status**: Perubahan status laporan secara real-time (Pending → Diproses → Selesai) yang diupdate oleh admin.
 
 ### 4. Sistem Layanan E-Surat Digital
@@ -48,6 +51,13 @@ Pusat kendali bagi Ketua RT atau RW untuk mengatur seluruh gerak-gerik administr
 Brankas digital bagi warga untuk menyimpan dokumen penting agar selalu tersedia saat dibutuhkan.
 -   **Repository KTP/KK**: Menghilangkan kebutuhan untuk sering mencari fotokopi dokumen saat pengurusan administrasi mendadak.
 -   **Akses Cepat**: Fitur klik-untuk-unduh yang memungkinkan warga mencetak dokumen mereka langsung dari dashboard.
+
+### 8. Floating Database-Aware SmartWarga AI Chatbot (Asisten Cerdas Warga)
+Fitur asisten virtual interaktif yang mengambang di pojok kanan bawah, siap membantu warga 24/7 dengan data dinamis lingkungan RT.
+-   **Database-Aware Context**: Chatbot terintegrasi langsung dengan database internal RT (seperti saldo kas, histori iuran, rincian pengeluaran, status dokumen, dll.) untuk memberikan jawaban yang akurat, real-time, dan kontekstual.
+-   **Premium Formatting Engine**: Balasan dari AI diformat secara indah dengan dukungan render bold text (`**teks**`), bulleted lists, numbered lists, dan spasi paragraf yang dinamis untuk memudahkan pembacaan warga.
+-   **Smart Auto-Scroll**: Kolom percakapan dilengkapi dengan fitur *auto-scroll* otomatis ke pesan paling baru setiap kali AI sedang mengetik atau memberikan respons baru demi pengalaman berkirim pesan yang mulus.
+-   **Demo Quick Prompts**: Tersedia tombol shortcut pertanyaan cepat (misal: "Cek Saldo Kas RT", "Rincian Iuran Bulanan", dll.) untuk mempercepat interaksi warga dengan AI.
 
 ---
 
