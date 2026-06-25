@@ -16,7 +16,8 @@ import {
   Sun,
   Moon,
   User,
-  FileCheck
+  FileCheck,
+  BrainCircuit,
 } from "lucide-react";
 
 export type Role = "user" | "admin" | "docs";
@@ -55,6 +56,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
     { id: "market_manage", label: "Kelola UMKM & Iklan", icon: Store },
     { id: "validations", label: "Administrasi Warga", icon: Users },
     { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
+    { id: "ai_triage", label: "AI Triage Laporan", icon: BrainCircuit },
   ];
 
   const tabs = currentRole === "user" ? userTabs : currentRole === "admin" ? adminTabs : [

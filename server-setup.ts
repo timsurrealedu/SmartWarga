@@ -116,12 +116,12 @@ export function createApp() {
   ];
 
   let reportsData: any[] = [
-    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1509021436665-8f37df706533?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: true },
-    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=400", sender: "Ibu Sari", isPublic: true },
-    { id: "REP-03", title: "Parkir Liar Motor Tidak Dikenal", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: false },
-    { id: "REP-04", title: "Got Tersumbat Sampah Plastik", location: "Gang Melati Blok A2", date: "Kemarin, 13:00", status: "PROSES", image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400", sender: "Ibu Siti Aminah", isPublic: true },
-    { id: "REP-05", title: "Pagar Fasilitas Umum Rusak", location: "Area Lapangan Blok D", date: "3 hari yang lalu", status: "TERKIRIM", image: "https://images.unsplash.com/photo-1580828343064-fde4fc206bc6?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Firmansyah", isPublic: true },
-    { id: "REP-06", title: "Pohon Tumbang Tutup Jalan", location: "Jl. Kenanga depan No. 28", date: "4 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400", sender: "Ibu Dewi Lestari", isPublic: true },
+    { id: "REP-01", title: "Lampu Jalan Mati", location: "Blok C2 No. 12", date: "2 jam yang lalu", status: "PROSES", image: "https://images.unsplash.com/photo-1509021436665-8f37df706533?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: true, category: "Infrastruktur", aiLabels: { category: "Infrastruktur", urgency: 7.5, tags: ["lampu jalan", "fasilitas umum", "blok C"], confirmed: false } },
+    { id: "REP-02", title: "Sampah Belum Diambil", location: "Blok A1", date: "Kemarin", status: "SELESAI", image: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&q=80&w=400", sender: "Ibu Sari", isPublic: true, category: "Kebersihan", aiLabels: { category: "Kebersihan", urgency: 5.0, tags: ["sampah", "blok A", "pengangkutan"], confirmed: true } },
+    { id: "REP-03", title: "Parkir Liar Motor Tidak Dikenal", location: "Gerbang Utama", date: "2 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Rahardian", isPublic: false, category: "Keamanan", aiLabels: { category: "Keamanan", urgency: 6.2, tags: ["parkir liar", "gerbang", "ketertiban"], confirmed: false } },
+    { id: "REP-04", title: "Got Tersumbat Sampah Plastik", location: "Gang Melati Blok A2", date: "Kemarin, 13:00", status: "PROSES", image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400", sender: "Ibu Siti Aminah", isPublic: true, category: "Kebersihan", aiLabels: { category: "Kebersihan", urgency: 8.1, tags: ["got", "banjir", "sampah plastik", "prioritas"], confirmed: false } },
+    { id: "REP-05", title: "Pagar Fasilitas Umum Rusak", location: "Area Lapangan Blok D", date: "3 hari yang lalu", status: "TERKIRIM", image: "https://images.unsplash.com/photo-1580828343064-fde4fc206bc6?auto=format&fit=crop&q=80&w=400", sender: "Bpk. Firmansyah", isPublic: true, category: "Infrastruktur", aiLabels: { category: "Infrastruktur", urgency: 4.3, tags: ["pagar rusak", "lapangan", "keselamatan"], confirmed: false } },
+    { id: "REP-06", title: "Pohon Tumbang Tutup Jalan", location: "Jl. Kenanga depan No. 28", date: "4 hari yang lalu", status: "SELESAI", image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400", sender: "Ibu Dewi Lestari", isPublic: true, category: "Infrastruktur", aiLabels: { category: "Infrastruktur", urgency: 9.2, tags: ["pohon tumbang", "jalan terblokir", "darurat"], confirmed: true } },
   ];
 
   let financeDetails: any[] = [
@@ -215,21 +215,142 @@ export function createApp() {
 
   app.get("/api/user/reports", (_req, res) => res.json(reportsData));
 
-  app.post("/api/user/reports", (req, res) => {
-    const { title, location, image, isPublic, category } = req.body;
-    const newReport = {
+  app.post("/api/user/reports", async (req, res) => {
+    const { title, location, image, isPublic, category, description } = req.body;
+    const newReport: any = {
       id: `REP-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
       title: title || "Laporan Baru",
       location: location || "Lokasi tidak diketahui",
+      description: description || "",
       date: "Baru saja",
       status: "TERKIRIM",
       image: image || null,
       sender: "Budi Santoso",
       isPublic: isPublic ?? true,
       category: category || "Lainnya",
+      aiLabels: null,
     };
     reportsData = [newReport, ...reportsData];
     res.json(newReport);
+
+    // Async NLP classification (non-blocking)
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const prompt = `Klasifikasikan laporan warga berikut:\nJudul: ${newReport.title}\nLokasi: ${newReport.location}\nDeskripsi: ${newReport.description || "(tidak ada)"}\n\nTentukan category (salah satu dari: Infrastruktur, Kebersihan, Keamanan, Sosial, Lainnya), urgency (angka 0-10 menunjukkan tingkat urgensi, 10 paling mendesak), dan tags (3-5 kata kunci relevan). Balas HANYA dalam format JSON.`;
+        const result = await ai.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                category: { type: Type.STRING },
+                urgency: { type: Type.NUMBER },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+              },
+              required: ["category", "urgency", "tags"],
+            },
+          },
+        });
+        const labels = JSON.parse(result.text || "{}");
+        const idx = reportsData.findIndex((r: any) => r.id === newReport.id);
+        if (idx !== -1) {
+          reportsData[idx].aiLabels = { ...labels, confirmed: false };
+        }
+      } catch (e) {
+        console.error("NLP classification error:", e);
+      }
+    } else {
+      // Fallback classification without Gemini
+      const cats: Record<string, string[]> = {
+        Infrastruktur: ["lampu", "jalan", "pagar", "pohon", "air", "listrik", "got"],
+        Kebersihan: ["sampah", "kotor", "bersih", "got", "limbah"],
+        Keamanan: ["parkir", "maling", "pencuri", "aman", "bahaya", "liar"],
+        Sosial: ["berisik", "keributan", "warga"],
+      };
+      let detected = "Lainnya";
+      const lc = (newReport.title + " " + (newReport.description || "")).toLowerCase();
+      for (const [cat, kws] of Object.entries(cats)) {
+        if (kws.some((k) => lc.includes(k))) { detected = cat; break; }
+      }
+      const urgencyMap: Record<string, number> = { Infrastruktur: 7.0, Kebersihan: 5.5, Keamanan: 8.0, Sosial: 4.0, Lainnya: 3.5 };
+      const idx = reportsData.findIndex((r: any) => r.id === newReport.id);
+      if (idx !== -1) {
+        reportsData[idx].aiLabels = { category: detected, urgency: urgencyMap[detected] ?? 5.0, tags: [detected.toLowerCase(), "laporan baru"], confirmed: false };
+      }
+    }
+  });
+
+  app.get("/api/admin/complaints", (_req, res) => {
+    const sorted = [...reportsData].sort((a, b) => (b.aiLabels?.urgency ?? 0) - (a.aiLabels?.urgency ?? 0));
+    res.json(sorted);
+  });
+
+  app.post("/api/admin/complaints/:id/confirm", (req, res) => {
+    const { id } = req.params;
+    const idx = reportsData.findIndex((r: any) => r.id === id);
+    if (idx === -1) return res.status(404).json({ error: "Not found" });
+    reportsData[idx].aiLabels = { ...reportsData[idx].aiLabels, confirmed: true };
+    res.json(reportsData[idx]);
+  });
+
+  app.post("/api/admin/complaints/:id/override", (req, res) => {
+    const { id } = req.params;
+    const { category, urgency, tags } = req.body;
+    const idx = reportsData.findIndex((r: any) => r.id === id);
+    if (idx === -1) return res.status(404).json({ error: "Not found" });
+    reportsData[idx].aiLabels = { category, urgency, tags, confirmed: true };
+    reportsData[idx].category = category;
+    res.json(reportsData[idx]);
+  });
+
+  app.post("/api/admin/complaints/:id/status", (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const idx = reportsData.findIndex((r: any) => r.id === id);
+    if (idx === -1) return res.status(404).json({ error: "Not found" });
+    reportsData[idx].status = status;
+    res.json(reportsData[idx]);
+  });
+
+  // ── AI OCR for KTP/KK ─────────────────────────────────────────────────────────
+
+  app.post("/api/ocr-ktp", async (req, res) => {
+    try {
+      const { image } = req.body;
+      if (!image) return res.status(400).json({ error: "Image is required" });
+      const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (!match) return res.status(400).json({ error: "Invalid image base64 format" });
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.json({ nik: "3273112345678900", name: "Nama Dummy", alamat: "Jl. Merdeka No. 45, RT 05/RW 12" });
+      }
+
+      const result = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: [
+          { inlineData: { mimeType: match[1], data: match[2] } },
+          { text: "Ekstrak data dari KTP atau Kartu Keluarga ini. Kembalikan NIK (16 digit), nama lengkap, dan alamat. Jika gambar bukan KTP/KK atau data tidak terbaca, isi dengan string kosong. Format: JSON murni sesuai schema." },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              nik: { type: Type.STRING },
+              name: { type: Type.STRING },
+              alamat: { type: Type.STRING },
+            },
+            required: ["nik", "name", "alamat"],
+          },
+        },
+      });
+      res.json(JSON.parse((result.text || "{}").trim()));
+    } catch (error: any) {
+      console.error("OCR KTP error:", error);
+      res.status(500).json({ error: error.message || "Failed to process image" });
+    }
   });
 
   app.get("/api/news", (_req, res) => res.json(newsData));

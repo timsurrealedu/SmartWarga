@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { 
+import {
   Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
-  Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall, LayoutDashboard
+  Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall, LayoutDashboard,
+  BrainCircuit, SlidersHorizontal, ArrowUpDown, ThumbsUp, Pencil, ChevronRight, Filter,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -24,6 +25,7 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
           {currentTab === "market_manage" && <AdminMarketTab />}
           {currentTab === "validations" && <ValidationsTab />}
           {currentTab === "finance_manage" && <AdminFinanceTab />}
+          {currentTab === "ai_triage" && <AITriageTab />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -1782,4 +1784,310 @@ export function AdminMarketTab() {
   );
 }
 
+// ── AI Triage Tab ─────────────────────────────────────────────────────────────
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Infrastruktur: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  Kebersihan:    "bg-green-500/15 text-green-400 border-green-500/30",
+  Keamanan:      "bg-red-500/15 text-red-400 border-red-500/30",
+  Sosial:        "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  Lainnya:       "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+};
+
+function UrgencyBar({ value }: { value: number }) {
+  const pct = Math.min(100, Math.max(0, (value / 10) * 100));
+  const color = value >= 8 ? "bg-red-500" : value >= 5 ? "bg-amber-400" : "bg-emerald-500";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden border border-border-weak">
+        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={cn("text-xs font-bold tabular-nums w-6 text-right", value >= 8 ? "text-red-400" : value >= 5 ? "text-amber-400" : "text-emerald-400")}>
+        {value.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+function OverrideModal({ report, onSave, onClose }: { report: any; onSave: (id: string, category: string, urgency: number, tags: string[]) => void; onClose: () => void }) {
+  const [category, setCategory] = useState<string>(report.aiLabels?.category ?? "Lainnya");
+  const [urgency, setUrgency] = useState<number>(report.aiLabels?.urgency ?? 5);
+  const [tagsInput, setTagsInput] = useState<string>((report.aiLabels?.tags ?? []).join(", "));
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-sidebar border border-border-strong rounded-2xl p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-text-main mb-4 font-display">Override Label AI</h3>
+        <p className="text-xs text-text-muted mb-5 font-mono">{report.id} — {report.title}</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Kategori</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-surface border border-border-weak rounded-lg px-3 py-2 text-sm text-text-main">
+              {["Infrastruktur","Kebersihan","Keamanan","Sosial","Lainnya"].map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Urgensi (0–10)</label>
+            <input type="range" min={0} max={10} step={0.1} value={urgency} onChange={e => setUrgency(parseFloat(e.target.value))} className="w-full accent-primary" />
+            <div className="text-right text-xs text-primary font-bold mt-1">{urgency.toFixed(1)}</div>
+          </div>
+          <div>
+            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Tags (pisah koma)</label>
+            <input value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="w-full bg-surface border border-border-weak rounded-lg px-3 py-2 text-sm text-text-main" />
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <button onClick={onClose} className="flex-1 py-2 border border-border-weak rounded-xl text-sm text-text-muted hover:bg-surface-hover cursor-pointer">Batal</button>
+          <button
+            onClick={() => { onSave(report.id, category, urgency, tagsInput.split(",").map(t => t.trim()).filter(Boolean)); onClose(); }}
+            className="flex-1 py-2 bg-primary text-text-inverse rounded-xl text-sm font-bold hover:bg-primary/90 cursor-pointer"
+          >
+            Simpan Override
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AITriageTab() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterCategory, setFilterCategory] = useState("Semua");
+  const [sortBy, setSortBy] = useState<"urgency" | "date">("urgency");
+  const [overrideTarget, setOverrideTarget] = useState<any>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchReports = async () => {
+    try {
+      const res = await fetch("/api/admin/complaints");
+      if (res.ok) setReports(await res.json());
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchReports(); }, []);
+
+  const handleConfirm = async (id: string) => {
+    await fetch(`/api/admin/complaints/${id}/confirm`, { method: "POST" });
+    setReports(prev => prev.map(r => r.id === id ? { ...r, aiLabels: { ...r.aiLabels, confirmed: true } } : r));
+  };
+
+  const handleOverrideSave = async (id: string, category: string, urgency: number, tags: string[]) => {
+    await fetch(`/api/admin/complaints/${id}/override`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, urgency, tags }),
+    });
+    setReports(prev => prev.map(r => r.id === id ? { ...r, aiLabels: { category, urgency, tags, confirmed: true }, category } : r));
+  };
+
+  const handleStatus = async (id: string, status: string) => {
+    await fetch(`/api/admin/complaints/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+  };
+
+  const categories = ["Semua", "Infrastruktur", "Kebersihan", "Keamanan", "Sosial", "Lainnya"];
+
+  const filtered = reports
+    .filter(r => filterCategory === "Semua" || r.aiLabels?.category === filterCategory)
+    .sort((a, b) => sortBy === "urgency"
+      ? (b.aiLabels?.urgency ?? 0) - (a.aiLabels?.urgency ?? 0)
+      : 0
+    );
+
+  const stats = {
+    total: reports.length,
+    pending: reports.filter(r => !r.aiLabels?.confirmed).length,
+    highUrgency: reports.filter(r => (r.aiLabels?.urgency ?? 0) >= 8).length,
+  };
+
+  return (
+    <div className="space-y-6">
+      {overrideTarget && (
+        <OverrideModal
+          report={overrideTarget}
+          onSave={handleOverrideSave}
+          onClose={() => setOverrideTarget(null)}
+        />
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold font-display text-text-main flex items-center gap-2">
+            <BrainCircuit size={22} className="text-primary" /> AI Triage Laporan Warga
+          </h2>
+          <p className="text-sm text-text-muted mt-1">Klasifikasi NLP otomatis berbasis Gemini — validasi & tindak lanjut laporan masuk</p>
+        </div>
+        <button onClick={fetchReports} className="text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer">
+          Refresh
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-surface border border-border-weak rounded-xl p-4">
+          <p className="text-xs text-text-muted uppercase font-bold tracking-widest mb-1">Total Laporan</p>
+          <p className="text-3xl font-bold text-text-main font-display">{stats.total}</p>
+        </div>
+        <div className="bg-surface border border-amber-500/20 rounded-xl p-4">
+          <p className="text-xs text-amber-400 uppercase font-bold tracking-widest mb-1">Menunggu Validasi</p>
+          <p className="text-3xl font-bold text-amber-400 font-display">{stats.pending}</p>
+        </div>
+        <div className="bg-surface border border-red-500/20 rounded-xl p-4">
+          <p className="text-xs text-red-400 uppercase font-bold tracking-widest mb-1">Urgensi Tinggi (≥8)</p>
+          <p className="text-3xl font-bold text-red-400 font-display">{stats.highUrgency}</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-1.5 text-xs text-text-muted">
+          <Filter size={13} /> Filter:
+        </div>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setFilterCategory(cat)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer",
+              filterCategory === cat
+                ? "bg-primary text-text-inverse border-primary"
+                : "bg-surface border-border-weak text-text-muted hover:border-primary/50"
+            )}
+          >
+            {cat}
+          </button>
+        ))}
+        <button
+          onClick={() => setSortBy(prev => prev === "urgency" ? "date" : "urgency")}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-weak text-text-muted hover:border-primary/50 transition cursor-pointer"
+        >
+          <ArrowUpDown size={12} /> Urut: {sortBy === "urgency" ? "Urgensi" : "Tanggal"}
+        </button>
+      </div>
+
+      {/* Report Cards */}
+      {loading ? (
+        <div className="flex items-center justify-center h-40 text-text-muted text-sm">Memuat laporan...</div>
+      ) : filtered.length === 0 ? (
+        <div className="flex items-center justify-center h-40 text-text-muted text-sm">Tidak ada laporan ditemukan.</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(report => {
+            const labels = report.aiLabels;
+            const isExpanded = expandedId === report.id;
+            return (
+              <div key={report.id} className={cn("bg-surface border rounded-xl overflow-hidden transition-all", labels?.urgency >= 8 ? "border-red-500/30" : "border-border-weak")}>
+                {/* Card header row */}
+                <div
+                  className="flex items-center gap-3 p-4 cursor-pointer hover:bg-surface-hover transition"
+                  onClick={() => setExpandedId(isExpanded ? null : report.id)}
+                >
+                  {/* Urgency indicator */}
+                  <div className={cn("w-1.5 self-stretch rounded-full flex-shrink-0", labels?.urgency >= 8 ? "bg-red-500" : labels?.urgency >= 5 ? "bg-amber-400" : "bg-emerald-500")} />
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm text-text-main truncate">{report.title}</span>
+                      {labels?.confirmed && (
+                        <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">
+                          ✓ Validated
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-muted mt-0.5">{report.sender} · {report.location} · {report.date}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {labels?.category && (
+                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>
+                        {labels.category}
+                      </span>
+                    )}
+                    <span className={cn(
+                      "text-[10px] font-bold px-2 py-0.5 rounded border",
+                      report.status === "SELESAI" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                      report.status === "PROSES"  ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                                                    "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
+                    )}>
+                      {report.status}
+                    </span>
+                    <ChevronRight size={14} className={cn("text-text-muted transition-transform", isExpanded && "rotate-90")} />
+                  </div>
+                </div>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="border-t border-border-weak px-4 pb-4 pt-3 space-y-4">
+                    {/* AI Labels */}
+                    <div>
+                      <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5">
+                        <BrainCircuit size={11} /> Label AI
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] text-text-muted mb-1">Urgensi</p>
+                          {labels ? <UrgencyBar value={labels.urgency} /> : <span className="text-xs text-text-muted italic">Memproses...</span>}
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-text-muted mb-1.5">Tags</p>
+                          <div className="flex flex-wrap gap-1">
+                            {labels?.tags?.map((tag: string) => (
+                              <span key={tag} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">{tag}</span>
+                            )) ?? <span className="text-xs text-text-muted italic">—</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {!labels?.confirmed && (
+                        <button
+                          onClick={() => handleConfirm(report.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500/25 transition cursor-pointer"
+                        >
+                          <ThumbsUp size={12} /> Confirm Label
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setOverrideTarget(report)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
+                      >
+                        <Pencil size={12} /> Override
+                      </button>
+                      <div className="flex gap-1 ml-auto">
+                        <button
+                          onClick={() => handleStatus(report.id, "PROSES")}
+                          className={cn("px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer", report.status === "PROSES" ? "bg-amber-500/20 text-amber-400 border-amber-500/40" : "border-border-weak text-text-muted hover:border-amber-500/40")}
+                        >
+                          Tanggapi
+                        </button>
+                        <button
+                          onClick={() => handleStatus(report.id, "SELESAI")}
+                          className={cn("px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer", report.status === "SELESAI" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "border-border-weak text-text-muted hover:border-emerald-500/40")}
+                        >
+                          Selesai
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
