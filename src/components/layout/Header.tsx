@@ -18,12 +18,12 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
   const [profile, setProfile] = useState(() => {
     const stored = localStorage.getItem("user-profile");
     return stored ? JSON.parse(stored) : {
-      name: "Bpk. Rahardian",
+      name: "Rahardian Pratama",
       address: "Jl. Merdeka No. 45",
       rt: "05",
       rw: "12",
       phone: "0812-3456-7890",
-      familyMembers: ["Ibu Siti (Istri)", "Agus (Anak)", "Rani (Anak)"]
+      familyMembers: ["Siti Rahayu (Istri)", "Agus (Anak)", "Rani (Anak)"]
     };
   });
 
@@ -116,17 +116,17 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
 
   return (
     <>
-      <header className="py-4 md:py-6 bg-canvas flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 sticky top-0 z-10 border-b border-border-weak md:border-none">
-        <div className="flex items-center gap-4 mb-4 md:mb-0">
-          <button className="md:hidden p-2 -ml-2 text-text-main" onClick={toggleSidebar}>
-            <Menu size={24} />
+      <header className="py-2 md:py-5 bg-canvas flex flex-row items-center justify-between px-3 md:px-8 sticky top-0 z-10 border-b border-border-weak gap-2">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+          <button className="md:hidden p-1.5 -ml-1 text-text-main shrink-0" onClick={toggleSidebar}>
+            <Menu size={22} />
           </button>
-          <h1 className="text-xl md:text-3xl font-display font-bold text-text-main">
-            {currentRole === "user" ? "Dashboard Warga" : currentRole === "admin" ? "Dashboard Pengurus" : "Architecture Documentation"}
+          <h1 className="text-base md:text-3xl font-display font-bold text-text-main truncate">
+            {currentRole === "user" ? "Dashboard Warga" : currentRole === "admin" ? "Dashboard Pengurus" : "Dokumentasi"}
           </h1>
         </div>
 
-        <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 mt-2 md:mt-0 w-full md:w-auto flex-wrap">
+        <div className="flex items-center gap-2 md:gap-5 shrink-0">
           <div className="flex flex-col items-end">
             <button 
               onMouseDown={startHolding}
@@ -139,10 +139,11 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
                   ? `linear-gradient(to right, #b91c1c ${holdProgress}%, #ef4444 ${holdProgress}%)`
                   : undefined
               }}
-              className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-2 px-4 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all hover:scale-102 text-xs md:text-sm select-none touch-none"
+              className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-1.5 px-2.5 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all text-xs select-none touch-none"
             >
-              <AlertTriangle size={18} fill="currentColor" className="md:w-5 md:h-5" />
-              <span>{isHolding ? `HOLD: ${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC (TAHAN 3S)"}</span>
+              <AlertTriangle size={15} fill="currentColor" className="shrink-0" />
+              <span className="hidden sm:inline">{isHolding ? `HOLD: ${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC (TAHAN 3S)"}</span>
+              <span className="sm:hidden">{isHolding ? `${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC"}</span>
             </button>
             {isHolding && (
               <span className="text-[10px] text-red-500 font-mono mt-1 font-bold animate-pulse">
@@ -204,9 +205,9 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
             )}
           </div>
 
-          <button 
+          <button
             onClick={onProfileClick}
-            className="flex items-center gap-3 pl-4 md:pl-6 border-l border-border-strong hover:opacity-80 transition-all text-left bg-transparent border-none cursor-pointer"
+            className="flex items-center gap-2 md:gap-3 pl-2 md:pl-5 border-l border-border-strong hover:opacity-80 transition-all text-left bg-transparent cursor-pointer"
             id="header-profile-btn"
           >
             <div className="text-right hidden sm:block">

@@ -4,14 +4,18 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
   Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall, LayoutDashboard,
-  BrainCircuit, SlidersHorizontal, ArrowUpDown, ThumbsUp, Pencil, ChevronRight, Filter,
+  BrainCircuit, SlidersHorizontal, ArrowUpDown, ThumbsUp, Pencil, ChevronRight, Filter, Vote, Trophy, Clock, UserPlus,
+  Lock, Shield, ShieldCheck, Edit3,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import {
+  PieChart, Pie, Cell, Legend, Tooltip as RechartsTooltip, ResponsiveContainer,
+} from "recharts";
 
 export function AdminDashboard({ currentTab, setTab }: { currentTab: string, setTab: (tab: string) => void }) {
   return (
-    <div className="w-full max-w-6xl mx-auto pb-20">
+    <div className="w-full max-w-6xl mx-auto pb-20 relative">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentTab}
@@ -26,109 +30,116 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
           {currentTab === "validations" && <ValidationsTab />}
           {currentTab === "finance_manage" && <AdminFinanceTab />}
           {currentTab === "ai_triage" && <AITriageTab />}
+          {currentTab === "election" && <ElectionTab />}
+          {currentTab === "admin_profile" && <AdminProfileTab />}
         </motion.div>
       </AnimatePresence>
+
+      <AdminChatbot />
     </div>
   );
 }
 
 function AdminOverviewTab({ setTab }: { setTab: (tab: string) => void }) {
-  const [isLettersOpen, setIsLettersOpen] = useState(true);
-  const [isTicketsOpen, setIsTicketsOpen] = useState(false);
+  const [stats, setStats] = useState({ letters: 0, reports: 0, highUrgency: 0, balance: "Memuat...", pendingWarga: 2 });
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [election, setElection] = useState<any>(null);
 
-  const toggleLetters = () => {
-    setIsLettersOpen(!isLettersOpen);
-    if (!isLettersOpen) setIsTicketsOpen(false);
-  };
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/admin/letters").then(r => r.json()).catch(() => []),
+      fetch("/api/admin/complaints").then(r => r.json()).catch(() => []),
+      fetch("/api/finance").then(r => r.json()).catch(() => ({ summary: [] })),
+      fetch("/api/election").then(r => r.json()).catch(() => null),
+    ]).then(([letters, complaints, finance, elec]) => {
+      const pendingLetters = Array.isArray(letters) ? letters.filter((l: any) => l.status === "pending").length : 0;
+      const activeReports = Array.isArray(complaints) ? complaints.filter((c: any) => c.status !== "SELESAI").length : 0;
+      const urgentReports = Array.isArray(complaints) ? complaints.filter((c: any) => (c.aiLabels?.urgency ?? 0) >= 8).length : 0;
+      const balItem = Array.isArray(finance?.summary) ? finance.summary.find((s: any) => s.label === "Saldo") : null;
+      setStats({ letters: pendingLetters, reports: activeReports, highUrgency: urgentReports, balance: balItem ? `Rp ${balItem.value?.toLocaleString("id-ID")}` : "—", pendingWarga: 2 });
+      setRecentReports(Array.isArray(complaints) ? complaints.slice(0, 4) : []);
+      if (elec?.phase && elec.phase !== "inactive") setElection(elec);
+    });
+  }, []);
 
-  const toggleTickets = () => {
-    setIsTicketsOpen(!isTicketsOpen);
-    if (!isTicketsOpen) setIsLettersOpen(false);
-  };
+  const today = new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-surface text-text-main p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] md:col-span-2 relative overflow-hidden">
-           <h2 className="text-2xl font-display font-semibold mb-1">Dashboard Pengurus</h2>
-           <p className="text-sm text-text-muted mb-6">Ringkasan aktivitas warga RT 04 hari ini.</p>
-           <div className="flex gap-4">
-              <div className="bg-canvas border border-border-weak px-4 py-3 rounded-xl flex-1 md:flex-initial min-w-[124px]">
-                 <p className="text-xs uppercase tracking-wider text-text-muted font-medium">Total Warga</p>
-                 <p className="text-2xl font-display font-bold text-text-main">142 KK</p>
-              </div>
-              <div className="bg-canvas border border-border-weak px-4 py-3 rounded-xl flex-1 md:flex-initial min-w-[124px]">
-                 <p className="text-xs uppercase tracking-wider text-text-muted font-medium">Aman/Kondusif</p>
-                 <p className="text-2xl font-display font-bold text-emerald-800 dark:text-primary">Yes</p>
-              </div>
-           </div>
-           <div className="flex gap-4 mt-6">
-              <button 
-                onClick={toggleLetters} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  isLettersOpen 
-                    ? "bg-primary text-text-inverse hover:bg-primary/90" 
-                    : "bg-surface text-text-main border border-border-strong hover:bg-surface-hover"
-                }`}
-              >
-                {isLettersOpen ? "Tutup Surat" : "Cek Surat"}
-                {isLettersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-              <button 
-                onClick={toggleTickets} 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  isTicketsOpen 
-                    ? "bg-primary text-text-inverse hover:bg-primary/90" 
-                    : "bg-surface text-text-main border border-border-strong hover:bg-surface-hover"
-                }`}
-              >
-                {isTicketsOpen ? "Tutup Laporan" : "Lihat Laporan"}
-                {isTicketsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-            </div>
+    <div className="space-y-8">
+      {/* Welcome */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p className="text-xs text-text-muted">{today}</p>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-text-main mt-1">Selamat datang, Ketua RT 04</h2>
+          <p className="text-sm text-text-muted mt-1">Berikut ringkasan kondisi warga RT 04 saat ini.</p>
         </div>
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center justify-center text-center">
-            <UserCheck size={32} className="text-accent mb-2" />
-            <p className="text-3xl font-display font-semibold text-text-main">5</p>
-            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mt-1">Surat Menunggu</p>
-        </div>
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center justify-center text-center">
-            <Users size={32} className="text-text-muted mb-2" />
-            <p className="text-3xl font-display font-semibold text-text-main">2</p>
-            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mt-1">Validasi Warga Baru</p>
+        <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 w-fit">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+          <p className="text-xs font-semibold text-primary">RT 04 — Aman & Kondusif</p>
         </div>
       </div>
-      
-      {/* Collapsible Sections */}
-      <AnimatePresence>
-        {isLettersOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-border-weak pt-6">
-              <LettersApprovalTab />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {isTicketsOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-border-weak pt-6">
-              <AdminTicketsTab />
+      {/* Election alert if active */}
+      {election && (
+        <div className={cn("border rounded-xl p-4 flex items-center justify-between gap-3",
+          election.phase === "voting" ? "bg-blue-500/10 border-blue-500/25" : "bg-primary/10 border-primary/25"
+        )}>
+          <div className="flex items-center gap-3">
+            <Vote size={18} className={election.phase === "voting" ? "text-blue-400" : "text-primary"} />
+            <div>
+              <p className="font-semibold text-sm text-text-main">
+                {election.phase === "nominating" ? "Fase Nominasi Sedang Berjalan" : election.phase === "voting" ? "Pemungutan Suara Sedang Berlangsung" : "Pemilihan RT Selesai"}
+              </p>
+              <p className="text-xs text-text-muted">{election.candidates?.length || 0} kandidat terdaftar · {election.votes?.length || 0} suara masuk</p>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          <button onClick={() => setTab("election")} className="text-xs font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer shrink-0">Kelola</button>
+        </div>
+      )}
+
+      {/* Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Surat Menunggu", value: stats.letters, icon: FileText, color: "text-primary", urgent: stats.letters > 0, tab: "letters_manage" },
+          { label: "Laporan Aktif", value: stats.reports, icon: AlertTriangle, color: "text-amber-400", urgent: stats.highUrgency > 0, tab: "ai_triage" },
+          { label: "Total Warga", value: "142 KK", icon: Users, color: "text-blue-400", urgent: false, tab: "validations" },
+          { label: "Pendaftaran Baru", value: stats.pendingWarga, icon: UserCheck, color: "text-accent", urgent: stats.pendingWarga > 0, tab: "validations" },
+        ].map(m => (
+          <button key={m.label} onClick={() => setTab(m.tab)} className={cn("bg-surface border rounded-xl p-5 text-left hover:bg-surface-hover transition-all cursor-pointer group", m.urgent ? "border-amber-500/25" : "border-border-weak")}>
+            <m.icon size={18} className={cn(m.color, "mb-3")} />
+            <p className="text-2xl font-display font-bold text-text-main">{m.value}</p>
+            <p className="text-xs text-text-muted mt-1">{m.label}</p>
+            {m.urgent && <span className="mt-2 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Recent reports */}
+      {recentReports.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-text-main">Laporan Terbaru</h3>
+            <button onClick={() => setTab("ai_triage")} className="text-xs text-primary hover:underline cursor-pointer">Lihat semua →</button>
+          </div>
+          <div className="space-y-2">
+            {recentReports.map(r => (
+              <div key={r.id} className="bg-surface border border-border-weak rounded-xl px-4 py-3 flex items-center gap-4">
+                <div className={cn("w-1.5 h-8 rounded-full shrink-0", (r.aiLabels?.urgency ?? 0) >= 8 ? "bg-red-500" : (r.aiLabels?.urgency ?? 0) >= 5 ? "bg-amber-400" : "bg-primary")} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-text-main truncate">{r.title}</p>
+                  <p className="text-[11px] text-text-muted">{r.sender} · {r.date}</p>
+                </div>
+                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border shrink-0",
+                  r.status === "SELESAI" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                  r.status === "PROSES" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                  "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
+                )}>{r.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,7 +326,7 @@ function LettersApprovalTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 flex justify-between">
+              <label className="block text-xs font-medium text-text-muted mb-2 flex justify-between">
                  <span>Tanda Tangan Digital Pengurus</span>
                  <button onClick={clearSignature} type="button" className="text-accent underline lowercase font-normal">Hapus Tanda Tangan</button>
               </label>
@@ -359,7 +370,7 @@ function LettersApprovalTab() {
         <p className="text-sm text-text-muted mt-1">Review dan berikan persetujuan (Digital Signature) untuk permohonan surat warga.</p>
       </div>
 
-      <div className="bg-surface rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-border-weak overflow-hidden">
         <div className="p-4 border-b border-border-weak flex gap-4 bg-surface">
            <div className="relative flex-1">
              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -388,7 +399,7 @@ function LettersApprovalTab() {
                      )}
                    </h3>
                    <p className="text-sm text-text-muted">{letter.type}</p>
-                   <p className="text-xs text-text-muted mt-1 uppercase tracking-wider font-semibold">{letter.id} — {letter.date}</p>
+                   <p className="text-xs text-text-muted mt-1 font-mono">{letter.id} — {letter.date}</p>
                  </div>
                </div>
                               {letter.status === "pending" ? (
@@ -418,7 +429,7 @@ function LettersApprovalTab() {
                       </button>
                     )}
                     <div className={cn(
-                      "px-4 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wider shrink-0 flex items-center gap-2",
+                      "px-4 py-1.5 rounded-lg text-sm font-semibold shrink-0 flex items-center gap-2",
                       letter.status === "approved" ? "bg-primary/20 text-primary" : "bg-red-900/40 text-red-400"
                     )}>
                        {letter.status === "approved" ? <><Check size={16} /> Disetujui</> : <><X size={16} /> Ditolak</>}
@@ -434,25 +445,57 @@ function LettersApprovalTab() {
 }
 
 function ValidationsTab() {
+  const [subTab, setSubTab] = useState<"letters" | "register" | "data">("letters");
+
+  // Warga data section state
+  const [sigUnlocked, setSigUnlocked] = useState(false);
+  const [sigCanvasRef] = useState(() => React.createRef<HTMLCanvasElement>());
+  const [sigDrawing, setSigDrawing] = useState(false);
+  const [sigDone, setSigDone] = useState(false);
+  const [residents, setResidents] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (subTab === "data") {
+      fetch("/api/admin/residents").then(r => r.json()).then(setResidents).catch(() => {});
+    }
+  }, [subTab]);
+
+  const startSigDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    setSigDrawing(true); setSigDone(true);
+    const c = sigCanvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    ctx.strokeStyle = "#4ade80"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    const rect = c.getBoundingClientRect();
+    const x = "touches" in e ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).nativeEvent.offsetX;
+    const y = "touches" in e ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).nativeEvent.offsetY;
+    ctx.beginPath(); ctx.moveTo(x, y);
+  };
+  const moveSig = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!sigDrawing) return;
+    const c = sigCanvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    const rect = c.getBoundingClientRect();
+    const x = "touches" in e ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).nativeEvent.offsetX;
+    const y = "touches" in e ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).nativeEvent.offsetY;
+    ctx.lineTo(x, y); ctx.stroke();
+  };
+  const endSig = () => setSigDrawing(false);
+  const clearSig = () => {
+    const c = sigCanvasRef.current; if (!c) return;
+    c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+    setSigDone(false);
+  };
+
+  // OCR section state
   const [ocrScanning, setOcrScanning] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
 
   const simulateOCR = () => {
     setOcrScanning(true);
-    // Simulate network delay for OCR
     setTimeout(() => {
       setOcrScanning(false);
-      setOcrResult({
-        nik: "3273112345678900",
-        name: "Agus Pratama",
-        tempatLahir: "Bandung",
-        tanggalLahir: "14-08-1985",
-        alamat: "Jl. Merdeka No. 45",
-        rt: "05",
-        rw: "12",
-        agama: "Islam",
-        status: "Kawin"
-      });
+      setOcrResult({ nik: "3273112345678900", name: "Agus Pratama", tempatLahir: "Bandung", tanggalLahir: "14-08-1985", alamat: "Jl. Merdeka No. 45", rt: "05", rw: "12", agama: "Islam", status: "Kawin" });
     }, 2500);
   };
 
@@ -464,91 +507,138 @@ function ValidationsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">Validasi Warga Baru (OCR)</h2>
-        <p className="text-sm text-text-muted mt-1">Unggah KTP/KK untuk mempercepat pengisian data warga baru secara otomatis.</p>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Administrasi Warga</h2>
+        <p className="text-sm text-text-muted mt-1">Kelola surat warga, pendaftaran KTP/KK, dan data warga terdaftar di RT 04.</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-           <div className="bg-surface border-2 border-dashed border-border-strong rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-colors hover:bg-surface-hover">
+      {/* Sub-tab selector */}
+      <div className="flex bg-surface rounded-xl p-1 border border-border-weak w-fit">
+        {([["letters", "Validasi Surat"], ["register", "Pendaftaran Warga"], ["data", "Data Warga"]] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setSubTab(id)}
+            className={cn("px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer", subTab === id ? "bg-primary text-text-inverse" : "text-text-muted hover:text-text-main")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Validasi Surat ── */}
+      {subTab === "letters" && <LettersApprovalTab />}
+
+      {/* ── Pendaftaran Warga (OCR) ── */}
+      {subTab === "register" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <div className="bg-surface border-2 border-dashed border-border-strong rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-colors hover:bg-surface-hover">
               <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mb-4">
-                 {ocrScanning ? <Camera size={28} className="animate-pulse" /> : <Upload size={28} />}
+                {ocrScanning ? <Camera size={28} className="animate-pulse" /> : <Upload size={28} />}
               </div>
               <p className="font-semibold text-text-main mb-1">Unggah KTP / KK Warga</p>
               <p className="text-xs text-text-muted mb-6 max-w-[200px]">Format JPG/PNG maks 5MB. AI akan mengekstrak data otomatis.</p>
-              <button 
-                onClick={simulateOCR} 
-                disabled={ocrScanning}
-                className={cn("px-6 py-2.5 rounded-full font-medium text-sm transition-colors border border-border-strong", ocrScanning ? "bg-surface text-text-muted" : "bg-primary text-text-inverse hover:bg-primary/80")}
-              >
+              <button onClick={simulateOCR} disabled={ocrScanning} className={cn("px-6 py-2.5 rounded-full font-medium text-sm transition-colors border border-border-strong", ocrScanning ? "bg-surface text-text-muted" : "bg-primary text-text-inverse hover:bg-primary/80 cursor-pointer")}>
                 {ocrScanning ? "Memindai dengan AI..." : "Pilih File Dokumen"}
               </button>
-           </div>
+            </div>
+          </div>
+          <div className="bg-surface p-6 rounded-xl border border-border-weak">
+            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2"><User size={20} className="text-primary" /> Data Hasil Ekstraksi</h3>
+            {!ocrResult && !ocrScanning && <div className="h-48 flex items-center justify-center text-sm text-text-muted text-center border-2 border-dashed border-border-weak rounded-xl">Belum ada data.<br/>Silakan unggah dokumen untuk memulai scan OCR.</div>}
+            {ocrScanning && <div className="h-48 flex flex-col items-center justify-center gap-3 text-sm text-text-muted border-2 border-dashed border-border-weak rounded-xl"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />Sedang mengekstrak data...</div>}
+            {ocrResult && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="grid grid-cols-2 gap-3">
+                  {[["NIK", ocrResult.nik], ["Nama Lengkap", ocrResult.name], ["Tempat, Tgl Lahir", `${ocrResult.tempatLahir}, ${ocrResult.tanggalLahir}`], ["RT/RW", `${ocrResult.rt} / ${ocrResult.rw}`]].map(([label, val]) => (
+                    <div key={label as string}>
+                      <label className="block text-xs font-medium text-text-muted mb-1">{label}</label>
+                      <input type="text" defaultValue={val as string} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
+                    </div>
+                  ))}
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-text-muted mb-1">Alamat</label>
+                    <input type="text" defaultValue={ocrResult.alamat} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-primary/10 p-3 rounded-lg text-xs text-primary"><CheckCircle2 size={14} /> Data diekstrak dengan keyakinan 98%. Periksa sebelum menyimpan.</div>
+                <button onClick={handleValidate} className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer">Validasi & Simpan Warga</button>
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-          <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
-            <User size={20} className="text-primary" /> Data Hasil Ekstraksi
-          </h3>
-          
-          {!ocrResult && !ocrScanning && (
-            <div className="h-48 flex items-center justify-center text-sm text-text-muted text-center border-2 border-dashed border-border-weak rounded-xl">
-              Belum ada data.<br/>Silakan unggah dokumen untuk memulai scan OCR.
-            </div>
-          )}
-
-          {ocrScanning && (
-            <div className="h-48 flex flex-col items-center justify-center gap-3 text-sm text-text-muted border-2 border-dashed border-border-weak rounded-xl">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              Sedang mengekstrak data...
-            </div>
-          )}
-
-          {ocrResult && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-              <div className="grid grid-cols-2 gap-4">
+      {/* ── Data Warga (locked with digital signature) ── */}
+      {subTab === "data" && (
+        <div className="space-y-4">
+          {!sigUnlocked ? (
+            <div className="max-w-md mx-auto bg-surface border border-border-strong rounded-xl p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center shrink-0"><Shield size={20} className="text-accent" /></div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">NIK</label>
-                  <input type="text" defaultValue={ocrResult.nik} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">Nama Lengkap</label>
-                  <input type="text" defaultValue={ocrResult.name} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">Tempat, Tgl Lahir</label>
-                  <input type="text" defaultValue={`${ocrResult.tempatLahir}, ${ocrResult.tanggalLahir}`} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">RT</label>
-                    <input type="text" defaultValue={ocrResult.rt} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">RW</label>
-                    <input type="text" defaultValue={ocrResult.rw} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] uppercase font-bold text-text-muted mb-1 tracking-wider">Alamat</label>
-                  <input type="text" defaultValue={ocrResult.alamat} className="w-full bg-canvas border border-border-strong rounded-lg p-2 text-sm text-text-main focus:outline-none focus:border-primary" />
+                  <p className="font-semibold text-text-main text-sm">Akses Data Warga Terlindungi</p>
+                  <p className="text-xs text-text-muted mt-0.5">Tanda tangani di bawah untuk membuka akses edit data warga terdaftar.</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 mt-4 bg-primary/10 p-3 rounded-lg text-sm text-primary">
-                <CheckCircle2 size={16} /> <span>Data telah diekstrak dengan keyakinan 98%. Periksa kembali sebelum menyimpan.</span>
+              <div>
+                <p className="text-xs font-medium text-text-muted mb-2">Tanda Tangan Pengurus RT:</p>
+                <div className="border-2 border-dashed border-border-strong rounded-xl overflow-hidden bg-canvas touch-none">
+                  <canvas
+                    ref={sigCanvasRef}
+                    width={380}
+                    height={120}
+                    className="w-full cursor-crosshair"
+                    onMouseDown={startSigDraw}
+                    onMouseMove={moveSig}
+                    onMouseUp={endSig}
+                    onMouseLeave={endSig}
+                    onTouchStart={startSigDraw}
+                    onTouchMove={moveSig}
+                    onTouchEnd={endSig}
+                  />
+                </div>
+                <div className="flex justify-end mt-1">
+                  <button onClick={clearSig} className="text-xs text-text-muted hover:text-text-main cursor-pointer">Hapus tanda tangan</button>
+                </div>
               </div>
-
-              <button 
-                onClick={handleValidate}
-                className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/80 transition-colors mt-2"
+              <button
+                onClick={() => sigDone && setSigUnlocked(true)}
+                disabled={!sigDone}
+                className="w-full bg-primary text-text-inverse font-bold py-2.5 rounded-xl hover:bg-primary/90 transition cursor-pointer disabled:opacity-40"
               >
-                Validasi & Simpan Warga
+                <Lock size={14} className="inline mr-2" />Buka Akses Data Warga
               </button>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5">
+                <ShieldCheck size={16} className="text-primary" />
+                <p className="text-xs text-primary font-semibold">Akses terbuka — terautentikasi dengan tanda tangan digital</p>
+                <button onClick={() => { setSigUnlocked(false); setSigDone(false); clearSig(); }} className="ml-auto text-xs text-text-muted hover:text-text-main cursor-pointer">Kunci</button>
+              </div>
+              <div className="space-y-2">
+                {residents.length === 0 ? (
+                  <p className="text-sm text-text-muted text-center py-8">Memuat data warga...</p>
+                ) : residents.map((res: any) => (
+                  <div key={res.id} className="bg-surface border border-border-weak rounded-xl px-4 py-3 flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><User size={16} /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-text-main">{res.name}</p>
+                      <p className="text-xs text-text-muted truncate">{res.address} · <span className="font-mono">{res.id}</span></p>
+                    </div>
+                    <button
+                      onClick={() => setEditingId(editingId === res.id ? null : res.id)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer shrink-0"
+                    >
+                      <Edit3 size={12} /> Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -707,7 +797,7 @@ function AdminFinanceTab() {
                 <div 
                   key={res.id} 
                   className={cn(
-                    "bg-surface border rounded-3xl overflow-hidden transition-all shadow-sm",
+                    "bg-surface border rounded-xl overflow-hidden transition-all shadow-sm",
                     hasPending ? "border-accent/40 bg-accent/5" : "border-border-weak hover:border-border-strong"
                   )}
                 >
@@ -725,7 +815,7 @@ function AdminFinanceTab() {
                           <h4 className="font-bold text-text-main text-base">{res.name}</h4>
                           <span className="text-[10px] bg-canvas border border-border-weak px-2.5 py-0.5 rounded text-text-muted font-mono">{res.id}</span>
                           {hasPending && (
-                            <span className="bg-accent text-white hover:bg-accent-hover text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-bounce">
+                            <span className="bg-accent text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                               Butuh Verifikasi Resi
                             </span>
                           )}
@@ -735,7 +825,7 @@ function AdminFinanceTab() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right hidden sm:block">
-                        <span className="text-[10px] text-text-muted block uppercase tracking-wider">Status Pembayaran</span>
+                        <span className="text-[10px] text-text-muted block">Status Pembayaran</span>
                         <div className="flex gap-1.5 mt-1">
                           {res.dues.map((d: any, i: number) => (
                             <span 
@@ -760,7 +850,7 @@ function AdminFinanceTab() {
                       <div className="grid md:grid-cols-2 gap-6 pt-4">
                         {/* Resident basic info */}
                         <div className="space-y-3 p-4 bg-surface rounded-2xl border border-border-weak/80 text-xs text-text-main">
-                          <h5 className="font-bold text-text-main text-sm uppercase tracking-wider flex items-center gap-2">
+                          <h5 className="font-semibold text-text-main text-sm flex items-center gap-2">
                             <span className="w-1.5 h-3 bg-primary rounded-full"></span>
                             Kontak & Kependudukan
                           </h5>
@@ -779,7 +869,7 @@ function AdminFinanceTab() {
 
                         {/* Custom reminder setter */}
                         <div className="space-y-3 p-4 bg-surface rounded-2xl border border-border-weak/80 text-xs text-text-main">
-                          <h5 className="font-bold text-text-main text-sm uppercase tracking-wider flex items-center gap-2">
+                          <h5 className="font-semibold text-text-main text-sm flex items-center gap-2">
                             <span className="w-1.5 h-3 bg-accent rounded-full"></span>
                             Atur & Kirim Pengingat Saldo Bulanan (Reminder)
                           </h5>
@@ -811,7 +901,7 @@ function AdminFinanceTab() {
 
                       {/* Itemized Dues ledger and check forms */}
                       <div className="space-y-3">
-                        <h5 className="font-bold text-text-main text-xs uppercase tracking-wider">Histori Tagihan Bulanan & Kelengkapan Resi</h5>
+                        <h5 className="font-semibold text-text-main text-xs">Histori Tagihan Bulanan & Kelengkapan Resi</h5>
                         <div className="grid sm:grid-cols-2 gap-4">
                           {res.dues.map((due: any) => (
                             <div key={due.id} className="bg-surface border border-border-weak p-4 rounded-2xl flex flex-col justify-between space-y-4">
@@ -881,7 +971,35 @@ function AdminFinanceTab() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-surface border border-border-weak p-5 rounded-3xl">
+          {/* Pie chart — spending breakdown */}
+          {ledger.summary?.length > 0 && (() => {
+            const pieData = ledger.summary.filter((s: any) => s.value > 0 && s.label !== "Saldo");
+            const total = pieData.reduce((sum: number, s: any) => sum + s.value, 0);
+            return (
+              <div className="bg-surface border border-border-weak rounded-xl p-5">
+                <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
+                <div className="h-[260px] relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                        {pieData.map((entry: any, i: number) => (
+                          <Cell key={i} fill={entry.color || ["#4ade80","#f97316","#60a5fa","#a78bfa"][i % 4]} stroke="var(--border-strong)" strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(v: number) => [`Rp ${v.toLocaleString("id-ID")}`, ""]} />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-center pointer-events-none">
+                    <p className="text-[10px] text-text-muted">Total</p>
+                    <p className="text-base font-bold text-text-main">Rp {(total / 1000).toFixed(0)}k</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="flex justify-between items-center bg-surface border border-border-weak p-5 rounded-xl">
             <div>
               <h3 className="font-bold text-text-main text-base">Pembukuan Transaksi Manual</h3>
               <p className="text-xs text-text-muted mt-0.5">Catat kas masuk donasi operasional non-iuran bulanan reguler.</p>
@@ -895,11 +1013,11 @@ function AdminFinanceTab() {
           </div>
 
           {showAdd && (
-            <div className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4 font-sans">
+            <div className="bg-surface p-6 rounded-xl border border-border-weak space-y-4 animate-in fade-in slide-in-from-top-4 font-sans">
               <h3 className="font-bold text-text-main text-base mb-2">Transaksi Baru</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Jenis Saldo</label>
+                  <label className="block text-xs font-medium text-text-muted mb-2">Jenis Saldo</label>
                   <select 
                     value={type}
                     onChange={e => setType(e.target.value)}
@@ -910,7 +1028,7 @@ function AdminFinanceTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide font-mono">Nominal (Rp)</label>
+                  <label className="block text-xs font-medium text-text-muted mb-2 font-mono">Nominal (Rp)</label>
                   <input 
                     type="number" 
                     value={amount}
@@ -921,7 +1039,7 @@ function AdminFinanceTab() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Keterangan Catatan</label>
+                <label className="block text-xs font-medium text-text-muted mb-2">Keterangan Catatan</label>
                 <input 
                   type="text" 
                   value={desc}
@@ -932,7 +1050,7 @@ function AdminFinanceTab() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-text-muted mb-2 tracking-wide">Upload Nota Fisik / Resi Bukti Bayar</label>
+                <label className="block text-xs font-medium text-text-muted mb-2">Upload Nota Fisik / Resi Bukti Bayar</label>
                 <div className="mt-1 flex justify-center px-4 py-8 border-2 border-border-strong border-dashed rounded-xl bg-canvas hover:bg-surface-hover transition-colors overflow-hidden">
                   <div className="space-y-1 text-center font-sans">
                     {!image ? (
@@ -978,7 +1096,7 @@ function AdminFinanceTab() {
             </div>
           )}
 
-      <div className="bg-surface rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-border-weak overflow-hidden">
          <div className="divide-y divide-border-weak">
             {transactions.map(t => {
               const isIncoming = t.type === 'in' || t.id?.startsWith('INC') || t.category === 'Pemasukan';
@@ -1021,17 +1139,28 @@ function AdminTicketsTab() {
       });
   }, []);
 
-  const handleUpdateStatus = (id: string, newStatus: string) => {
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
     setReports(reports.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    await fetch(`/api/admin/complaints/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    }).catch(() => {});
   };
 
-  const handleReply = (id: string) => {
+  const handleReply = async (id: string) => {
     if (!replyText.trim()) return;
+    const newStatus = reports.find(r => r.id === id)?.status === "TERKIRIM" ? "PROSES" : undefined;
     setReports(reports.map(r => r.id === id ? {
       ...r,
-      status: r.status === "TERKIRIM" ? "PROSES" : r.status,
+      status: newStatus || r.status,
       responses: [...(r.responses || []), { text: replyText, date: "Baru saja" }]
     } : r));
+    await fetch(`/api/admin/reports/${id}/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: replyText, status: newStatus }),
+    }).catch(() => {});
     setReplyText("");
     setReplyingTo(null);
   };
@@ -1098,7 +1227,7 @@ function AdminTicketsTab() {
               {/* Responses Section */}
              {report.responses && report.responses.length > 0 && (
                <div className="mt-4 pt-4 border-t border-border-weak space-y-3">
-                 <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Tanggapan Pengurus:</h4>
+                 <h4 className="text-xs font-medium text-text-muted mb-2">Tanggapan Pengurus:</h4>
                  {report.responses.map((resp, idx) => (
                     <div key={idx} className="bg-primary/20 px-3 py-2 rounded-lg inline-block w-full max-w-lg border border-primary/20">
                        <p className="text-sm font-medium text-text-main mb-1">{resp.text}</p>
@@ -1202,7 +1331,7 @@ export function AdminNewsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface border border-border-weak p-5 rounded-3xl gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-surface border border-border-weak p-5 rounded-xl gap-4">
         <div>
           <h2 className="text-xl font-display font-semibold text-text-main">Kelola Berita & Gotong Royong</h2>
           <p className="text-xs text-text-muted mt-1">Terbitkan pengumuman, perbarui agenda kerja bakti warga, dan kabar RT/RW terbaru.</p>
@@ -1244,7 +1373,7 @@ export function AdminNewsTab() {
       </div>
 
       {showAdd && (
-        <form onSubmit={handleCreate} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
+        <form onSubmit={handleCreate} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Berita" : "Buat Berita / Pengumuman Baru"}</h3>
           
           <div className="grid md:grid-cols-2 gap-4">
@@ -1330,7 +1459,7 @@ export function AdminNewsTab() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {filteredNews.map((item: any) => (
-          <div key={item.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
+          <div key={item.id} className="bg-surface rounded-xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
             <div className="flex flex-col md:flex-row">
               {item.image && (
                 <img
@@ -1354,7 +1483,7 @@ export function AdminNewsTab() {
             <div className="p-3 bg-canvas/30 border-t border-border-weak">
               <button 
                 onClick={() => handleEditClick(item)}
-                className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+                className="w-full py-1.5 text-xs font-medium border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer text-text-muted"
               >
                 Edit
               </button>
@@ -1519,7 +1648,7 @@ export function AdminMarketTab() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-surface border border-border-weak p-5 rounded-3xl">
+      <div className="flex justify-between items-center bg-surface border border-border-weak p-5 rounded-xl">
         <div>
           <h3 className="font-bold text-text-main text-base">{subTab === "umkm" ? "UMKM Lokal Warga" : "Slide Iklan Sponsor"}</h3>
           <p className="text-xs text-text-muted mt-0.5">
@@ -1542,7 +1671,7 @@ export function AdminMarketTab() {
       </div>
 
       {showAdd && subTab === "umkm" && (
-        <form onSubmit={handleCreateUMKM} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
+        <form onSubmit={handleCreateUMKM} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Toko / Lapak" : "Daftarkan Toko / Lapak Baru"}</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -1638,7 +1767,7 @@ export function AdminMarketTab() {
       )}
 
       {showAdd && subTab === "ads" && (
-        <form onSubmit={handleCreateAd} className="bg-surface p-6 rounded-3xl border border-border-weak space-y-4 shadow-xl">
+        <form onSubmit={handleCreateAd} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Banner Promo" : "Pasang Banner Promo Sponsor"}</h3>
           
           <div className="grid md:grid-cols-2 gap-4">
@@ -1723,7 +1852,7 @@ export function AdminMarketTab() {
       {subTab === "umkm" ? (
         <div className="grid md:grid-cols-3 gap-6">
           {umkm.map((u: any) => (
-            <div key={u.id} className="bg-surface border border-border-weak rounded-3xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-border-strong transition-all">
+            <div key={u.id} className="bg-surface border border-border-weak rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-border-strong transition-all">
               <div>
                 {u.image && <img src={u.image} alt={u.name} referrerPolicy="no-referrer" className="w-full h-40 object-cover border-b border-border-weak text-text-main text-xs" />}
                 <div className="p-5">
@@ -1741,7 +1870,7 @@ export function AdminMarketTab() {
                 </div>
                 <button 
                   onClick={() => handleEditUMKM(u)} 
-                  className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+                  className="w-full py-1.5 text-xs font-medium border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer text-text-muted"
                 >
                   Edit
                 </button>
@@ -1752,7 +1881,7 @@ export function AdminMarketTab() {
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {ads.map((ad: any) => (
-            <div key={ad.id} className="bg-surface rounded-3xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
+            <div key={ad.id} className="bg-surface rounded-xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
               <div className="flex flex-col md:flex-row flex-1">
                 {ad.image && <img src={ad.image} alt={ad.title} referrerPolicy="no-referrer" className="w-full md:w-48 h-40 md:h-auto object-cover shrink-0 text-text-main text-xs" />}
                 <div className="p-5 flex flex-col justify-between flex-1">
@@ -1771,7 +1900,7 @@ export function AdminMarketTab() {
               <div className="p-3 bg-canvas/30 border-t border-border-weak">
                 <button 
                   onClick={() => handleEditAd(ad)} 
-                  className="w-full py-1.5 text-xs font-bold border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer uppercase tracking-widest text-text-muted"
+                  className="w-full py-1.5 text-xs font-medium border border-border-strong rounded-lg hover:bg-border-weak transition-colors cursor-pointer text-text-muted"
                 >
                   Edit
                 </button>
@@ -1821,18 +1950,18 @@ function OverrideModal({ report, onSave, onClose }: { report: any; onSave: (id: 
         <p className="text-xs text-text-muted mb-5 font-mono">{report.id} — {report.title}</p>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Kategori</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Kategori</label>
             <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-surface border border-border-weak rounded-lg px-3 py-2 text-sm text-text-main">
               {["Infrastruktur","Kebersihan","Keamanan","Sosial","Lainnya"].map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Urgensi (0–10)</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Urgensi (0–10)</label>
             <input type="range" min={0} max={10} step={0.1} value={urgency} onChange={e => setUrgency(parseFloat(e.target.value))} className="w-full accent-primary" />
             <div className="text-right text-xs text-primary font-bold mt-1">{urgency.toFixed(1)}</div>
           </div>
           <div>
-            <label className="block text-xs text-text-muted mb-1.5 uppercase font-bold tracking-widest">Tags (pisah koma)</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Tags (pisah koma)</label>
             <input value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="w-full bg-surface border border-border-weak rounded-lg px-3 py-2 text-sm text-text-main" />
           </div>
         </div>
@@ -1853,17 +1982,16 @@ function OverrideModal({ report, onSave, onClose }: { report: any; onSave: (id: 
 function AITriageTab() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("Semua");
   const [filterCategory, setFilterCategory] = useState("Semua");
-  const [sortBy, setSortBy] = useState<"urgency" | "date">("urgency");
-  const [overrideTarget, setOverrideTarget] = useState<any>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const fetchReports = async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/admin/complaints");
-      if (res.ok) setReports(await res.json());
-    } catch (e) {
-      console.error(e);
+      if (res.ok) setReports((await res.json()).map((r: any) => ({ ...r, responses: r.responses || [] })));
     } finally {
       setLoading(false);
     }
@@ -1871,215 +1999,235 @@ function AITriageTab() {
 
   useEffect(() => { fetchReports(); }, []);
 
-  const handleConfirm = async (id: string) => {
-    await fetch(`/api/admin/complaints/${id}/confirm`, { method: "POST" });
-    setReports(prev => prev.map(r => r.id === id ? { ...r, aiLabels: { ...r.aiLabels, confirmed: true } } : r));
-  };
-
-  const handleOverrideSave = async (id: string, category: string, urgency: number, tags: string[]) => {
-    await fetch(`/api/admin/complaints/${id}/override`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category, urgency, tags }),
-    });
-    setReports(prev => prev.map(r => r.id === id ? { ...r, aiLabels: { category, urgency, tags, confirmed: true }, category } : r));
-  };
-
-  const handleStatus = async (id: string, status: string) => {
+  const handleValidate = async (id: string) => {
     await fetch(`/api/admin/complaints/${id}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      body: JSON.stringify({ status: "PROSES" }),
+    }).catch(() => {});
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status: "PROSES" } : r));
+  };
+
+  const handleReplyAndClose = async (id: string) => {
+    if (!replyText.trim()) return;
+    await fetch(`/api/admin/reports/${id}/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: replyText, status: "SELESAI" }),
+    }).catch(() => {});
+    await fetch(`/api/admin/complaints/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "SELESAI" }),
+    }).catch(() => {});
+    setReports(prev => prev.map(r => r.id === id ? {
+      ...r,
+      status: "SELESAI",
+      responses: [...r.responses, { text: replyText, date: "Baru saja" }],
+    } : r));
+    setReplyText("");
+    setExpandedId(null);
   };
 
   const categories = ["Semua", "Infrastruktur", "Kebersihan", "Keamanan", "Sosial", "Lainnya"];
+  const statuses = ["Semua", "TERKIRIM", "PROSES", "SELESAI"];
+
+  const statusOrder: Record<string, number> = { "TERKIRIM": 0, "PROSES": 1, "SELESAI": 2 };
 
   const filtered = reports
+    .filter(r => filterStatus === "Semua" || r.status === filterStatus)
     .filter(r => filterCategory === "Semua" || r.aiLabels?.category === filterCategory)
-    .sort((a, b) => sortBy === "urgency"
-      ? (b.aiLabels?.urgency ?? 0) - (a.aiLabels?.urgency ?? 0)
-      : 0
-    );
+    .sort((a, b) => {
+      const sa = statusOrder[a.status] ?? 3, sb = statusOrder[b.status] ?? 3;
+      if (sa !== sb) return sa - sb;
+      return (b.aiLabels?.urgency ?? 0) - (a.aiLabels?.urgency ?? 0);
+    });
 
-  const stats = {
-    total: reports.length,
-    pending: reports.filter(r => !r.aiLabels?.confirmed).length,
-    highUrgency: reports.filter(r => (r.aiLabels?.urgency ?? 0) >= 8).length,
+  const counts = {
+    pending: reports.filter(r => r.status === "TERKIRIM").length,
+    proses: reports.filter(r => r.status === "PROSES").length,
+    selesai: reports.filter(r => r.status === "SELESAI").length,
   };
 
   return (
     <div className="space-y-6">
-      {overrideTarget && (
-        <OverrideModal
-          report={overrideTarget}
-          onSave={handleOverrideSave}
-          onClose={() => setOverrideTarget(null)}
-        />
-      )}
-
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold font-display text-text-main flex items-center gap-2">
-            <BrainCircuit size={22} className="text-primary" /> AI Triage Laporan Warga
-          </h2>
-          <p className="text-sm text-text-muted mt-1">Klasifikasi NLP otomatis berbasis Gemini — validasi & tindak lanjut laporan masuk</p>
+          <h2 className="text-2xl font-bold font-display text-text-main">Kelola Laporan Warga</h2>
+          <p className="text-sm text-text-muted mt-1">Tinjau, validasi, dan tindak lanjuti laporan dari warga RT 04.</p>
         </div>
         <button onClick={fetchReports} className="text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer">
           Refresh
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-surface border border-border-weak rounded-xl p-4">
-          <p className="text-xs text-text-muted uppercase font-bold tracking-widest mb-1">Total Laporan</p>
-          <p className="text-3xl font-bold text-text-main font-display">{stats.total}</p>
+      {/* Status summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-surface border border-zinc-500/20 rounded-xl p-4">
+          <p className="text-xs text-text-muted mb-1">Masuk / Pending</p>
+          <p className="text-2xl font-bold font-display text-text-main">{counts.pending}</p>
         </div>
         <div className="bg-surface border border-amber-500/20 rounded-xl p-4">
-          <p className="text-xs text-amber-400 uppercase font-bold tracking-widest mb-1">Menunggu Validasi</p>
-          <p className="text-3xl font-bold text-amber-400 font-display">{stats.pending}</p>
+          <p className="text-xs text-amber-400 mb-1">Sedang Diproses</p>
+          <p className="text-2xl font-bold font-display text-amber-400">{counts.proses}</p>
         </div>
-        <div className="bg-surface border border-red-500/20 rounded-xl p-4">
-          <p className="text-xs text-red-400 uppercase font-bold tracking-widest mb-1">Urgensi Tinggi (≥8)</p>
-          <p className="text-3xl font-bold text-red-400 font-display">{stats.highUrgency}</p>
+        <div className="bg-surface border border-emerald-500/20 rounded-xl p-4">
+          <p className="text-xs text-emerald-400 mb-1">Selesai</p>
+          <p className="text-2xl font-bold font-display text-emerald-400">{counts.selesai}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-1.5 text-xs text-text-muted">
-          <Filter size={13} /> Filter:
+      <div className="space-y-2">
+        <div className="flex gap-2 flex-wrap">
+          {statuses.map(s => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer",
+                filterStatus === s ? "bg-primary text-text-inverse border-primary" : "bg-surface border-border-weak text-text-muted hover:border-primary/50"
+              )}
+            >
+              {s === "Semua" ? `Semua (${reports.length})` : s === "TERKIRIM" ? `Pending (${counts.pending})` : s === "PROSES" ? `Diproses (${counts.proses})` : `Selesai (${counts.selesai})`}
+            </button>
+          ))}
         </div>
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setFilterCategory(cat)}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer",
-              filterCategory === cat
-                ? "bg-primary text-text-inverse border-primary"
-                : "bg-surface border-border-weak text-text-muted hover:border-primary/50"
-            )}
-          >
-            {cat}
-          </button>
-        ))}
-        <button
-          onClick={() => setSortBy(prev => prev === "urgency" ? "date" : "urgency")}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-weak text-text-muted hover:border-primary/50 transition cursor-pointer"
-        >
-          <ArrowUpDown size={12} /> Urut: {sortBy === "urgency" ? "Urgensi" : "Tanggal"}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter size={12} className="text-text-muted" />
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setFilterCategory(cat)}
+              className={cn("px-2.5 py-1 rounded-full text-[11px] font-semibold border transition cursor-pointer",
+                filterCategory === cat ? "bg-accent/20 text-accent border-accent/40" : "bg-surface border-border-weak text-text-muted hover:border-accent/40"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Report Cards */}
+      {/* Report list */}
       {loading ? (
         <div className="flex items-center justify-center h-40 text-text-muted text-sm">Memuat laporan...</div>
       ) : filtered.length === 0 ? (
-        <div className="flex items-center justify-center h-40 text-text-muted text-sm">Tidak ada laporan ditemukan.</div>
+        <div className="flex items-center justify-center h-40 text-text-muted text-sm">Tidak ada laporan.</div>
       ) : (
         <div className="space-y-3">
           {filtered.map(report => {
-            const labels = report.aiLabels;
             const isExpanded = expandedId === report.id;
+            const labels = report.aiLabels;
             return (
-              <div key={report.id} className={cn("bg-surface border rounded-xl overflow-hidden transition-all", labels?.urgency >= 8 ? "border-red-500/30" : "border-border-weak")}>
-                {/* Card header row */}
+              <div key={report.id} className={cn("bg-surface border rounded-xl overflow-hidden transition-all",
+                report.status === "TERKIRIM" ? "border-zinc-500/30" :
+                report.status === "PROSES" ? "border-amber-500/30" : "border-emerald-500/20"
+              )}>
+                {/* Row */}
                 <div
                   className="flex items-center gap-3 p-4 cursor-pointer hover:bg-surface-hover transition"
-                  onClick={() => setExpandedId(isExpanded ? null : report.id)}
+                  onClick={() => { setExpandedId(isExpanded ? null : report.id); setReplyText(""); }}
                 >
-                  {/* Urgency indicator */}
-                  <div className={cn("w-1.5 self-stretch rounded-full flex-shrink-0", labels?.urgency >= 8 ? "bg-red-500" : labels?.urgency >= 5 ? "bg-amber-400" : "bg-emerald-500")} />
-
+                  <div className={cn("w-1.5 self-stretch rounded-full shrink-0",
+                    report.status === "TERKIRIM" ? "bg-zinc-500" :
+                    report.status === "PROSES" ? "bg-amber-400" : "bg-emerald-500"
+                  )} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm text-text-main truncate">{report.title}</span>
-                      {labels?.confirmed && (
-                        <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">
-                          ✓ Validated
-                        </span>
-                      )}
-                    </div>
+                    <p className="font-semibold text-sm text-text-main truncate">{report.title}</p>
                     <p className="text-xs text-text-muted mt-0.5">{report.sender} · {report.location} · {report.date}</p>
                   </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {labels?.category && (
-                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>
+                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border hidden sm:inline", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>
                         {labels.category}
                       </span>
                     )}
-                    <span className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded border",
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border",
                       report.status === "SELESAI" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
                       report.status === "PROSES"  ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
                                                     "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
-                    )}>
-                      {report.status}
-                    </span>
+                    )}>{report.status}</span>
                     <ChevronRight size={14} className={cn("text-text-muted transition-transform", isExpanded && "rotate-90")} />
                   </div>
                 </div>
 
-                {/* Expanded detail */}
+                {/* Expanded */}
                 {isExpanded && (
-                  <div className="border-t border-border-weak px-4 pb-4 pt-3 space-y-4">
-                    {/* AI Labels */}
-                    <div>
-                      <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5">
-                        <BrainCircuit size={11} /> Label AI
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[10px] text-text-muted mb-1">Urgensi</p>
-                          {labels ? <UrgencyBar value={labels.urgency} /> : <span className="text-xs text-text-muted italic">Memproses...</span>}
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-text-muted mb-1.5">Tags</p>
-                          <div className="flex flex-wrap gap-1">
-                            {labels?.tags?.map((tag: string) => (
-                              <span key={tag} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">{tag}</span>
-                            )) ?? <span className="text-xs text-text-muted italic">—</span>}
+                  <div className="border-t border-border-weak px-4 pb-5 pt-4 space-y-4">
+                    {/* Image + description */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {report.image && (
+                        <img
+                          src={report.image}
+                          referrerPolicy="no-referrer"
+                          alt={report.title}
+                          className="w-full sm:w-48 h-36 object-cover rounded-xl border border-border-weak shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <p className="text-xs text-text-muted">Deskripsi laporan:</p>
+                        <p className="text-sm text-text-main leading-relaxed">{report.description || report.message || "Tidak ada deskripsi tambahan."}</p>
+                        {labels && (
+                          <div className="flex items-center gap-2 flex-wrap pt-1">
+                            <span className="text-[10px] text-text-muted">AI:</span>
+                            <UrgencyBar value={labels.urgency} />
+                            {labels.tags?.map((t: string) => (
+                              <span key={t} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">{t}</span>
+                            ))}
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-wrap gap-2">
-                      {!labels?.confirmed && (
+                    {/* Workflow actions */}
+                    {report.status === "TERKIRIM" && (
+                      <div className="flex items-center justify-between bg-canvas border border-border-strong rounded-xl p-4">
+                        <div>
+                          <p className="text-sm font-semibold text-text-main">Laporan masuk — belum ditindaklanjuti</p>
+                          <p className="text-xs text-text-muted mt-0.5">Klik "Validasi" untuk mulai memproses laporan ini.</p>
+                        </div>
                         <button
-                          onClick={() => handleConfirm(report.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500/25 transition cursor-pointer"
+                          onClick={() => handleValidate(report.id)}
+                          className="bg-primary text-text-inverse font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-primary/90 transition cursor-pointer shrink-0"
                         >
-                          <ThumbsUp size={12} /> Confirm Label
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setOverrideTarget(report)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
-                      >
-                        <Pencil size={12} /> Override
-                      </button>
-                      <div className="flex gap-1 ml-auto">
-                        <button
-                          onClick={() => handleStatus(report.id, "PROSES")}
-                          className={cn("px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer", report.status === "PROSES" ? "bg-amber-500/20 text-amber-400 border-amber-500/40" : "border-border-weak text-text-muted hover:border-amber-500/40")}
-                        >
-                          Tanggapi
-                        </button>
-                        <button
-                          onClick={() => handleStatus(report.id, "SELESAI")}
-                          className={cn("px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer", report.status === "SELESAI" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "border-border-weak text-text-muted hover:border-emerald-500/40")}
-                        >
-                          Selesai
+                          Validasi →
                         </button>
                       </div>
-                    </div>
+                    )}
+
+                    {report.status === "PROSES" && (
+                      <div className="bg-canvas border border-amber-500/25 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-semibold text-amber-400">Sedang diproses — tulis tanggapan lalu tandai selesai</p>
+                        <textarea
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          rows={3}
+                          placeholder="Tulis tanggapan resmi RT kepada warga pelapor..."
+                          className="w-full bg-canvas border border-border-strong rounded-lg p-3 text-sm text-text-main placeholder:text-text-muted/50 resize-none focus:outline-none focus:border-primary"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handleReplyAndClose(report.id)}
+                            disabled={!replyText.trim()}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50"
+                          >
+                            Kirim & Selesaikan ✓
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {report.status === "SELESAI" && (
+                      <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-4">
+                        <p className="text-xs font-semibold text-emerald-400 mb-2">Laporan telah diselesaikan</p>
+                        {report.responses?.map((r: any, i: number) => (
+                          <div key={i} className="bg-canvas border border-border-strong rounded-lg px-3 py-2 mt-2">
+                            <p className="text-xs text-text-main">{r.text}</p>
+                            <p className="text-[10px] text-text-muted mt-1">{r.date}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2091,3 +2239,518 @@ function AITriageTab() {
   );
 }
 
+function ElectionTab() {
+  const [election, setElection] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentRT, setCurrentRT] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [yearsServed, setYearsServed] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const fetchElection = async () => {
+    try {
+      const res = await fetch("/api/admin/election");
+      if (res.ok) setElection(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchElection(); }, []);
+
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentRT || !endDate) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/election/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentRT, startDate, endDate, yearsServed }),
+      });
+      if (res.ok) { setElection(await res.json().then((r: any) => r.election)); }
+    } finally {
+      setSaving(false);
+      fetchElection();
+    }
+  };
+
+  const handleStartVoting = async () => {
+    const res = await fetch("/api/admin/election/start-voting", { method: "POST" });
+    if (res.ok) fetchElection();
+    else alert((await res.json()).error);
+  };
+
+  const handleTally = async () => {
+    const res = await fetch("/api/admin/election/tally", { method: "POST" });
+    if (res.ok) fetchElection();
+    else alert((await res.json()).error);
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Reset seluruh data pemilihan? Tindakan ini tidak dapat dibatalkan.")) return;
+    const res = await fetch("/api/admin/election/reset", { method: "POST" });
+    if (res.ok) fetchElection();
+  };
+
+  if (loading) return <div className="py-20 text-center text-text-muted text-sm">Memuat data pemilihan...</div>;
+
+  const phase = election?.phase || "inactive";
+  const totalVotes = (election?.votes || []).length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Manajemen Pemilihan RT</h2>
+        <p className="text-sm text-text-muted mt-1">Kelola siklus masa jabatan dan proses e-voting demokratis untuk pemilihan Ketua RT.</p>
+      </div>
+
+      {/* Phase indicator */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {[
+          { key: "inactive", label: "Tidak Aktif", icon: Clock },
+          { key: "nominating", label: "Nominasi", icon: UserPlus },
+          { key: "voting", label: "Pemungutan Suara", icon: Vote },
+          { key: "completed", label: "Selesai", icon: Trophy },
+        ].map((p, i) => {
+          const phases = ["inactive", "nominating", "voting", "completed"];
+          const phaseIdx = phases.indexOf(phase);
+          const stepIdx = phases.indexOf(p.key);
+          const isDone = stepIdx < phaseIdx;
+          const isCurrent = p.key === phase;
+          return (
+            <React.Fragment key={p.key}>
+              <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border", isCurrent ? "bg-primary/15 text-primary border-primary/30" : isDone ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-text-muted border-border-weak")}>
+                <p.icon size={13} />
+                {p.label}
+              </div>
+              {i < 3 && <span className="text-text-muted text-xs">→</span>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Phase: inactive → setup form */}
+      {phase === "inactive" && (
+        <div className="bg-surface border border-border-weak rounded-xl p-6 space-y-5 max-w-xl">
+          <div>
+            <h3 className="font-semibold text-text-main mb-1">Daftarkan Masa Jabatan Ketua RT Saat Ini</h3>
+            <p className="text-xs text-text-muted">Isi data masa jabatan Ketua RT yang sedang menjabat untuk memulai proses perencanaan pemilihan berikutnya.</p>
+          </div>
+          <form onSubmit={handleSetup} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Nama Ketua RT Saat Ini</label>
+              <input value={currentRT} onChange={e => setCurrentRT(e.target.value)} placeholder="Contoh: Bpk. Suherman" required className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-text-muted mb-1">Tanggal Mulai Jabatan</label>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-muted mb-1">Tanggal Akhir Jabatan</label>
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">Sudah Menjabat Berapa Tahun?</label>
+              <input type="number" min="0" max="30" value={yearsServed} onChange={e => setYearsServed(e.target.value)} placeholder="Contoh: 2" className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
+            </div>
+            <button type="submit" disabled={saving} className="bg-primary text-text-inverse font-semibold px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors text-sm cursor-pointer disabled:opacity-60">
+              {saving ? "Menyimpan..." : "Mulai Proses Nominasi"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Phase: nominating */}
+      {phase === "nominating" && (
+        <div className="space-y-4">
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+            <UserPlus size={18} className="text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-text-main">Fase Nominasi Aktif</p>
+              <p className="text-xs text-text-muted mt-0.5">Masa jabatan <strong>{election?.term?.currentRT}</strong> berakhir pada <strong>{election?.term?.endDate}</strong>. Warga yang berminat dapat mendaftarkan diri sebagai calon Ketua RT melalui dashboard mereka.</p>
+            </div>
+          </div>
+
+          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border-weak flex items-center justify-between">
+              <h3 className="font-semibold text-text-main text-sm">Kandidat Terdaftar ({election?.candidates?.length || 0})</h3>
+              <button onClick={handleStartVoting} disabled={(election?.candidates?.length || 0) < 1} className="bg-primary text-text-inverse text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                Tutup Nominasi & Mulai Voting
+              </button>
+            </div>
+            {(election?.candidates?.length || 0) === 0 ? (
+              <div className="p-8 text-center text-text-muted text-sm">Belum ada kandidat yang mendaftar. Notifikasi telah dikirim ke semua warga.</div>
+            ) : (
+              <div className="divide-y divide-border-weak">
+                {election.candidates.map((c: any, i: number) => (
+                  <div key={c.id} className="p-4 flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0">{i + 1}</div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-text-main text-sm">{c.name}</p>
+                      {c.visiMisi && <p className="text-xs text-text-muted mt-1 leading-relaxed">{c.visiMisi}</p>}
+                      <p className="text-[10px] text-text-muted mt-1">Terdaftar: {c.nominatedAt}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Phase: voting */}
+      {phase === "voting" && (
+        <div className="space-y-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3">
+            <Vote size={18} className="text-blue-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-text-main">Pemungutan Suara Berlangsung</p>
+              <p className="text-xs text-text-muted mt-0.5">Total suara masuk: <strong>{totalVotes}</strong>. Warga dapat memberikan suara melalui dashboard mereka.</p>
+            </div>
+          </div>
+
+          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border-weak flex items-center justify-between">
+              <h3 className="font-semibold text-text-main text-sm">Rekapitulasi Sementara</h3>
+              <button onClick={handleTally} className="bg-accent text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors cursor-pointer">
+                Tutup Voting & Umumkan Pemenang
+              </button>
+            </div>
+            <div className="divide-y divide-border-weak">
+              {election.candidates.map((c: any) => (
+                <div key={c.id} className="p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
+                    <span className="font-bold text-text-main text-sm">{c.voteCount} suara</span>
+                  </div>
+                  <div className="w-full bg-canvas rounded-full h-2">
+                    <div className="bg-primary rounded-full h-2 transition-all duration-500" style={{ width: totalVotes > 0 ? `${(c.voteCount / totalVotes) * 100}%` : "0%" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase: completed */}
+      {phase === "completed" && (
+        <div className="space-y-4">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6 text-center space-y-3">
+            <Trophy size={40} className="text-emerald-400 mx-auto" />
+            <div>
+              <p className="text-xs text-text-muted">Ketua RT Terpilih</p>
+              <h3 className="text-2xl font-display font-bold text-text-main">{election.winner}</h3>
+              <p className="text-xs text-text-muted mt-1">Diumumkan: {election.announcedAt}</p>
+            </div>
+          </div>
+
+          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border-weak">
+              <h3 className="font-semibold text-text-main text-sm">Hasil Akhir Pemungutan Suara</h3>
+            </div>
+            <div className="divide-y divide-border-weak">
+              {[...election.candidates].sort((a: any, b: any) => b.voteCount - a.voteCount).map((c: any, i: number) => (
+                <div key={c.id} className="p-4 flex items-center gap-4">
+                  {i === 0 ? <Trophy size={18} className="text-amber-400 shrink-0" /> : <span className="w-[18px] text-center text-text-muted font-bold text-sm">{i + 1}</span>}
+                  <div className="flex-1">
+                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
+                    <div className="w-full bg-canvas rounded-full h-1.5 mt-1.5">
+                      <div className="bg-primary rounded-full h-1.5" style={{ width: totalVotes > 0 ? `${(c.voteCount / totalVotes) * 100}%` : "0%" }} />
+                    </div>
+                  </div>
+                  <span className="font-bold text-text-main text-sm shrink-0">{c.voteCount} suara</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={handleReset} className="text-xs text-text-muted border border-border-weak px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors cursor-pointer">
+            Reset & Mulai Pemilihan Baru
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminChatbot() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<{ sender: string; text: string }[]>([
+    { sender: "ai", text: "Halo, Ketua RT! Saya Asisten AI SmartWarga untuk Pengurus. Tanyakan apa saja — laporan warga, status keuangan kas, jadwal, atau ringkasan kondisi RT." }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const endRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+  }, [messages, loading, isOpen]);
+
+  const adminPrompts = [
+    { label: "📊 Saldo Kas RT", query: "Berapa saldo kas RT saat ini?" },
+    { label: "📋 Laporan Aktif", query: "Berapa laporan warga yang belum selesai?" },
+    { label: "📝 Surat Pending", query: "Ada berapa surat yang menunggu persetujuan?" },
+    { label: "💰 Tunggakan Iuran", query: "Siapa saja warga yang belum bayar iuran?" },
+    { label: "🏗️ Infrastruktur", query: "Laporan infrastruktur apa saja yang masuk minggu ini?" },
+    { label: "📣 Buat Pengumuman", query: "Bantu saya membuat draft pengumuman gotong royong" },
+    { label: "📈 Statistik RT", query: "Berikan ringkasan statistik kondisi RT 04" },
+    { label: "🗳️ Info Pemilihan", query: "Apa status pemilihan RT saat ini?" },
+  ];
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
+    setMessages(prev => [...prev, { sender: "user", text }]);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, role: "admin" }),
+      });
+      const data = await res.json();
+      setMessages(prev => [...prev, { sender: "ai", text: data.reply || data.text || "Maaf, tidak dapat memproses pertanyaan saat ini." }]);
+    } catch {
+      setMessages(prev => [...prev, { sender: "ai", text: "Gagal menghubungi server AI SmartWarga." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    sendMessage(text);
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+      {isOpen && (
+        <div className="bg-sidebar border border-border-strong rounded-3xl w-80 md:w-96 h-[480px] shadow-2xl flex flex-col mb-4 overflow-hidden animate-in slide-in-from-bottom-6 duration-200">
+          <div className="bg-primary text-text-inverse p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-text-inverse/10 flex items-center justify-center text-base">🤖</div>
+              <div>
+                <h4 className="font-bold text-xs font-display">Asisten AI — Pengurus RT</h4>
+                <p className="text-[9px] text-text-inverse/80 font-mono">AKTIF • Mode Pengurus</p>
+              </div>
+            </div>
+            <button onClick={() => setIsOpen(false)} className="text-text-inverse/80 hover:text-text-inverse font-bold cursor-pointer">✕</button>
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-canvas/40">
+            {messages.map((msg, i) => (
+              <div key={i} className={cn("max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed", msg.sender === "user" ? "bg-primary text-text-inverse ml-auto rounded-tr-none" : "bg-surface border border-border-weak text-text-main mr-auto rounded-tl-none")}>
+                {msg.text}
+              </div>
+            ))}
+            {loading && (
+              <div className="bg-surface border border-border-weak text-text-muted p-3 rounded-2xl rounded-tl-none mr-auto text-xs w-20 flex gap-1 justify-center animate-pulse">
+                <span>●</span><span>●</span><span>●</span>
+              </div>
+            )}
+            <div ref={endRef} />
+          </div>
+
+          <div className="px-3 py-2 border-t border-border-weak/40 bg-surface/80 flex gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+            {adminPrompts.map((p, i) => (
+              <button key={i} type="button" onClick={() => sendMessage(p.query)} disabled={loading}
+                className="text-[10px] bg-canvas hover:bg-primary/10 hover:text-primary text-text-muted font-medium border border-border-weak rounded-full px-2.5 py-1 whitespace-nowrap cursor-pointer transition-colors disabled:opacity-50">
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSend} className="p-3 border-t border-border-weak bg-surface flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Tanyakan laporan, kas, warga..."
+              className="flex-1 bg-canvas border border-border-strong rounded-xl px-3 py-2 text-xs text-text-main outline-none focus:border-primary"
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading || !input.trim()} className="bg-primary text-text-inverse px-3 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer disabled:opacity-55">
+              🚀
+            </button>
+          </form>
+        </div>
+      )}
+
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer", isOpen ? "bg-accent text-white" : "bg-primary text-text-inverse")}
+      >
+        {isOpen ? <span className="font-bold text-lg">✕</span> : (
+          <div className="relative">
+            <BrainCircuit size={24} />
+            <span className="absolute -top-1.5 -right-1.5 bg-accent text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse border border-sidebar">AI</span>
+          </div>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ==========================================
+// ADMIN PROFILE TAB
+// ==========================================
+function AdminProfileTab() {
+  const [profile, setProfile] = useState({
+    name: "Budi Santoso",
+    jabatan: "Ketua RT 05",
+    rt: "05",
+    rw: "12",
+    phone: "0813-9876-5432",
+    email: "budi.santoso@rt05rw12.id",
+    address: "Jl. Merdeka No. 01, RT 05 / RW 12",
+    periode: "2023 – 2026",
+  });
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem("admin-profile", JSON.stringify(profile));
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem("admin-profile");
+    if (stored) {
+      try { setProfile(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Profil Pengurus</h2>
+        <p className="text-sm text-text-muted mt-1">Kelola kontak dan informasi pengurus RT yang ditampilkan ke warga.</p>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Profile Form */}
+        <div className="md:col-span-2 bg-surface border border-border-weak p-6 rounded-xl space-y-6">
+          <h3 className="font-bold text-base text-text-main border-b border-border-weak pb-3">Identitas Pengurus</h3>
+
+          <form onSubmit={handleSave} className="space-y-4">
+            {/* Read-only fields */}
+            <div className="grid sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  Nama Lengkap
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Sistem</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium">{profile.name}</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  Jabatan
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Sistem</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium">{profile.jabatan}</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  RT / RW
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Sistem</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-bold">RT {profile.rt} / RW {profile.rw}</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  Periode Jabatan
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Sistem</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium">{profile.periode}</div>
+              </div>
+            </div>
+            <p className="text-xs text-text-muted">Data jabatan dan wilayah dikelola oleh sistem. Hubungi administrator untuk perubahan.</p>
+
+            {/* Editable fields */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted">Nomor WhatsApp</label>
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                  placeholder="08xx-xxxx-xxxx"
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted">Email Dinas</label>
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={e => setProfile({ ...profile, email: e.target.value })}
+                  placeholder="email@rt.id"
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-border-weak">
+              {isSaved ? (
+                <span className="text-xs text-primary font-bold animate-pulse flex items-center gap-1">✓ Kontak pengurus berhasil diperbarui!</span>
+              ) : (
+                <span className="text-xs text-text-muted">Nomor WhatsApp dan email dinas dapat diperbarui.</span>
+              )}
+              <button
+                type="submit"
+                className="bg-primary text-text-inverse font-bold py-2.5 px-6 rounded-xl text-xs hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20 cursor-pointer"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Info card */}
+        <div className="bg-surface border border-border-weak p-6 rounded-xl space-y-5">
+          <h3 className="font-bold text-base text-text-main">Informasi Kontak</h3>
+          <p className="text-xs text-text-muted">Informasi ini ditampilkan kepada warga sebagai kontak resmi RT/RW.</p>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <User size={15} />
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Ketua RT</p>
+                <p className="text-sm font-semibold text-text-main">{profile.name}</p>
+                <p className="text-xs text-text-muted">{profile.jabatan} · Periode {profile.periode}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <PhoneCall size={15} />
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">WhatsApp</p>
+                <p className="text-sm font-semibold text-text-main">{profile.phone || "—"}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <MessageSquare size={15} />
+              </div>
+              <div>
+                <p className="text-xs text-text-muted">Email Dinas</p>
+                <p className="text-sm font-semibold text-text-main break-all">{profile.email || "—"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

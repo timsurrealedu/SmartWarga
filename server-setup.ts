@@ -165,6 +165,17 @@ export function createApp() {
     },
   ];
 
+  let reportResponses: any[] = [];
+
+  let electionData: any = {
+    phase: "inactive", // inactive | nominating | voting | completed
+    term: null,
+    candidates: [] as any[],
+    votes: [] as any[],
+    winner: null as string | null,
+    announcedAt: null as string | null,
+  };
+
   let notificationsData: any[] = [
     { id: "NOT-01", title: "Tagihan Iuran November", message: "Tagihan iuran bulanan November 2023 sebesar Rp 150.000 belum lunas. Segera lakukan pembayaran.", category: "finance", date: "Baru saja", isRead: false },
     { id: "NOT-02", title: "Gotong Royong Akhir Pekan", message: "Kerja bakti akbar bersih selokan akan diadakan Minggu ini. Daftarkan relawan keluarga Anda sekarang!", category: "event", date: "2 jam yang lalu", isRead: false },
@@ -448,6 +459,116 @@ export function createApp() {
   app.post("/api/admin/validate-user", (_req, res) =>
     res.json({ success: true, message: "User validated successfully." })
   );
+
+  // ── Report responses ──────────────────────────────────────────────────────────
+
+  app.get("/api/admin/reports/:id/responses", (req, res) => {
+    const responses = reportResponses.filter((r: any) => r.reportId === req.params.id);
+    res.json(responses);
+  });
+
+  app.post("/api/admin/reports/:id/respond", (req, res) => {
+    const { id } = req.params;
+    const { text, status } = req.body;
+    const response = { id: `RESP-${Date.now()}`, reportId: id, text: text || "", date: "Baru saja" };
+    reportResponses = [response, ...reportResponses];
+    if (status) {
+      const idx = reportsData.findIndex((r: any) => r.id === id);
+      if (idx !== -1) reportsData[idx].status = status;
+    }
+    res.json({ success: true, response, updatedReport: reportsData.find((r: any) => r.id === id) });
+  });
+
+  // ── Election / E-Voting ───────────────────────────────────────────────────────
+
+  app.get("/api/election", (_req, res) => {
+    const { term, phase, candidates, winner, announcedAt } = electionData;
+    const sanitizedCandidates = candidates.map((c: any) => ({
+      id: c.id, name: c.name, visiMisi: c.visiMisi, nominatedAt: c.nominatedAt,
+      voteCount: phase === "completed" ? c.voteCount : undefined,
+    }));
+    res.json({ phase, term, candidates: sanitizedCandidates, winner, announcedAt });
+  });
+
+  app.get("/api/admin/election", (_req, res) => res.json(electionData));
+
+  app.post("/api/admin/election/setup", (req, res) => {
+    const { currentRT, startDate, endDate, yearsServed } = req.body;
+    if (!currentRT || !endDate) return res.status(400).json({ error: "Nama RT dan tanggal akhir jabatan wajib diisi." });
+    electionData.term = { currentRT, startDate: startDate || "Tidak diketahui", endDate, yearsServed: Number(yearsServed) || 0 };
+    electionData.phase = "nominating";
+    electionData.candidates = [];
+    electionData.votes = [];
+    electionData.winner = null;
+    electionData.announcedAt = null;
+    notificationsData = [
+      { id: `NOT-${Date.now()}`, title: "📢 Pemilihan RT Dibuka!", message: `Masa jabatan ${currentRT} akan berakhir pada ${endDate}. Pendaftaran calon Ketua RT sekarang dibuka. Daftarkan diri Anda!`, category: "election", date: "Baru saja", isRead: false },
+      ...notificationsData,
+    ];
+    res.json({ success: true, election: electionData });
+  });
+
+  app.post("/api/nominations", (req, res) => {
+    const { name, residentId, visiMisi } = req.body;
+    if (electionData.phase !== "nominating") return res.status(400).json({ error: "Fase nominasi sudah ditutup." });
+    if (!name) return res.status(400).json({ error: "Nama calon wajib diisi." });
+    const exists = electionData.candidates.find((c: any) => c.residentId === residentId);
+    if (exists) return res.status(400).json({ error: "Anda sudah mendaftarkan diri sebagai calon." });
+    const candidate = {
+      id: `CAND-${Date.now()}`,
+      name,
+      residentId: residentId || "unknown",
+      visiMisi: visiMisi || "",
+      nominatedAt: "Baru saja",
+      voteCount: 0,
+    };
+    electionData.candidates = [...electionData.candidates, candidate];
+    res.json({ success: true, candidate });
+  });
+
+  app.post("/api/admin/election/start-voting", (_req, res) => {
+    if (electionData.phase !== "nominating") return res.status(400).json({ error: "Tidak bisa memulai voting sekarang." });
+    if (electionData.candidates.length < 1) return res.status(400).json({ error: "Minimal 1 kandidat diperlukan." });
+    electionData.phase = "voting";
+    notificationsData = [
+      { id: `NOT-${Date.now()}`, title: "🗳️ Pemungutan Suara Dibuka!", message: `Fase nominasi selesai. ${electionData.candidates.length} kandidat telah terdaftar. Berikan suara Anda sekarang!`, category: "election", date: "Baru saja", isRead: false },
+      ...notificationsData,
+    ];
+    res.json({ success: true, election: electionData });
+  });
+
+  app.post("/api/vote", (req, res) => {
+    const { voterId, candidateId } = req.body;
+    if (electionData.phase !== "voting") return res.status(400).json({ error: "Fase pemungutan suara belum/sudah berakhir." });
+    if (!voterId || !candidateId) return res.status(400).json({ error: "Data pemilih dan kandidat wajib diisi." });
+    const alreadyVoted = electionData.votes.find((v: any) => v.voterId === voterId);
+    if (alreadyVoted) return res.status(400).json({ error: "Anda sudah memberikan suara." });
+    const candIdx = electionData.candidates.findIndex((c: any) => c.id === candidateId);
+    if (candIdx === -1) return res.status(404).json({ error: "Kandidat tidak ditemukan." });
+    electionData.votes = [...electionData.votes, { voterId, candidateId, votedAt: "Baru saja" }];
+    electionData.candidates[candIdx].voteCount += 1;
+    res.json({ success: true });
+  });
+
+  app.post("/api/admin/election/tally", (_req, res) => {
+    if (electionData.phase !== "voting") return res.status(400).json({ error: "Tidak dalam fase voting." });
+    electionData.phase = "completed";
+    const winner = electionData.candidates.reduce((max: any, c: any) => c.voteCount > (max?.voteCount ?? -1) ? c : max, null);
+    electionData.winner = winner?.name || null;
+    electionData.announcedAt = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    if (electionData.winner) {
+      notificationsData = [
+        { id: `NOT-${Date.now()}`, title: "🎉 Ketua RT Baru Terpilih!", message: `Selamat kepada ${electionData.winner} yang terpilih sebagai Ketua RT baru dengan ${winner.voteCount} suara. Terima kasih atas partisipasi seluruh warga!`, category: "election", date: "Baru saja", isRead: false },
+        ...notificationsData,
+      ];
+    }
+    res.json({ success: true, election: electionData });
+  });
+
+  app.post("/api/admin/election/reset", (_req, res) => {
+    electionData = { phase: "inactive", term: null, candidates: [], votes: [], winner: null, announcedAt: null };
+    res.json({ success: true });
+  });
 
   app.get("/api/volunteers", (_req, res) => res.json(volunteersData));
 

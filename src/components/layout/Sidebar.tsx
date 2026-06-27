@@ -18,6 +18,7 @@ import {
   User,
   FileCheck,
   BrainCircuit,
+  Vote,
 } from "lucide-react";
 
 export type Role = "user" | "admin" | "docs";
@@ -40,23 +41,26 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
   };
 
   const userTabs = [
-    { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+    { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
     { id: "news_gotong_royong", label: "Portal Berita", icon: Newspaper },
     { id: "market", label: "Pasar & UMKM", icon: Store },
-    { id: "letters", label: "E-Surat & QR", icon: FileText },
+    { id: "letters", label: "Surat Pengantar", icon: FileText },
     { id: "finance_dues", label: "Keuangan & Iuran", icon: PieChart },
-    { id: "reports", label: "E-Reporting", icon: MessageSquare },
+    { id: "reports", label: "Lapor Masalah", icon: MessageSquare },
     { id: "tracking", label: "Lacak Status", icon: FileCheck },
+    { id: "election_warga", label: "Pemilihan RT/RW", icon: Vote },
     { id: "profile", label: "Profil Keluarga", icon: User },
   ];
 
   const adminTabs = [
-    { id: "dashboard", label: "Pengurus Overview", icon: LayoutDashboard },
+    { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
     { id: "news_manage", label: "Kelola Berita", icon: Newspaper },
     { id: "market_manage", label: "Kelola UMKM & Iklan", icon: Store },
     { id: "validations", label: "Administrasi Warga", icon: Users },
     { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
-    { id: "ai_triage", label: "AI Triage Laporan", icon: BrainCircuit },
+    { id: "ai_triage", label: "Kelola Laporan", icon: BrainCircuit },
+    { id: "election", label: "Pemilihan RT", icon: Vote },
+    { id: "admin_profile", label: "Profil Pengurus", icon: User },
   ];
 
   const tabs = currentRole === "user" ? userTabs : currentRole === "admin" ? adminTabs : [

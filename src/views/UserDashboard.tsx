@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Camera, FileCheck, CheckCircle2, AlertCircle, PhoneCall, 
+import {
+  Camera, FileCheck, CheckCircle2, AlertCircle, PhoneCall,
   MapPin, Clock, Upload, Search, Download, Plus, MessageSquare, CreditCard,
   Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert,
   Newspaper, Store, Calendar, Tag, AlertTriangle, Building, Megaphone, Users,
-  FileText, Sparkles, ChevronRight, ChevronLeft
+  FileText, Sparkles, ChevronRight, ChevronLeft, Vote, Trophy, UserPlus, X,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar,
@@ -18,14 +18,82 @@ import "jspdf-autotable";
 export function UserDashboard({ currentTab, setTab }: { currentTab: string, setTab: (tab: string) => void }) {
   const [letters, setLetters] = useState<any[]>([]);
   const [finance, setFinance] = useState<any>({ summary: [], details: [], history: [] });
-  
+  const [election, setElection] = useState<any>(null);
+  const [showElectionBanner, setShowElectionBanner] = useState(true);
+  const [trackingInitialType, setTrackingInitialType] = useState<"aduan" | "e-surat">("aduan");
+
+  const navigateToTracking = (type: "aduan" | "e-surat") => {
+    setTrackingInitialType(type);
+    setTab("tracking");
+  };
+
   useEffect(() => {
     fetch('/api/user/letters').then(r => r.json()).then(setLetters);
     fetch('/api/finance').then(r => r.json()).then(setFinance);
+    fetch('/api/election').then(r => r.json()).then(data => {
+      if (data.phase !== "inactive") setElection(data);
+    }).catch(() => {});
   }, []);
+
+  const electionActive = election && ["nominating", "voting"].includes(election.phase);
 
   return (
     <div className="w-full max-w-6xl mx-auto pb-20 relative">
+      {/* Election notification banner */}
+      <AnimatePresence>
+        {electionActive && showElectionBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className={cn(
+              "mb-4 rounded-xl border p-4 flex items-center justify-between gap-4",
+              election.phase === "nominating"
+                ? "bg-primary/10 border-primary/25 text-primary"
+                : "bg-blue-500/10 border-blue-500/25 text-blue-400"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {election.phase === "nominating" ? <UserPlus size={18} className="shrink-0" /> : <Vote size={18} className="shrink-0" />}
+              <div>
+                <p className="font-semibold text-sm text-text-main">
+                  {election.phase === "nominating"
+                    ? "📢 Pendaftaran Calon Ketua RT Dibuka!"
+                    : "🗳️ Pemungutan Suara Sedang Berlangsung!"}
+                </p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {election.phase === "nominating"
+                    ? `Masa jabatan ${election.term?.currentRT || "Ketua RT"} akan berakhir. ${election.candidates?.length || 0} kandidat terdaftar.`
+                    : `${election.candidates?.length || 0} kandidat. Pilih pemimpin RT Anda sekarang.`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <ElectionModal election={election} onVoted={() => fetch('/api/election').then(r => r.json()).then(setElection)} />
+              <button onClick={() => setShowElectionBanner(false)} className="text-text-muted hover:text-text-main transition-colors cursor-pointer"><X size={16} /></button>
+            </div>
+          </motion.div>
+        )}
+        {election?.phase === "completed" && showElectionBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-4 rounded-xl border bg-emerald-500/10 border-emerald-500/25 p-4 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <Trophy size={18} className="text-emerald-400 shrink-0" />
+              <div>
+                <p className="font-semibold text-sm text-text-main">🎉 Ketua RT Baru Terpilih: {election.winner}</p>
+                <p className="text-xs text-text-muted mt-0.5">Pemilihan selesai. Terima kasih atas partisipasi Anda!</p>
+              </div>
+            </div>
+            <button onClick={() => setShowElectionBanner(false)} className="text-text-muted hover:text-text-main cursor-pointer"><X size={16} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={currentTab}
@@ -37,11 +105,12 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
           {currentTab === "dashboard" && <OverviewTab letters={letters} setTab={setTab} />}
           {currentTab === "news_gotong_royong" && <NewsGotongRoyongTab />}
           {currentTab === "market" && <MarketTab />}
-          {currentTab === "letters" && <LettersTab letters={letters} onLetterAdded={(l) => setLetters([l, ...letters])} />}
+          {currentTab === "letters" && <LettersTab letters={letters} onLetterAdded={(l) => setLetters([l, ...letters])} setTab={setTab} navigateToTracking={navigateToTracking} />}
           {currentTab === "finance_dues" && <FinanceDuesTab data={finance} />}
           {currentTab === "reports" && <ReportingTab setTab={setTab} />}
-          {currentTab === "tracking" && <TrackingTab setTab={setTab} />}
+          {currentTab === "tracking" && <TrackingTab setTab={setTab} initialType={trackingInitialType} />}
           {currentTab === "panic" && <PanicTab />}
+          {currentTab === "election_warga" && <WargaElectionTab election={election} onRefresh={() => fetch('/api/election').then(r => r.json()).then(setElection)} />}
           {currentTab === "profile" && <ProfileTab />}
         </motion.div>
       </AnimatePresence>
@@ -60,12 +129,12 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.name || "Bpk. Rahardian";
+        return parsed.name || "Rahardian Pratama";
       } catch (e) {
-        return "Bpk. Rahardian";
+        return "Rahardian Pratama";
       }
     }
-    return "Bpk. Rahardian";
+    return "Rahardian Pratama";
   });
 
   useEffect(() => {
@@ -97,20 +166,15 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
             Sistem Digital SmartWarga siap membantu administrasi dan keamanan lingkungan Anda. Apa yang ingin Anda lakukan hari ini?
           </p>
           <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={() => setTab("letters")}
-              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-red-500 transition-colors shadow-[0_10px_30px_rgba(0,0,0,0.25)] cursor-pointer">
-              Buat Surat Pengantar
-            </button>
-            <button 
-              onClick={() => setTab("finance_dues")}
-              className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
-              Bayar Iuran
-            </button>
-            <button 
+            <button
               onClick={() => setShowVideo(true)}
-              className="bg-surface/10 border border-white/20 text-white dark:text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer hover:bg-surface/20">
-              <span>▶ Bantuan / Tutorial</span>
+              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-2 cursor-pointer">
+              <span>▶ Tonton Video Tutorial</span>
+            </button>
+            <button
+              onClick={() => setTab("reports")}
+              className="bg-surface/10 border border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
+              Buat Laporan
             </button>
           </div>
         </div>
@@ -148,29 +212,29 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-primary/10 text-text-main flex items-center justify-center mb-4">
+        <button onClick={() => setTab("letters")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
+          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
              <FileCheck size={24} />
           </div>
-          <h3 className="font-semibold font-display text-text-main">Surat Aktif</h3>
+          <h3 className="font-semibold font-display text-text-main">Surat Pengantar</h3>
           <p className="text-3xl font-bold text-text-main mt-2">{activeLettersCount}</p>
-          <span className="text-xs text-text-muted mt-1 uppercase tracking-wider">Menunggu RT</span>
-        </div>
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center mb-4">
-             <AlertCircle size={24} />
+          <span className="text-xs text-text-muted mt-1">Menunggu persetujuan RT</span>
+        </button>
+        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
+          <div className="w-12 h-12 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-4 group-hover:bg-violet-500/25 transition-colors">
+             <Newspaper size={24} />
           </div>
-          <h3 className="font-semibold font-display text-text-main">Laporan Terbuka</h3>
-          <p className="text-3xl font-bold text-text-main mt-2">0</p>
-          <span className="text-xs text-text-muted mt-1 uppercase tracking-wider">Aman Terselesaikan</span>
-        </div>
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-primary text-text-inverse flex items-center justify-center mb-4">
+          <h3 className="font-semibold font-display text-text-main">Berita RT</h3>
+          <p className="text-sm text-text-muted mt-2 leading-relaxed">Pengumuman & agenda terbaru</p>
+          <span className="text-xs text-primary font-semibold mt-2">Lihat semua →</span>
+        </button>
+        <button onClick={() => setTab("finance_dues")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
+          <div className="w-12 h-12 rounded-full bg-primary text-text-inverse flex items-center justify-center mb-4 group-hover:opacity-90 transition-opacity">
              <CheckCircle2 size={24} />
           </div>
           <h3 className="font-semibold font-display text-text-main">Status Iuran</h3>
           <p className="text-xl font-medium text-primary mt-3 bg-primary/20 px-3 py-1 rounded-full">Lunas (Okt)</p>
-        </div>
+        </button>
       </div>
 
       <div className="pt-8">
@@ -180,18 +244,18 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
   );
 }
 
-function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded: (l: any) => void }) {
+function LettersTab({ letters, onLetterAdded, setTab, navigateToTracking }: { letters: any[], onLetterAdded: (l: any) => void, setTab: (tab: string) => void, navigateToTracking: (type: "aduan" | "e-surat") => void }) {
   const [profileName, setProfileName] = useState(() => {
     const stored = localStorage.getItem("user-profile");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.name || "Bpk. Rahardian";
+        return parsed.name || "Rahardian Pratama";
       } catch (e) {
-        return "Bpk. Rahardian";
+        return "Rahardian Pratama";
       }
     }
-    return "Bpk. Rahardian";
+    return "Rahardian Pratama";
   });
 
   useEffect(() => {
@@ -200,7 +264,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          setProfileName(parsed.name || "Bpk. Rahardian");
+          setProfileName(parsed.name || "Rahardian Pratama");
         } catch (e) {}
       }
     };
@@ -397,7 +461,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
     <div className="space-y-6">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h2 className="text-2xl font-display font-semibold text-text-main">E-Surat & QR Code</h2>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Surat Pengantar</h2>
           <p className="text-sm text-text-muted mt-1">Buat surat pengantar RT/RW secara mandiri tanpa antri.</p>
         </div>
       </div>
@@ -405,11 +469,11 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
       <div className="grid md:grid-cols-2 gap-6">
          {/* Form Request */}
          <div className="space-y-6">
-            <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+            <div className="bg-surface p-6 rounded-2xl border border-border-weak">
               <h3 className="font-semibold text-text-main border-b border-border-weak pb-4 mb-4">Form Pengajuan</h3>
               <div className="space-y-6">
                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">Pilih Jenis Surat</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-3">Pilih Jenis Surat</label>
                     <div className="grid grid-cols-3 gap-3">
                        {mainLetterTypes.map((item) => (
                          <button
@@ -435,7 +499,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
 
                     {showOtherOptions && (
                       <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                        <label className="block text-[10px] font-bold uppercase text-text-muted mb-2 tracking-widest">Surat Lainnya</label>
+                        <label className="block text-xs font-medium text-text-muted mb-2">Surat Lainnya</label>
                         <select 
                           value={type} 
                           onChange={e => setType(e.target.value)}
@@ -450,7 +514,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
                  </div>
                  
                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Keperluan</label>
+                    <label className="block text-xs font-semibold text-text-muted mb-2">Keperluan</label>
                     <textarea 
                       rows={3} 
                       value={keperluan}
@@ -460,7 +524,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
                  </div>
                  
                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 flex justify-between">
+                    <label className="block text-xs font-semibold text-text-muted mb-2 flex justify-between">
                        <span>Tanda Tangan Digital Warga</span>
                        <button onClick={clearSignature} type="button" className="text-accent underline lowercase font-normal">Hapus Tanda Tangan</button>
                     </label>
@@ -491,48 +555,16 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
            </div>
            
            {/* History */}
-           <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+           <div className="bg-surface p-6 rounded-2xl border border-border-weak">
               <h3 className="font-semibold text-text-main border-b border-border-weak pb-4 mb-4">Riwayat Pengajuan</h3>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                 {letters.length === 0 && <p className="text-sm text-text-muted text-center py-4">Belum ada riwayat pengajuan.</p>}
-                 {letters.map(letter => (
-                   <div key={letter.id} className="flex flex-col p-4 border border-border-weak rounded-xl hover:bg-surface-hover transition-colors overflow-hidden relative">
-                     {/* Timeline Lead Time Visualization */}
-                     <div className="flex items-center justify-between">
-                       <div className="flex-1">
-                         <p className="text-sm font-semibold text-text-main">{letter.type}</p>
-                         <p className="text-xs text-text-muted mt-0.5">{letter.date} — {letter.keperluan}</p>
-                       </div>
-                       <div className="flex items-center gap-2">
-                          {letter.status === 'approved' && (
-                            <button 
-                              onClick={() => handleDownloadPDF(letter)}
-                              className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
-                              title="Download PDF"
-                            >
-                              <Download size={14} />
-                            </button>
-                          )}
-                          {letter.status === 'approved' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-primary/20 text-primary rounded-md whitespace-nowrap">Selesai / QR Valid</span>}
-                          {letter.status === 'pending' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-accent/20 text-accent rounded-md whitespace-nowrap">Menunggu RT</span>}
-                          {letter.status === 'rejected' && <span className="text-[10px] uppercase font-bold px-2 py-1 bg-red-900/40 text-red-400 rounded-md whitespace-nowrap">Ditolak</span>}
-                       </div>
-                     </div>
-                     <div className="mt-4 pt-3 border-t border-border-weak flex justify-between items-center text-xs text-text-muted">
-                        <div className="flex gap-2">
-                          <span>Status Lead Time:</span>
-                          {letter.status === 'approved' ? (
-                            <span className="font-mono text-primary font-bold">1 Hari Kerja (Selesai pada {letter.date})</span>
-                          ) : letter.status === 'pending' ? (
-                            <span className="font-mono text-accent font-bold animate-pulse">Sedang ditinjau Pengurus RT (Estimasi Maksimal: 2 Hari Kerja)</span>
-                          ) : (
-                            <span className="font-mono text-red-400 font-bold">Ditolak - Pengecekan Sistem (0 Hari)</span>
-                          )}
-                        </div>
-                     </div>
-                   </div>
-                 ))}
-              </div>
+              <p className="text-sm text-text-muted mb-4">Pantau status dan riwayat lengkap pengajuan surat Anda di halaman Lacak Status.</p>
+              <button
+                onClick={() => navigateToTracking("e-surat")}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-primary/10 hover:bg-primary/20 text-primary font-semibold rounded-xl transition-colors border border-primary/20 cursor-pointer"
+              >
+                <FileCheck size={16} />
+                Lihat Status Surat di Lacak Status
+              </button>
            </div>
          </div>
 
@@ -551,7 +583,7 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
              <p>Yang bertanda tangan di bawah ini Ketua RT. 05 RW. 12 Kelurahan Sukamaju, menerangkan dengan sebenarnya bahwa:</p>
              <table className="w-full">
                <tbody>
-                 <tr><td className="w-32 py-1">Nama</td><td>: Bpk. Rahardian</td></tr>
+                 <tr><td className="w-32 py-1">Nama</td><td>: {profileName}</td></tr>
                  <tr><td className="w-32 py-1">NIK</td><td>: 3273****************</td></tr>
                  <tr><td className="w-32 py-1">Alamat</td><td>: Jl. Merdeka No. 45</td></tr>
                </tbody>
@@ -566,8 +598,8 @@ function LettersTab({ letters, onLetterAdded }: { letters: any[], onLetterAdded:
            <div className="flex justify-between mt-12 text-sm text-center">
              <div>
                <p className="mb-16">Pemohon,</p>
-               <div className="font-signature text-2xl text-blue-800 opacity-80 -rotate-3 mb-1">~ Rahardian ~</div>
-               <p className="underline font-bold">Bpk. Rahardian</p>
+               <div className="font-signature text-2xl text-blue-800 opacity-80 -rotate-3 mb-1">~ {profileName.split(" ")[0]} ~</div>
+               <p className="underline font-bold">{profileName}</p>
              </div>
              <div>
                <p className="mb-20">Ketua RT 05,</p>
@@ -707,26 +739,26 @@ function FinanceDuesTab({ data }: { data: any }) {
       {subTab === "finance" && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Saldo Kas Saat Ini</p>
+             <div className="bg-surface p-5 rounded-2xl border border-border-weak">
+                <p className="text-xs font-medium text-text-muted mb-1">Saldo Kas Saat Ini</p>
                 <p className="text-2xl font-display font-bold text-text-main">Rp 12.550.000</p>
              </div>
-             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-primary">
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pemasukan (Okt)</p>
+             <div className="bg-surface p-5 rounded-2xl border border-border-weak text-primary">
+                <p className="text-xs font-medium text-text-muted mb-1">Total Pemasukan (Okt)</p>
                 <p className="text-2xl font-display font-bold">+ Rp 2.400.000</p>
              </div>
-             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak text-accent">
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1">Total Pengeluaran (Okt)</p>
+             <div className="bg-surface p-5 rounded-2xl border border-border-weak text-accent">
+                <p className="text-xs font-medium text-text-muted mb-1">Total Pengeluaran (Okt)</p>
                 <p className="text-2xl font-display font-bold">- Rp {totalExpense.toLocaleString('id-ID')}</p>
              </div>
-             <div className="bg-surface p-5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Warga Terdaftar</p>
+             <div className="bg-surface p-5 rounded-2xl border border-border-weak">
+                <p className="text-xs font-medium text-text-muted mb-1">Warga Terdaftar</p>
                 <p className="text-2xl font-display font-bold text-text-main">120 KK</p>
              </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-             <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+             <div className="bg-surface p-6 rounded-2xl border border-border-weak">
                 <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
                 <div className="h-[300px] relative">
                   <ResponsiveContainer width="100%" height="100%">
@@ -760,7 +792,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                 </div>
              </div>
 
-             <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+             <div className="bg-surface p-6 rounded-2xl border border-border-weak">
                 <h3 className="font-semibold text-text-main mb-4">Rincian Pengeluaran Bulanan</h3>
                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                    {chartData.map((item: any, idx: number) => (
@@ -780,7 +812,7 @@ function FinanceDuesTab({ data }: { data: any }) {
              </div>
           </div>
 
-          <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+          <div className="bg-surface p-6 rounded-2xl border border-border-weak">
              <h3 className="font-semibold text-text-main mb-6">Bukti Pengeluaran (Kwitansi Digital)</h3>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {details.map((item: any) => (
@@ -825,7 +857,7 @@ function FinanceDuesTab({ data }: { data: any }) {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
             {dues.map((due: any) => (
-              <div key={due.id} className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak relative overflow-hidden group hover:border-primary/50 transition-colors">
+              <div key={due.id} className="bg-surface p-6 rounded-2xl border border-border-weak relative overflow-hidden group hover:border-primary/50 transition-colors">
                 {due.status === "paid" && (
                   <div className="absolute top-0 right-0 bg-primary text-text-inverse px-4 py-1.5 rounded-bl-2xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">
                     <CheckCircle2 size={12} /> Lunas
@@ -847,7 +879,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                   
                   {due.categories && due.categories.length > 0 && (
                     <div className="bg-canvas border border-border-weak rounded p-3 mt-2 space-y-2">
-                      <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider border-b border-border-weak pb-1">Rincian Iuran</p>
+                      <p className="text-xs font-medium text-text-muted border-b border-border-weak pb-1">Rincian Iuran</p>
                       <div className="space-y-1">
                         {due.categories.map((cat: any, i: number) => (
                           <div key={i} className="flex justify-between items-center text-xs">
@@ -908,7 +940,7 @@ function FinanceDuesTab({ data }: { data: any }) {
             
             <form onSubmit={handleSubmitPayment} className="mt-6 space-y-4">
                <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Informasi Rekening Tujuan</label>
+                  <label className="block text-xs font-medium text-text-muted mb-2">Informasi Rekening Tujuan</label>
                   <div className="bg-canvas border border-border-strong rounded-xl p-4 flex flex-col gap-3">
                      <div>
                        <p className="text-xs text-text-muted font-bold">Bank BCA</p>
@@ -924,7 +956,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                </div>
 
                <div>
-                  <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Pilih Metode Pembayaran Anda</label>
+                  <label className="block text-xs font-medium text-text-muted mb-2">Pilih Metode Pembayaran Anda</label>
                   <select 
                     value={bankName}
                     onChange={e => setBankName(e.target.value)}
@@ -939,7 +971,7 @@ function FinanceDuesTab({ data }: { data: any }) {
 
                {bankName === "QRIS" && (
                  <div className="bg-canvas border border-border-strong rounded-xl p-6 flex flex-col items-center justify-center text-center">
-                    <p className="text-xs font-bold text-text-muted mb-4 uppercase tracking-widest">Pindai QR Dibawah Ini</p>
+                    <p className="text-xs font-medium text-text-muted mb-4">Pindai QR Dibawah Ini</p>
                     <img src="https://images.unsplash.com/photo-1613994344079-c5bda29c4263?auto=format&fit=crop&q=80&w=200&h=200" alt="QRIS" className="w-40 h-40 object-cover rounded-lg border-4 border-white shadow-lg mb-4" />
                     <p className="text-sm font-bold text-text-main">MANDIRI - RT 05 SMARTWARGA</p>
                     <p className="text-xs text-text-muted font-mono mt-1">NMID: ID203912039103901</p>
@@ -948,7 +980,7 @@ function FinanceDuesTab({ data }: { data: any }) {
 
                {bankName !== "QRIS" && (
                  <div>
-                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Nama Pengirim (A.N. Rekening Anda)</label>
+                    <label className="block text-xs font-medium text-text-muted mb-2">Nama Pengirim (A.N. Rekening Anda)</label>
                     <input 
                       type="text"
                       required
@@ -962,7 +994,7 @@ function FinanceDuesTab({ data }: { data: any }) {
 
                <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Tgl Transfer</label>
+                    <label className="block text-xs font-medium text-text-muted mb-2">Tgl Transfer</label>
                     <input 
                       type="date"
                       required
@@ -972,7 +1004,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                     />
                  </div>
                  <div>
-                    <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Nominal transfer (Rp)</label>
+                    <label className="block text-xs font-medium text-text-muted mb-2">Nominal transfer (Rp)</label>
                     <input 
                       type="number"
                       required
@@ -984,7 +1016,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                </div>
 
                <div>
-                 <label className="block text-xs font-bold uppercase text-text-muted tracking-wide mb-2">Unggah Resi / Bukti Transfer</label>
+                 <label className="block text-xs font-medium text-text-muted mb-2">Unggah Resi / Bukti Transfer</label>
                  <div className="w-full bg-surface border-2 border-dashed border-border-strong rounded-xl p-4 text-center hover:bg-surface-hover transition-colors cursor-pointer relative">
                     <input 
                       type="file" 
@@ -1089,7 +1121,7 @@ function StorageTab() {
            )}
         </div>
 
-        <div className="bg-surface p-6 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] border border-border-weak">
+        <div className="bg-surface p-6 rounded-2xl border border-border-weak">
           <h3 className="font-semibold text-text-main mb-4">Dokumen Tersimpan</h3>
           <div className="space-y-3">
              <div className="flex items-center justify-between p-3 border border-border-weak rounded-xl bg-canvas">
@@ -1214,7 +1246,7 @@ function PanicTab() {
             </svg>
           )}
           <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-            {clicked ? <PhoneCall size={64} className="animate-bounce" /> : <AlertCircle size={64} className={isHolding ? "animate-pulse" : ""} />}
+            {clicked ? <PhoneCall size={64} className="animate-pulse" /> : <AlertCircle size={64} className={isHolding ? "animate-pulse" : ""} />}
             <span className="font-display font-bold text-2.5xl uppercase tracking-widest leading-none">
               {clicked ? "Terkirim!" : isHolding ? `${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC"}
             </span>
@@ -1469,7 +1501,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-border-weak pb-4">
         <div>
-          <h2 className="text-2xl font-display font-semibold text-text-main">E-Reporting</h2>
+          <h2 className="text-2xl font-display font-semibold text-text-main">Lapor Masalah</h2>
           <p className="text-sm text-text-muted mt-1">Lapor masalah lingkungan & pantau aduan warga secara transparan.</p>
         </div>
         
@@ -1699,7 +1731,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
                           animate={{ top: ["5%", "95%", "5%"] }}
                           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
                         />
-                        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center animate-bounce mb-3 border border-primary/30">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3 border border-primary/30">
                           <MapPin size={24} />
                         </div>
                         <p className="text-sm font-bold text-primary animate-pulse">RT-AI sedang memindai koordinat lokasi...</p>
@@ -1708,7 +1740,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
                     ) : (
                       <div className="space-y-4">
                         <div className="space-y-1.5">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-text-muted">Detail Lokasi / Alamat</label>
+                          <label className="block text-xs font-medium text-text-muted">Detail Lokasi / Alamat</label>
                           <input 
                             type="text" 
                             value={location}
@@ -1725,7 +1757,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
                           <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:14px_24px]" />
                           
                           <div className="relative text-center p-4 space-y-2 z-10">
-                            <div className="w-10 h-10 bg-accent/20 text-accent border border-accent/40 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                            <div className="w-10 h-10 bg-accent/20 text-accent border border-accent/40 rounded-full flex items-center justify-center mx-auto animate-pulse">
                               <MapPin size={20} />
                             </div>
                             <div>
@@ -1888,7 +1920,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
 
                         {/* Title input field */}
                         <div className="space-y-1.5 border-t border-border-weak/20 pt-3">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-text-muted">Judul Laporan</label>
+                          <label className="block text-xs font-medium text-text-muted">Judul Laporan</label>
                           <input 
                             type="text" 
                             value={title}
@@ -1955,7 +1987,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
                 {/* STEP 5: SELESAI */}
                 {step === 5 && (
                   <div className="text-center py-6 space-y-6">
-                    <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 rounded-full flex items-center justify-center mx-auto text-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-bounce">
+                    <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 rounded-full flex items-center justify-center mx-auto text-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-in zoom-in duration-300">
                       ✓
                     </div>
                     
@@ -2049,7 +2081,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
 
                 {report.status === "SELESAI" && (
                   <div className="md:ml-16 bg-emerald-500/5 p-4 rounded-xl text-xs border border-emerald-500/15 text-text-main shadow-inner">
-                    <strong className="text-emerald-500 block mb-1 uppercase tracking-wider text-[10px] font-bold">Tanggapan Resmi RT:</strong> 
+                    <strong className="text-emerald-500 block mb-1 font-semibold">Tanggapan Resmi RT:</strong> 
                     <p className="leading-relaxed text-text-main/90">Terima kasih, laporan sudah ditindaklanjuti dan selesai dikerjakan kemarin sore bersama tim lingkungan swadaya RT 05.</p>
                   </div>
                 )}
@@ -2066,12 +2098,16 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
 // ==========================================
 // FEATURE 10: DEDICATED LACAK STATUS & RIWAYAT TAB
 // ==========================================
-function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
+function TrackingTab({ setTab, initialType }: { setTab: (tab: string) => void, initialType?: "aduan" | "e-surat" }) {
   const [reports, setReports] = useState<any[]>([]);
   const [letters, setLetters] = useState<any[]>([]);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [selectedLetter, setSelectedLetter] = useState<any>(null);
-  const [activeType, setActiveType] = useState<"aduan" | "e-surat">("aduan");
+  const [activeType, setActiveType] = useState<"aduan" | "e-surat">(initialType || "aduan");
+
+  useEffect(() => {
+    if (initialType) setActiveType(initialType);
+  }, [initialType]);
   const [loading, setLoading] = useState(true);
 
   const [profileName, setProfileName] = useState(() => {
@@ -2079,12 +2115,12 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.name || "Bpk. Rahardian";
+        return parsed.name || "Rahardian Pratama";
       } catch (e) {
-        return "Bpk. Rahardian";
+        return "Rahardian Pratama";
       }
     }
-    return "Bpk. Rahardian";
+    return "Rahardian Pratama";
   });
 
   useEffect(() => {
@@ -2113,7 +2149,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
       if (resReports.ok) {
         const data = await resReports.json();
         setReports(data || []);
-        const myReports = data.filter((r: any) => r.sender === "Budi Santoso" || r.sender === "Bpk. Rahardian" || r.sender === profileName);
+        const myReports = data.filter((r: any) => r.sender === "Budi Santoso" || r.sender === "Rahardian Pratama" || r.sender === profileName);
         if (myReports.length > 0) {
           setSelectedReport(myReports[0]);
         }
@@ -2123,7 +2159,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
       const resLetters = await fetch('/api/user/letters');
       if (resLetters.ok) {
         const data = await resLetters.json();
-        const myLetters = data.filter((l: any) => l.name === "Budi Santoso" || l.name === "Bpk. Rahardian" || l.name === profileName);
+        const myLetters = data.filter((l: any) => l.name === "Budi Santoso" || l.name === "Rahardian Pratama" || l.name === profileName);
         setLetters(myLetters || []);
         if (myLetters.length > 0) {
           setSelectedLetter(myLetters[0]);
@@ -2211,7 +2247,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
     doc.save(`${letter.type}-${letter.id}.pdf`);
   };
 
-  const myReports = Array.isArray(reports) ? reports.filter(r => r.sender === "Budi Santoso" || r.sender === "Bpk. Rahardian" || r.sender === profileName) : [];
+  const myReports = Array.isArray(reports) ? reports.filter(r => r.sender === "Budi Santoso" || r.sender === "Rahardian Pratama" || r.sender === profileName) : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -2366,7 +2402,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
                   {/* RT Official Response if Selesai */}
                   {selectedReport.status === "SELESAI" && (
                     <div className="bg-[#142320]/60 [.light_&]:bg-[#e6f5f0]/60 border border-border-strong/20 [.light_&]:border-primary/15 rounded-2xl p-4 text-xs">
-                      <strong className="text-emerald-400 block mb-1 uppercase tracking-wider text-[10px]">Tanggapan RT:</strong>
+                      <strong className="text-emerald-400 block mb-1 font-semibold text-xs">Tanggapan RT:</strong>
                       <p className="text-text-muted leading-relaxed">Terima kasih banyak Bpk/Ibu, petugas lapangan RT 05 sudah mengonfirmasi perbaikan di lokasi dan saat ini kondisi sudah kembali normal.</p>
                     </div>
                   )}
@@ -2485,7 +2521,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
                   {selectedLetter.status === "approved" && (
                     <div className="bg-[#142320]/60 [.light_&]:bg-[#e6f5f0]/60 border border-border-strong/20 [.light_&]:border-primary/15 rounded-2xl p-4 text-xs space-y-3">
                       <div>
-                        <strong className="text-emerald-400 block mb-1 uppercase tracking-wider text-[10px]">Tanggapan RT:</strong>
+                        <strong className="text-emerald-400 block mb-1 font-semibold text-xs">Tanggapan RT:</strong>
                         <p className="text-text-muted leading-relaxed">Surat pengantar digital Anda telah terbit dan ditandatangani secara resmi. Silakan unduh dokumen di bawah ini.</p>
                       </div>
                       <button
@@ -2499,7 +2535,7 @@ function TrackingTab({ setTab }: { setTab: (tab: string) => void }) {
 
                   {selectedLetter.status === "rejected" && (
                     <div className="bg-red-500/5 border border-red-500/15 rounded-2xl p-4 text-xs">
-                      <strong className="text-red-400 block mb-1 uppercase tracking-wider text-[10px]">Alasan Penolakan RT:</strong>
+                      <strong className="text-red-400 block mb-1 font-semibold text-xs">Alasan Penolakan RT:</strong>
                       <p className="text-text-muted leading-relaxed">Detail keperluan kurang lengkap atau tidak sesuai format administrasi. Silakan ajukan ulang dengan keperluan yang lebih jelas.</p>
                     </div>
                   )}
@@ -2684,7 +2720,7 @@ function NewsGotongRoyongTab() {
       const parsed = JSON.parse(stored);
       setFamilyMembers(parsed.familyMembers || []);
     } else {
-      setFamilyMembers(["Ibu Siti (Istri)", "Agus (Anak)", "Rani (Anak)"]);
+      setFamilyMembers(["Siti Rahayu (Istri)", "Agus (Anak)", "Rani (Anak)"]);
     }
   }, []);
 
@@ -2751,7 +2787,7 @@ function NewsGotongRoyongTab() {
     // Persist back to profile
     const stored = localStorage.getItem("user-profile");
     const profile = stored ? JSON.parse(stored) : {
-      name: "Bpk. Rahardian",
+      name: "Rahardian Pratama",
       address: "Jl. Merdeka No. 45",
       rt: "05",
       rw: "12",
@@ -2857,7 +2893,7 @@ function NewsGotongRoyongTab() {
 
                 {/* Show family members registered for this event */}
                 <div className="mt-4 pt-3 border-t border-border-weak/50">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Relawan Keluarga Terdaftar:</h4>
+                  <h4 className="text-xs font-medium text-text-muted mb-2">Relawan Keluarga Terdaftar:</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {volunteers.filter(v => v.eventId === ev.id).length === 0 ? (
                       <span className="text-[11px] text-text-muted italic">Belum ada relawan terdaftar dari keluarga Anda</span>
@@ -2913,7 +2949,7 @@ function NewsGotongRoyongTab() {
               </div>
 
               <div className="space-y-3">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Pilih Anggota Keluarga yang Ikut:</label>
+                <label className="block text-xs font-semibold text-text-muted mb-2">Pilih Anggota Keluarga yang Ikut:</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-border-weak p-3 rounded-xl bg-canvas/30">
                   {familyMembers.map((name, idx) => (
                     <div key={idx} className="flex items-center gap-3">
@@ -2941,11 +2977,11 @@ function NewsGotongRoyongTab() {
                 </div>
 
                 <div className="border-t border-border-weak pt-3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">Tambahkan Anggota Keluarga Baru:</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1.5">Tambahkan Anggota Keluarga Baru:</label>
                   <div className="flex gap-2">
                     <input 
                       type="text" 
-                      placeholder="Contoh: Ibu Siti (Istri)" 
+                      placeholder="Contoh: Siti Rahayu (Istri)" 
                       value={newFamilyMember}
                       onChange={e => setNewFamilyMember(e.target.value)}
                       className="flex-1 bg-canvas border border-border-strong rounded-lg px-3 py-1.5 text-xs text-text-main focus:border-primary outline-none"
@@ -3017,7 +3053,7 @@ function MarketTab() {
 
   // Form States for user UMKM registration
   const [name, setName] = useState("");
-  const [owner, setOwner] = useState("Bpk. Rahardian");
+  const [owner, setOwner] = useState("Rahardian Pratama");
   const [category, setCategory] = useState("Makanan & Minuman");
   const [phone, setPhone] = useState("");
   const [desc, setDesc] = useState("");
@@ -3523,16 +3559,159 @@ function DonationSection() {
 
 
 // ==========================================
+// WARGA ELECTION TAB
+// ==========================================
+function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: () => void }) {
+  const [name, setName] = useState("");
+  const [visiMisi, setVisiMisi] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [hasNominated, setHasNominated] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const phase = election?.phase || "inactive";
+  const isNominating = phase === "nominating";
+
+  const handleNominate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/nominations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, visiMisi, residentId: "RES-01" }),
+      });
+      const data = await res.json();
+      if (res.ok) { setHasNominated(true); setMsg("Pendaftaran berhasil! Nama Anda telah ditambahkan ke daftar kandidat."); onRefresh(); }
+      else setMsg(data.error || "Gagal mendaftar.");
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Pemilihan Ketua RT/RW</h2>
+        <p className="text-sm text-text-muted mt-1">Lihat kandidat, visi misi, dan daftarkan diri sebagai calon pemimpin RT.</p>
+      </div>
+
+      {/* Phase status banner */}
+      <div className={cn(
+        "rounded-xl p-4 flex items-center gap-3 border",
+        phase === "inactive" ? "bg-surface border-border-weak" :
+        phase === "nominating" ? "bg-primary/10 border-primary/25" :
+        phase === "voting" ? "bg-blue-500/10 border-blue-500/25" :
+        "bg-emerald-500/10 border-emerald-500/25"
+      )}>
+        <Vote size={20} className={cn(
+          phase === "inactive" ? "text-text-muted" :
+          phase === "nominating" ? "text-primary" :
+          phase === "voting" ? "text-blue-400" : "text-emerald-400"
+        )} />
+        <div>
+          <p className="font-semibold text-sm text-text-main">
+            {phase === "inactive" && "Belum Ada Pemilihan Aktif"}
+            {phase === "nominating" && "Pendaftaran Calon Sedang Dibuka"}
+            {phase === "voting" && "Pemungutan Suara Sedang Berlangsung"}
+            {phase === "completed" && `Pemilihan Selesai — Ketua Terpilih: ${election?.winner}`}
+          </p>
+          <p className="text-xs text-text-muted mt-0.5">
+            {phase === "inactive" && "Pengurus RT akan mengumumkan jadwal pemilihan melalui portal ini."}
+            {phase === "nominating" && `${election?.candidates?.length || 0} kandidat terdaftar. Masa jabatan ${election?.term?.currentRT || "Ketua RT"} akan segera berakhir.`}
+            {phase === "voting" && `${election?.candidates?.length || 0} kandidat. Pengurus sedang mengelola proses pemungutan suara.`}
+            {phase === "completed" && "Terima kasih atas partisipasi seluruh warga RT."}
+          </p>
+        </div>
+      </div>
+
+      <div className={cn("grid md:grid-cols-2 gap-6", !isNominating && "opacity-60 pointer-events-none select-none")}>
+        {/* Candidate list */}
+        <div className="bg-surface border border-border-weak rounded-xl p-5">
+          <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
+            <Users size={16} className="text-primary" /> Daftar Kandidat
+            {!isNominating && <span className="text-[10px] bg-surface border border-border-weak px-2 py-0.5 rounded text-text-muted ml-auto">Hanya aktif saat pendaftaran</span>}
+          </h3>
+          {(!election || !election.candidates || election.candidates.length === 0) ? (
+            <p className="text-sm text-text-muted text-center py-8">Belum ada kandidat yang mendaftar.</p>
+          ) : (
+            <div className="space-y-3">
+              {election.candidates.map((c: any, i: number) => (
+                <div key={c.id} className="p-4 rounded-xl border border-border-weak bg-canvas">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm shrink-0">{i + 1}</div>
+                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
+                  </div>
+                  {c.visiMisi && (
+                    <p className="text-xs text-text-muted leading-relaxed pl-11">{c.visiMisi}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Registration form */}
+        <div className="bg-surface border border-border-weak rounded-xl p-5">
+          <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
+            <UserPlus size={16} className="text-primary" /> Daftarkan Diri sebagai Calon
+          </h3>
+          {hasNominated ? (
+            <div className="text-center py-8">
+              <CheckCircle2 size={40} className="text-primary mx-auto mb-3" />
+              <p className="font-semibold text-text-main text-sm">Pendaftaran Berhasil!</p>
+              <p className="text-xs text-text-muted mt-1">{msg}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleNominate} className="space-y-3">
+              {msg && <p className="text-xs text-accent bg-accent/10 px-3 py-2 rounded-lg">{msg}</p>}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted">Nama Lengkap (sesuai KTP)</label>
+                <input
+                  value={name} onChange={e => setName(e.target.value)} required
+                  placeholder="Nama lengkap Anda"
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted">Visi & Misi (opsional)</label>
+                <textarea
+                  value={visiMisi} onChange={e => setVisiMisi(e.target.value)} rows={4}
+                  placeholder="Tulis visi dan misi Anda untuk RT/RW..."
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none"
+                />
+              </div>
+              <button
+                type="submit" disabled={submitting}
+                className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran Calon"}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      {!isNominating && phase !== "inactive" && (
+        <p className="text-center text-xs text-text-muted">
+          {phase === "voting" ? "Pendaftaran calon telah ditutup. Pemungutan suara dikelola langsung oleh Pengurus RT." : ""}
+          {phase === "completed" ? "Pemilihan telah selesai. Selamat kepada Ketua RT yang baru!" : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
 // FEATURE 2 & 5: PROFIL KELUARGA TAB (MENU PROFILE & RT/RW SELECTOR)
 // ==========================================
 function ProfileTab() {
   const [profile, setProfile] = useState({
-    name: "Bpk. Rahardian",
+    name: "Rahardian Pratama",
     address: "Jl. Merdeka No. 45",
     rt: "05",
     rw: "12",
     phone: "0812-3456-7890",
-    familyMembers: ["Ibu Siti (Istri)", "Agus (Anak)", "Rani (Anak)"]
+    email: "rahardian@email.com",
+    familyMembers: ["Siti Rahayu (Istri)", "Agus (Anak)", "Rani (Anak)"]
   });
 
   const [newMember, setNewMember] = useState("");
@@ -3603,78 +3782,70 @@ function ProfileTab() {
           <h3 className="font-bold text-base text-text-main border-b border-border-weak pb-3">Identitas Kepala Keluarga</h3>
           
           <form onSubmit={handleSaveProfile} className="space-y-4">
+            {/* Read-only identity fields */}
+            <div className="grid sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  Nama Lengkap KK
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Diatur RT</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium">{profile.name}</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  Alamat
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Diatur RT</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium">{profile.address}</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  RT
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Diatur RT</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-bold">RT {profile.rt} — Harmoni Lestari</div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
+                  RW
+                  <span className="text-[10px] bg-surface border border-border-weak px-1.5 py-0.5 rounded text-text-muted font-medium ml-1">Diatur RT</span>
+                </label>
+                <div className="w-full bg-surface border border-border-weak rounded-xl p-3 text-sm text-text-main font-bold">RW {profile.rw} — Alam Sentosa</div>
+              </div>
+            </div>
+            <p className="text-xs text-text-muted">Data identitas dan wilayah hanya dapat diubah oleh Pengurus RT.</p>
+
+            {/* Editable contact fields */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-muted">Nama Lengkap KK</label>
+                <label className="block text-xs font-semibold text-text-muted">Nomor WhatsApp</label>
                 <input
-                  type="text"
-                  value={profile.name}
-                  onChange={e => setProfile({ ...profile, name: e.target.value })}
-                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-muted">Nomor Telepon</label>
-                <input
-                  type="text"
+                  type="tel"
                   value={profile.phone}
                   onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                  placeholder="08xx-xxxx-xxxx"
                   className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
-                  required
                 />
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-muted">Alamat Rumah (Blok/No.)</label>
-              <input
-                type="text"
-                value={profile.address}
-                onChange={e => setProfile({ ...profile, address: e.target.value })}
-                className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
-                required
-              />
-            </div>
-
-            {/* FEATURE 5: RT / RW SELECTORS */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-2xl">
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-primary">Pilih RT (Rukun Tetangga)</label>
-                <select
-                  value={profile.rt}
-                  onChange={e => setProfile({ ...profile, rt: e.target.value })}
-                  className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main font-bold outline-none focus:border-primary cursor-pointer shadow-sm"
-                >
-                  <option value="01">RT 01 - Kebersihan Asri</option>
-                  <option value="02">RT 02 - Harapan Warga</option>
-                  <option value="03">RT 03 - Gotong Swadaya</option>
-                  <option value="04">RT 04 - Mandiri Jaya</option>
-                  <option value="05">RT 05 - Harmoni Lestari</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-primary">Pilih RW (Rukun Warga)</label>
-                <select
-                  value={profile.rw}
-                  onChange={e => setProfile({ ...profile, rw: e.target.value })}
-                  className="w-full bg-surface border border-border-strong rounded-xl p-3 text-sm text-text-main font-bold outline-none focus:border-primary cursor-pointer shadow-sm"
-                >
-                  <option value="10">RW 10 - Kompleks Merdeka</option>
-                  <option value="11">RW 11 - Graha Permata</option>
-                  <option value="12">RW 12 - Alam Sentosa</option>
-                </select>
+                <label className="block text-xs font-semibold text-text-muted">Email</label>
+                <input
+                  type="email"
+                  value={profile.email || ""}
+                  onChange={e => setProfile({ ...profile, email: e.target.value })}
+                  placeholder="email@contoh.com"
+                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary shadow-sm"
+                />
               </div>
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-border-weak">
               {isSaved ? (
                 <span className="text-xs text-primary font-bold animate-pulse flex items-center gap-1">
-                  ✓ Profil Keluarga Berhasil Disinkronkan!
+                  ✓ Kontak berhasil diperbarui!
                 </span>
               ) : (
-                <span className="text-xs text-text-muted">Perubahan disinkronkan ke seluruh menu aplikasi.</span>
+                <span className="text-xs text-text-muted">Nomor WhatsApp dan email dapat Anda perbarui sendiri.</span>
               )}
               <button
                 type="submit"
@@ -3983,4 +4154,133 @@ function AIChatbot() {
   );
 }
 
+function ElectionModal({ election, onVoted }: { election: any; onVoted: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [visiMisi, setVisiMisi] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState("");
+  const [hasNominated, setHasNominated] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState("");
 
+  const handleNominate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/nominations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, visiMisi, residentId: "RES-01" }),
+      });
+      const data = await res.json();
+      if (res.ok) { setHasNominated(true); setMsg("Pendaftaran berhasil! Kandidat Anda telah terdaftar."); onVoted(); }
+      else setMsg(data.error || "Gagal mendaftar.");
+    } finally { setSubmitting(false); }
+  };
+
+  const handleVote = async () => {
+    if (!selectedCandidate) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voterId: "RES-01", candidateId: selectedCandidate }),
+      });
+      const data = await res.json();
+      if (res.ok) { setHasVoted(true); setMsg("Suara Anda berhasil dicatat. Terima kasih!"); onVoted(); }
+      else setMsg(data.error || "Gagal memberikan suara.");
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs font-semibold bg-primary text-text-inverse px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer shrink-0"
+      >
+        {election.phase === "nominating" ? "Daftar Calon" : "Berikan Suara"}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="bg-surface border border-border-strong rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-text-main">
+                  {election.phase === "nominating" ? "📝 Daftar sebagai Calon Ketua RT" : "🗳️ Berikan Suara Anda"}
+                </h3>
+                <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-main cursor-pointer"><X size={18} /></button>
+              </div>
+
+              {msg && (
+                <div className={cn("text-sm px-3 py-2 rounded-lg", msg.includes("berhasil") ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent")}>
+                  {msg}
+                </div>
+              )}
+
+              {election.phase === "nominating" && !hasNominated && (
+                <form onSubmit={handleNominate} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Nama Lengkap Anda</label>
+                    <input value={name} onChange={e => setName(e.target.value)} required placeholder="Sesuai KTP terdaftar" className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1">Visi & Misi (opsional)</label>
+                    <textarea value={visiMisi} onChange={e => setVisiMisi(e.target.value)} rows={3} placeholder="Tulis visi & misi Anda sebagai calon Ketua RT..." className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary resize-none" />
+                  </div>
+                  <button type="submit" disabled={submitting} className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60">
+                    {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran"}
+                  </button>
+                </form>
+              )}
+
+              {election.phase === "voting" && !hasVoted && (
+                <div className="space-y-3">
+                  <p className="text-xs text-text-muted">Pilih salah satu kandidat di bawah ini:</p>
+                  <div className="space-y-2">
+                    {election.candidates.map((c: any) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedCandidate(c.id)}
+                        className={cn(
+                          "w-full text-left p-3 rounded-xl border transition-all cursor-pointer",
+                          selectedCandidate === c.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border-weak hover:border-primary/40 bg-canvas"
+                        )}
+                      >
+                        <p className="font-semibold text-sm text-text-main">{c.name}</p>
+                        {c.visiMisi && <p className="text-xs text-text-muted mt-1 line-clamp-2">{c.visiMisi}</p>}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={handleVote} disabled={!selectedCandidate || submitting} className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60">
+                    {submitting ? "Menyimpan..." : "Konfirmasi Pilihan"}
+                  </button>
+                </div>
+              )}
+
+              {(hasNominated || hasVoted) && (
+                <div className="text-center py-4 space-y-2">
+                  <CheckCircle2 size={40} className="text-primary mx-auto" />
+                  <p className="font-semibold text-text-main text-sm">{msg}</p>
+                  <button onClick={() => setOpen(false)} className="text-xs text-text-muted hover:text-text-main cursor-pointer">Tutup</button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
