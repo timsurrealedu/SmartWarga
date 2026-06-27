@@ -82,15 +82,15 @@ export default function App() {
       />
 
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-20 md:hidden" 
-          onClick={() => setIsSidebarOpen(false)} 
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <div className="flex-1 md:ml-64 flex flex-col h-screen w-full">
-        <Header currentRole={currentRole} toggleSidebar={() => setIsSidebarOpen(true)} onProfileClick={() => setCurrentTab(currentRole === "admin" ? "admin_profile" : "profile")} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-canvas selection:bg-primary/30">
+      <div className="flex-1 md:ml-64 flex flex-col h-screen w-full min-w-0">
+        <Header currentRole={currentRole} currentTab={currentTab} toggleSidebar={() => setIsSidebarOpen(true)} onProfileClick={() => setCurrentTab(currentRole === "admin" ? "admin_profile" : "profile")} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-28 md:p-8 md:pb-8 bg-canvas selection:bg-primary/30">
            {currentRole === "user" && <UserDashboard currentTab={currentTab} setTab={setCurrentTab} />}
            {currentRole === "admin" && <AdminDashboard currentTab={currentTab} setTab={setCurrentTab} />}
            {currentRole === "docs" && <ArchitectureDoc />}

@@ -317,7 +317,7 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
       </div>
 
       {/* ── Lower grid: submissions + news ── */}
-      <div className="grid lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Status pengajuan saya */}
         <div className="lg:col-span-2 bg-surface border border-border-weak rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
@@ -607,7 +607,7 @@ function LettersTab({ letters, onLetterAdded, setTab, navigateToTracking }: { le
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {/* Form Request */}
          <div className="space-y-6">
             <div className="bg-surface p-6 rounded-2xl border border-border-weak">
@@ -898,7 +898,7 @@ function FinanceDuesTab({ data }: { data: any }) {
              </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div className="bg-surface p-6 rounded-2xl border border-border-weak">
                 <h3 className="font-semibold text-text-main mb-4">Grafik Penggunaan Dana</h3>
                 <div className="h-[300px] relative">
@@ -996,7 +996,7 @@ function FinanceDuesTab({ data }: { data: any }) {
             </div>
           )}
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
             {dues.map((due: any) => (
               <div key={due.id} className="bg-surface p-6 rounded-2xl border border-border-weak relative overflow-hidden group hover:border-primary/50 transition-colors">
                 {due.status === "paid" && (
@@ -1230,7 +1230,7 @@ function StorageTab() {
         <p className="text-sm text-text-muted mt-1">Simpan ID Card Anda dengan aman. Sistem OCR otomatis membaca data.</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
            <div className="bg-surface border-2 border-dashed border-border-strong rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-colors hover:bg-surface-hover">
               <div className="w-16 h-16 bg-primary/20 text-text-main rounded-full flex items-center justify-center mb-4">
@@ -1604,11 +1604,11 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
           <p className="text-sm text-text-muted mt-1">Lapor masalah lingkungan & pantau aduan warga secara transparan.</p>
         </div>
         
-        <div className="flex bg-surface rounded-xl p-1 border border-border-weak shrink-0">
+        <div className="flex w-full sm:w-auto bg-surface rounded-xl p-1 border border-border-weak shrink-0">
           <button
             onClick={() => setSubTab("create")}
             className={cn(
-              "px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
+              "flex-1 sm:flex-none px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               subTab === "create" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
@@ -1617,7 +1617,7 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
           <button
             onClick={() => setSubTab("public")}
             className={cn(
-              "px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
+              "flex-1 sm:flex-none px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               subTab === "public" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
@@ -1989,11 +1989,11 @@ function TrackingTab({ setTab, initialType }: { setTab: (tab: string) => void, i
         </div>
 
         {/* TABS SELECTOR - GREEN SCHEME */}
-        <div className="flex bg-surface rounded-xl p-1 border border-border-weak self-start md:self-auto">
+        <div className="flex w-full md:w-auto bg-surface rounded-xl p-1 border border-border-weak self-stretch md:self-auto">
           <button
             onClick={() => setActiveType("aduan")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+              "flex-1 md:flex-none px-3 md:px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               activeType === "aduan" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
@@ -2002,7 +2002,7 @@ function TrackingTab({ setTab, initialType }: { setTab: (tab: string) => void, i
           <button
             onClick={() => setActiveType("e-surat")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+              "flex-1 md:flex-none px-3 md:px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               activeType === "e-surat" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
@@ -2011,7 +2011,7 @@ function TrackingTab({ setTab, initialType }: { setTab: (tab: string) => void, i
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN: ACTIVE TIMELINE DETAIL (GREEN SCHEME) */}
         <div className="lg:col-span-2 space-y-6">
@@ -2571,7 +2571,7 @@ function NewsGotongRoyongTab() {
       </div>
 
       {subTab === "news" ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {articles.map(art => (
             <div key={art.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between hover:border-primary/30 transition-all duration-300">
               <div>
@@ -2608,7 +2608,7 @@ function NewsGotongRoyongTab() {
           ))}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
           {events.map(ev => (
             <div key={ev.id} className="bg-surface border border-border-weak p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-primary/30 transition-all">
               <div>
@@ -2862,7 +2862,7 @@ function MarketTab() {
         </button>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
         {listings.length === 0 && <p className="text-sm text-text-muted text-center py-8 col-span-full">Belum ada UMKM terdaftar.</p>}
         {listings.map(umkm => (
           <div key={umkm.id} className="bg-surface border border-border-weak rounded-2xl overflow-hidden shadow-md flex flex-col justify-between hover:border-primary/50 hover:shadow-lg transition-all duration-300 group cursor-pointer">
@@ -3148,7 +3148,7 @@ function DonationSection() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {campaigns.map(c => {
           const percent = Math.min(100, Math.round((c.raised / c.target) * 100));
           return (
@@ -3413,7 +3413,7 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
 
       {/* ── NOMINATING ── */}
       {phase === "nominating" && (
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Candidate list */}
           <div className="bg-surface border border-border-weak rounded-2xl p-5">
             <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2 text-sm"><Users size={16} className="text-primary" /> Kandidat Terdaftar ({candidates.length})</h3>
@@ -3482,7 +3482,7 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
         ) : (
           <div className="space-y-4">
             <h3 className="font-semibold text-text-main flex items-center gap-2 text-sm"><Vote size={16} className="text-blue-400" /> Pilih Kandidat Ketua RT</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {candidates.map((c: any) => {
                 const isSelected = selectedCandidate === c.id;
                 return (
@@ -3627,14 +3627,14 @@ function ProfileTab() {
         <p className="text-sm text-text-muted mt-1">Kelola data kepala keluarga, struktur RT/RW, dan rekam anggota keluarga.</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Form */}
         <div className="md:col-span-2 bg-surface border border-border-weak p-6 rounded-3xl shadow-sm space-y-6">
           <h3 className="font-bold text-base text-text-main border-b border-border-weak pb-3">Identitas Kepala Keluarga</h3>
           
           <form onSubmit={handleSaveProfile} className="space-y-4">
             {/* Read-only identity fields */}
-            <div className="grid sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
                   Nama Lengkap KK
@@ -3667,7 +3667,7 @@ function ProfileTab() {
             <p className="text-xs text-text-muted">Data identitas dan wilayah hanya dapat diubah oleh Pengurus RT.</p>
 
             {/* Editable contact fields */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-text-muted">Nomor WhatsApp</label>
                 <input

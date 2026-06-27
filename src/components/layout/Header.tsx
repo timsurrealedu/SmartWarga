@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bell, UserCircle, AlertTriangle, Menu } from "lucide-react";
-import { Role } from "./Sidebar";
+import { Role, getTabLabel } from "./Sidebar";
 
 interface HeaderProps {
   currentRole: Role;
+  currentTab?: string;
   toggleSidebar?: () => void;
   onProfileClick?: () => void;
 }
 
-export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderProps) {
+export function Header({ currentRole, currentTab, toggleSidebar, onProfileClick }: HeaderProps) {
   const [showPanicModal, setShowPanicModal] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
@@ -129,18 +130,20 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
 
   return (
     <>
-      <header className="pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:py-5 bg-canvas flex flex-row items-center justify-between px-3 md:px-8 sticky top-0 z-10 border-b border-border-weak gap-2">
+      <header className="pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:py-5 bg-canvas flex flex-row items-center justify-between px-3 md:px-8 sticky top-0 z-20 border-b border-border-weak gap-2">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <button aria-label="Buka menu" className="md:hidden -ml-1.5 h-11 w-11 flex items-center justify-center rounded-lg text-text-main shrink-0 active:bg-surface-hover" onClick={toggleSidebar}>
             <Menu size={24} />
           </button>
           <h1 className="text-base md:text-3xl font-display font-bold text-text-main truncate">
-            {currentRole === "user" ? "Dashboard Warga" : currentRole === "admin" ? "Dashboard Pengurus" : "Dokumentasi"}
+            {currentTab
+              ? getTabLabel(currentRole, currentTab)
+              : currentRole === "user" ? "Dashboard Warga" : currentRole === "admin" ? "Dashboard Pengurus" : "Dokumentasi"}
           </h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-5 shrink-0">
-          <div className="flex flex-col items-end">
+          <div className="relative flex flex-col items-end">
             <button 
               onMouseDown={startHolding}
               onMouseUp={stopHolding}
@@ -159,7 +162,7 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
               <span className="sm:hidden">{isHolding ? `${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC"}</span>
             </button>
             {isHolding && (
-              <span className="text-[10px] text-red-500 font-mono mt-1 font-bold animate-pulse">
+              <span className="absolute top-full right-0 mt-1 whitespace-nowrap text-[10px] text-red-500 font-mono font-bold animate-pulse pointer-events-none">
                 Jangan lepas! Mengirim dalam {3 - Math.floor((holdProgress / 100) * 3)}s...
               </span>
             )}

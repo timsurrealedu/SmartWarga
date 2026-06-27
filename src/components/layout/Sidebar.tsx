@@ -23,6 +23,36 @@ import {
 
 export type Role = "user" | "admin" | "docs";
 
+export const userTabs = [
+  { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
+  { id: "news_gotong_royong", label: "Portal Berita", icon: Newspaper },
+  { id: "market", label: "Pasar & UMKM", icon: Store },
+  { id: "letters", label: "Surat Pengantar", icon: FileText },
+  { id: "finance_dues", label: "Keuangan & Iuran", icon: PieChart },
+  { id: "reports", label: "Lapor Masalah", icon: MessageSquare },
+  { id: "tracking", label: "Lacak Status", icon: FileCheck },
+  { id: "election_warga", label: "Pemilihan RT/RW", icon: Vote },
+  { id: "profile", label: "Profil Keluarga", icon: User },
+];
+
+export const adminTabs = [
+  { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
+  { id: "news_manage", label: "Kelola Berita", icon: Newspaper },
+  { id: "market_manage", label: "Kelola UMKM & Iklan", icon: Store },
+  { id: "validations", label: "Administrasi Warga", icon: Users },
+  { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
+  { id: "ai_triage", label: "Kelola Laporan", icon: BrainCircuit },
+  { id: "election", label: "Pemilihan RT", icon: Vote },
+  { id: "admin_profile", label: "Profil Pengurus", icon: User },
+];
+
+/** Resolve a header-friendly page title for the current role + tab. */
+export function getTabLabel(role: Role, tabId: string): string {
+  const fallback = role === "user" ? "Dashboard Warga" : role === "admin" ? "Dashboard Pengurus" : "Dokumentasi";
+  const list = role === "user" ? userTabs : role === "admin" ? adminTabs : [];
+  return list.find(t => t.id === tabId)?.label ?? fallback;
+}
+
 interface SidebarProps {
   currentRole: Role;
   setRole: (role: Role) => void;
@@ -39,29 +69,6 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
   const toggleTheme = () => {
     setTheme(prev => prev === "light" ? "dark" : "light");
   };
-
-  const userTabs = [
-    { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
-    { id: "news_gotong_royong", label: "Portal Berita", icon: Newspaper },
-    { id: "market", label: "Pasar & UMKM", icon: Store },
-    { id: "letters", label: "Surat Pengantar", icon: FileText },
-    { id: "finance_dues", label: "Keuangan & Iuran", icon: PieChart },
-    { id: "reports", label: "Lapor Masalah", icon: MessageSquare },
-    { id: "tracking", label: "Lacak Status", icon: FileCheck },
-    { id: "election_warga", label: "Pemilihan RT/RW", icon: Vote },
-    { id: "profile", label: "Profil Keluarga", icon: User },
-  ];
-
-  const adminTabs = [
-    { id: "dashboard", label: "Beranda", icon: LayoutDashboard },
-    { id: "news_manage", label: "Kelola Berita", icon: Newspaper },
-    { id: "market_manage", label: "Kelola UMKM & Iklan", icon: Store },
-    { id: "validations", label: "Administrasi Warga", icon: Users },
-    { id: "finance_manage", label: "Kelola Kas & Iuran", icon: PieChart },
-    { id: "ai_triage", label: "Kelola Laporan", icon: BrainCircuit },
-    { id: "election", label: "Pemilihan RT", icon: Vote },
-    { id: "admin_profile", label: "Profil Pengurus", icon: User },
-  ];
 
   const tabs = currentRole === "user" ? userTabs : currentRole === "admin" ? adminTabs : [
     { id: "docs", label: "Proposal & Dokumen", icon: BookOpen }
@@ -84,7 +91,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
 
   return (
     <div className={cn(
-      "w-64 bg-sidebar border-r border-border-weak flex flex-col h-screen fixed top-0 left-0 z-30 transition-transform duration-300 md:translate-x-0",
+      "w-64 bg-sidebar border-r border-border-weak flex flex-col h-screen fixed top-0 left-0 z-40 transition-transform duration-300 md:translate-x-0",
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
       <div className="px-6 pb-4 pt-[max(1.5rem,env(safe-area-inset-top))] relative">

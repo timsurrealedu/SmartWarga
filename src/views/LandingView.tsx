@@ -45,7 +45,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-10 md:pt-48 md:pb-32 px-5 md:px-12">
+      <section className="relative pt-28 pb-16 md:pt-48 md:pb-32 px-6 md:px-12">
         <div className="absolute top-0 right-0 w-[60%] h-full bg-radial-gradient from-accent/10 to-transparent pointer-events-none opacity-50" />
         <div className="absolute bottom-0 left-0 w-[40%] h-[60%] bg-radial-gradient from-primary/10 to-transparent pointer-events-none opacity-30" />
 
@@ -56,14 +56,14 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
             transition={{ duration: 0.6 }}
             className="relative z-10"
           >
-            <div className="flex items-center gap-3 mb-4 md:mb-8">
+            <div className="flex items-center gap-3 mb-5 md:mb-8">
               <div className="h-px w-6 md:w-8 bg-accent" />
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-accent">Digitalisasi RT/RW Indonesia</span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-accent">Digitalisasi RT/RW Indonesia</span>
             </div>
-            <h1 className="font-display text-3xl md:text-7xl font-extrabold tracking-tight leading-[1.05] mb-4 md:mb-8">
+            <h1 className="font-display text-balance text-[2rem] md:text-7xl font-extrabold tracking-tight leading-[1.15] md:leading-[1.05] mb-5 md:mb-8">
               Lingkungan <span className="text-accent font-extrabold">Cerdas</span> Dimulai dari Sini
             </h1>
-            <p className="text-text-muted text-sm md:text-lg max-w-lg mb-6 md:mb-10 leading-relaxed font-normal">
+            <p className="text-text-muted text-[15px] md:text-lg max-w-lg mb-8 md:mb-10 leading-relaxed font-normal">
               Platform terintegrasi untuk administrasi RT/RW yang efisien, transparan, dan responsif — dirancang untuk warga Indonesia modern yang menghargai waktu.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -77,7 +77,7 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
               </button>
             </div>
 
-            <div className="mt-8 md:mt-20 flex gap-6 md:gap-16 border-t border-border-weak pt-6 md:pt-10">
+            <div className="mt-10 md:mt-20 flex gap-5 md:gap-16 border-t border-border-weak pt-8 md:pt-10">
               <div>
                 <div className="font-display text-xl md:text-3xl font-bold mb-0.5 md:mb-1 tracking-tight">Digitalisasi</div>
                 <div className="text-[9px] md:text-xs uppercase font-bold tracking-widest text-text-muted">Pengurusan Surat</div>
@@ -126,12 +126,12 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
       </section>
 
       {/* Features Section */}
-      <section className="py-12 md:py-32 bg-sidebar relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-5 md:px-12">
-          <div className="mb-8 md:mb-24 max-w-2xl">
-            <div className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-accent mb-3 md:mb-4">Fitur Unggulan</div>
-            <h2 className="font-display text-2xl md:text-5xl font-extrabold tracking-tight leading-[1.15] mb-3 md:mb-6">Semua yang Anda <br/> Butuhkan dalam Satu Atap</h2>
-            <p className="text-text-muted text-sm md:text-lg leading-relaxed font-normal">
+      <section className="py-16 md:py-32 bg-sidebar relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          <div className="mb-10 md:mb-24 max-w-2xl">
+            <div className="text-[10px] md:text-xs font-bold uppercase tracking-[0.25em] text-accent mb-4 md:mb-4">Fitur Unggulan</div>
+            <h2 className="font-display text-balance text-[1.65rem] md:text-5xl font-extrabold tracking-tight leading-[1.2] md:leading-[1.15] mb-4 md:mb-6">Semua yang Anda Butuhkan dalam Satu Atap</h2>
+            <p className="text-text-muted text-[15px] md:text-lg leading-relaxed font-normal">
               Kami membawa inovasi yang memecahkan masalah nyata kehidupan warga dan pengurus RT/RW setiap harinya.
             </p>
           </div>
@@ -172,11 +172,11 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
       </section>
 
       {/* Final CTA */}
-      <section className="py-14 md:py-40 px-5 md:px-12 text-center relative border-t border-border-weak">
+      <section className="py-20 md:py-40 px-6 md:px-12 text-center relative border-t border-border-weak">
         <div className="max-w-3xl mx-auto">
-          <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 rounded-full text-accent text-[10px] font-bold uppercase tracking-widest mb-5 md:mb-8">Ready to start?</div>
-          <h2 className="font-display text-2xl md:text-6xl font-extrabold tracking-tight leading-[1.15] mb-4 md:mb-10">Wujudkan RT/RW yang Lebih Modern & <span className="text-accent font-extrabold">Terpercaya</span></h2>
-          <p className="text-text-muted text-sm md:text-lg mb-6 md:mb-12 max-w-xl mx-auto font-normal leading-relaxed">
+          <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 rounded-full text-accent text-[10px] font-bold uppercase tracking-widest mb-6 md:mb-8">Ready to start?</div>
+          <h2 className="font-display text-balance text-[1.65rem] md:text-6xl font-extrabold tracking-tight leading-[1.2] md:leading-[1.15] mb-5 md:mb-10">Wujudkan RT/RW yang Lebih Modern & <span className="text-accent font-extrabold">Terpercaya</span></h2>
+          <p className="text-text-muted text-[15px] md:text-lg mb-8 md:mb-12 max-w-xl mx-auto font-normal leading-relaxed">
             Bergabunglah dengan ribuan lingkungan yang sudah menggunakan SmartWarga untuk kehidupan bertetangga yang lebih baik.
           </p>
           <button
@@ -202,8 +202,8 @@ export const LandingView = ({ onStart, onLogin, onLoginUser, theme, setTheme }: 
 };
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-  <div className="group bg-canvas p-5 md:p-10 hover:bg-surface-hover transition-all duration-500">
-    <div className="w-10 h-10 md:w-14 md:h-14 bg-accent/10 text-accent rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-8 group-hover:scale-110 group-hover:bg-accent group-hover:text-text-main transition-all duration-500">
+  <div className="group bg-canvas p-6 md:p-10 hover:bg-surface-hover transition-all duration-500">
+    <div className="w-11 h-11 md:w-14 md:h-14 bg-accent/10 text-accent rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-8 group-hover:scale-110 group-hover:bg-accent group-hover:text-text-main transition-all duration-500">
       {icon}
     </div>
     <h3 className="font-display text-base md:text-xl font-bold mb-2 md:mb-3 text-text-main group-hover:text-accent transition-colors duration-500">{title}</h3>

@@ -212,7 +212,7 @@ function AdminOverviewTab({ setTab, navigateToValidations }: { setTab: (tab: str
       </div>
 
       {/* ── Lower grid ── */}
-      <div className="grid lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent reports */}
         <div className="lg:col-span-2 bg-surface border border-border-weak rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
@@ -820,7 +820,7 @@ function ValidationsTab({ initialSubTab }: { initialSubTab?: "letters" | "regist
                         {/* Dokumen */}
                         <div>
                           <p className="text-xs font-semibold text-text-muted mb-3">Dokumen Identitas</p>
-                          <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-xl border border-border-weak overflow-hidden bg-surface">
                               <div className="px-3 py-2 bg-surface border-b border-border-weak flex items-center justify-between">
                                 <span className="text-[11px] font-semibold text-text-muted">KTP</span>
@@ -858,7 +858,7 @@ function ValidationsTab({ initialSubTab }: { initialSubTab?: "letters" | "regist
                         {/* Data diri */}
                         <div>
                           <p className="text-xs font-semibold text-text-muted mb-3">Data Diri</p>
-                          <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {[
                               ["Nama Lengkap", res.name],
                               ["NIK", dummyExtra?.nik],
@@ -998,7 +998,7 @@ function PendaftaranWargaSection({ ocrScanning, ocrResult, simulateOCR, handleVa
 
                   {isExpanded && (
                     <div className="border-t border-border-weak p-5 bg-canvas space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* KTP Preview */}
                         <div className="rounded-xl border border-border-weak overflow-hidden">
                           <div className="px-3 py-2 bg-surface border-b border-border-weak text-[11px] font-semibold text-text-muted flex items-center justify-between">
@@ -1060,7 +1060,7 @@ function PendaftaranWargaSection({ ocrScanning, ocrResult, simulateOCR, handleVa
           <h3 className="font-semibold text-text-main">Daftarkan Warga Manual (Walk-in)</h3>
           <p className="text-xs text-text-muted mt-0.5">Untuk warga yang datang langsung ke kantor RT — scan KTP / KK dan AI akan mengekstrak datanya.</p>
         </div>
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-surface border-2 border-dashed border-border-strong rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-surface-hover transition-colors">
             <div className="w-14 h-14 bg-primary/15 text-primary rounded-full flex items-center justify-center mb-3">
               {ocrScanning ? <Camera size={26} className="animate-pulse" /> : <Upload size={26} />}
@@ -1319,7 +1319,7 @@ function AdminFinanceTab() {
                     <p className="text-xs text-text-muted mt-1">Tidak ada resi yang menunggu persetujuan Anda saat ini.</p>
                   </div>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {pendingQueue.map(({ res, due }: any) => (
                       <div key={due.id} className="bg-surface border border-accent/30 rounded-2xl overflow-hidden">
                         <div className="p-4 flex items-start gap-3">
@@ -1418,7 +1418,7 @@ function AdminFinanceTab() {
                           {/* Expanded */}
                           {open && (
                             <div className="px-4 pb-5 pt-1 border-t border-border-weak bg-canvas/40 space-y-5 animate-in slide-in-from-top-2 duration-200">
-                              <div className="grid md:grid-cols-2 gap-4 pt-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                                 {/* Contact */}
                                 <div className="space-y-2.5 p-4 bg-surface rounded-xl border border-border-weak text-xs">
                                   <h5 className="font-semibold text-text-main text-xs flex items-center gap-2"><span className="w-1.5 h-3 bg-primary rounded-full" />Kontak & Kependudukan</h5>
@@ -1445,7 +1445,7 @@ function AdminFinanceTab() {
                               {/* Dues history */}
                               <div className="space-y-2.5">
                                 <h5 className="font-semibold text-text-main text-xs">Riwayat Tagihan Bulanan</h5>
-                                <div className="grid sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   {res.dues.map((due: any) => (
                                     <div key={due.id} className="bg-surface border border-border-weak p-4 rounded-xl space-y-3">
                                       <div className="flex justify-between items-start">
@@ -1556,7 +1556,7 @@ function AdminFinanceTab() {
           {showAdd && (
             <div className="bg-surface p-6 rounded-xl border border-border-weak space-y-4 animate-in fade-in slide-in-from-top-4 font-sans">
               <h3 className="font-bold text-text-main text-base mb-2">Transaksi Baru</h3>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-text-muted mb-2">Jenis Saldo</label>
                   <select 
@@ -1917,7 +1917,7 @@ export function AdminNewsTab() {
         <form onSubmit={handleCreate} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Berita" : "Buat Berita / Pengumuman Baru"}</h3>
           
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2">Judul Berita</label>
               <input
@@ -1998,7 +1998,7 @@ export function AdminNewsTab() {
         </form>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredNews.map((item: any) => (
           <div key={item.id} className="bg-surface rounded-xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
             <div className="flex flex-col md:flex-row">
@@ -2214,7 +2214,7 @@ export function AdminMarketTab() {
       {showAdd && subTab === "umkm" && (
         <form onSubmit={handleCreateUMKM} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Toko / Lapak" : "Daftarkan Toko / Lapak Baru"}</h3>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Nama Pemilik (Warga)</label>
               <input
@@ -2237,7 +2237,7 @@ export function AdminMarketTab() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Kategori Bidang</label>
               <select
@@ -2311,7 +2311,7 @@ export function AdminMarketTab() {
         <form onSubmit={handleCreateAd} className="bg-surface p-6 rounded-xl border border-border-weak space-y-4">
           <h3 className="font-bold text-text-main text-base">{editingId ? "Edit Banner Promo" : "Pasang Banner Promo Sponsor"}</h3>
           
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Nama Sponsor Organisasi</label>
               <input
@@ -2345,7 +2345,7 @@ export function AdminMarketTab() {
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase text-text-muted mb-2 font-semibold">Flyer / Spanduk Visual (URL)</label>
               <input
@@ -2391,7 +2391,7 @@ export function AdminMarketTab() {
       )}
 
       {subTab === "umkm" ? (
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {umkm.map((u: any) => (
             <div key={u.id} className="bg-surface border border-border-weak rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-border-strong transition-all">
               <div>
@@ -2420,7 +2420,7 @@ export function AdminMarketTab() {
           ))}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {ads.map((ad: any) => (
             <div key={ad.id} className="bg-surface rounded-xl border border-border-weak overflow-hidden shadow-sm hover:border-border-strong transition-all flex flex-col justify-between">
               <div className="flex flex-col md:flex-row flex-1">
@@ -3297,14 +3297,14 @@ function AdminProfileTab() {
         <p className="text-sm text-text-muted mt-1">Kelola kontak dan informasi pengurus RT yang ditampilkan ke warga.</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Form */}
         <div className="md:col-span-2 bg-surface border border-border-weak p-6 rounded-xl space-y-6">
           <h3 className="font-bold text-base text-text-main border-b border-border-weak pb-3">Identitas Pengurus</h3>
 
           <form onSubmit={handleSave} className="space-y-4">
             {/* Read-only fields */}
-            <div className="grid sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-canvas border border-border-weak rounded-xl opacity-70">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-text-muted flex items-center gap-1">
                   Nama Lengkap
@@ -3337,7 +3337,7 @@ function AdminProfileTab() {
             <p className="text-xs text-text-muted">Data jabatan dan wilayah dikelola oleh sistem. Hubungi administrator untuk perubahan.</p>
 
             {/* Editable fields */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-text-muted">Nomor WhatsApp</label>
                 <input
