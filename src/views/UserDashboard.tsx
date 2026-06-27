@@ -283,12 +283,12 @@ function LettersTab({ letters, onLetterAdded, setTab, navigateToTracking }: { le
   const [submitting, setSubmitting] = useState(false);
   
   const mainLetterTypes = [
-    { id: "Surat Pengantar Domisili", label: "Domisili", icon: <MapPin size={24} />, color: "bg-blue-50 text-blue-600 border-blue-100" },
-    { id: "Surat Keterangan Usaha", label: "Usaha (SKU)", icon: <Briefcase size={24} />, color: "bg-orange-50 text-orange-600 border-orange-100" },
-    { id: "Surat Keterangan Tidak Mampu (SKTM)", label: "SKTM", icon: <HelpingHand size={24} />, color: "bg-green-50 text-green-600 border-green-100" },
-    { id: "Surat Pengantar Nikah (N1-N4)", label: "P. Nikah", icon: <Heart size={24} />, color: "bg-rose-50 text-rose-600 border-rose-100" },
-    { id: "Surat Keterangan Pindah Domisili", label: "Pindah", icon: <Truck size={24} />, color: "bg-purple-50 text-purple-600 border-purple-100" },
-    { id: "Lainnya", label: "Lainnya", icon: <MoreHorizontal size={24} />, color: "bg-gray-50 text-gray-600 border-gray-100" },
+    { id: "Surat Pengantar Domisili", label: "Domisili", icon: <MapPin size={24} />, color: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
+    { id: "Surat Keterangan Usaha", label: "Usaha (SKU)", icon: <Briefcase size={24} />, color: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+    { id: "Surat Keterangan Tidak Mampu (SKTM)", label: "SKTM", icon: <HelpingHand size={24} />, color: "bg-primary/15 text-primary border-primary/20" },
+    { id: "Surat Pengantar Nikah (N1-N4)", label: "P. Nikah", icon: <Heart size={24} />, color: "bg-rose-500/15 text-rose-400 border-rose-500/20" },
+    { id: "Surat Keterangan Pindah Domisili", label: "Pindah", icon: <Truck size={24} />, color: "bg-violet-500/15 text-violet-400 border-violet-500/20" },
+    { id: "Lainnya", label: "Lainnya", icon: <MoreHorizontal size={24} />, color: "bg-surface border-border-strong text-text-muted" },
   ];
 
   const otherLetterTypes = [
@@ -550,10 +550,10 @@ function LettersTab({ letters, onLetterAdded, setTab, navigateToTracking }: { le
                     </div>
                  </div>
 
-                 <button 
-                   onClick={handleSubmit} 
+                 <button
+                   onClick={handleSubmit}
                    disabled={submitting}
-                   className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-lg hover:bg-surface-hover hover:text-text-main transition-colors">
+                   className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {submitting ? "Memproses..." : "Ajukan dengan Tanda Tangan Digital"}
                  </button>
               </div>
@@ -711,29 +711,29 @@ function FinanceDuesTab({ data }: { data: any }) {
         </div>
       </div>
 
-      <div className="flex border-b border-border-weak">
-        <button 
+      <div className="flex border-b border-border-weak overflow-x-auto">
+        <button
           onClick={() => setSubTab("finance")}
           className={cn(
-            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            "py-3 px-4 sm:px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0",
             subTab === "finance" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
           )}
         >
-          Transparansi Kas 
+          Transparansi Kas
         </button>
-        <button 
+        <button
           onClick={() => setSubTab("dues")}
           className={cn(
-            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            "py-3 px-4 sm:px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0",
             subTab === "dues" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
           )}
         >
           Iuran Warga
         </button>
-        <button 
+        <button
           onClick={() => setSubTab("donation")}
           className={cn(
-            "py-3 px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer",
+            "py-3 px-4 sm:px-6 text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0",
             subTab === "donation" ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main"
           )}
         >
@@ -1033,7 +1033,7 @@ function FinanceDuesTab({ data }: { data: any }) {
                     {proofImage ? (
                       <div className="flex flex-col items-center gap-2">
                         <CheckCircle2 className="text-primary" />
-                        <span className="text-xs text-text-main font-bold">Bukti Tembahan (Berhasil)</span>
+                        <span className="text-xs text-text-main font-bold">Bukti Tambahan (Berhasil)</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-text-muted">
@@ -1105,7 +1105,7 @@ function StorageTab() {
               <button 
                 onClick={simulateOCR} 
                 disabled={ocrScanning}
-                className={cn("px-6 py-2.5 rounded-full font-medium text-sm transition-colors", ocrScanning ? "bg-black/10 text-black/50" : "bg-primary text-white hover:bg-surface")}
+                className={cn("px-6 py-2.5 rounded-full font-medium text-sm transition-colors", ocrScanning ? "bg-surface text-text-muted cursor-not-allowed" : "bg-primary text-text-inverse hover:bg-primary/80 cursor-pointer")}
               >
                 {ocrScanning ? "Memindai dengan AI..." : "Pilih File Dokumen"}
               </button>
@@ -1510,24 +1510,24 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
           <p className="text-sm text-text-muted mt-1">Lapor masalah lingkungan & pantau aduan warga secara transparan.</p>
         </div>
         
-        <div className="flex bg-surface rounded-xl p-1 border border-border-weak">
+        <div className="flex bg-surface rounded-xl p-1 border border-border-weak shrink-0">
           <button
             onClick={() => setSubTab("create")}
             className={cn(
-              "flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5",
+              "px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               subTab === "create" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
-            <Plus size={14} /> Lapor Masalah
+            <Plus size={14} className="shrink-0" /> Lapor Masalah
           </button>
           <button
             onClick={() => setSubTab("public")}
             className={cn(
-              "flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5",
+              "px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap",
               subTab === "public" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
-            <Users size={14} /> Laporan Warga Lain
+            <Users size={14} className="shrink-0" /> Laporan Warga Lain
           </button>
         </div>
       </div>

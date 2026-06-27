@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Bell, UserCircle, AlertTriangle, Menu } from "lucide-react";
 import { Role } from "./Sidebar";
 
@@ -41,6 +41,19 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
   // Notifications State and Syncing
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(e.target as Node)) {
+        setShowNotifDropdown(false);
+      }
+    };
+    if (showNotifDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showNotifDropdown]);
 
   const fetchNotifications = async () => {
     try {
@@ -152,14 +165,9 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
             )}
           </div>
 
-          <div className="relative">
-            <button 
-              onClick={() => {
-                setShowNotifDropdown(!showNotifDropdown);
-                if (!showNotifDropdown) {
-                  handleClearNotifications();
-                }
-              }}
+          <div className="relative" ref={notifDropdownRef}>
+            <button
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
               className="p-2.5 rounded-xl bg-canvas hover:bg-surface-hover border border-border-strong text-text-muted hover:text-text-main relative transition-all cursor-pointer"
             >
               <Bell size={20} />
@@ -218,7 +226,7 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
                 {currentRole === "user" ? `Warga RT ${profile.rt} / RW ${profile.rw}` : "Pengurus"}
               </p>
             </div>
-            <UserCircle size={32} className="text-text-muted text-primary" />
+            <UserCircle size={32} className="text-primary" />
           </button>
         </div>
       </header>

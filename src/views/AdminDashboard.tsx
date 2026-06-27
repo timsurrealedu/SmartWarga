@@ -540,12 +540,12 @@ function ValidationsTab({ initialSubTab }: { initialSubTab?: "letters" | "regist
       </div>
 
       {/* Sub-tab selector */}
-      <div className="flex bg-surface rounded-xl p-1 border border-border-weak w-fit">
+      <div className="flex bg-surface rounded-xl p-1 border border-border-weak w-full sm:w-fit overflow-x-auto">
         {([["letters", "Validasi Surat"], ["register", "Pendaftaran Warga"], ["data", "Data Warga"]] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setSubTab(id)}
-            className={cn("px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer", subTab === id ? "bg-primary text-text-inverse" : "text-text-muted hover:text-text-main")}
+            className={cn("px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0", subTab === id ? "bg-primary text-text-inverse" : "text-text-muted hover:text-text-main")}
           >
             {label}
           </button>
