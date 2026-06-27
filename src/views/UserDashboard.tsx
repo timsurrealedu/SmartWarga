@@ -3902,10 +3902,10 @@ function AIChatbot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+    <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-4 sm:right-6 z-40 flex flex-col items-end">
       {/* Chat Panel */}
       {isOpen && (
-        <div className="bg-sidebar border border-border-strong rounded-3xl w-80 md:w-96 h-[480px] shadow-2xl flex flex-col justify-between mb-4 overflow-hidden animate-in slide-in-from-bottom-6 duration-200">
+        <div className="bg-sidebar border border-border-strong rounded-3xl w-[calc(100vw-2rem)] max-w-80 md:w-96 md:max-w-none h-[480px] max-h-[70vh] shadow-2xl flex flex-col justify-between mb-4 overflow-hidden animate-in slide-in-from-bottom-6 duration-200">
           {/* Header */}
           <div className="bg-primary text-text-inverse p-4 flex justify-between items-center">
             <div className="flex items-center gap-2.5">

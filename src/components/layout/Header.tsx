@@ -129,10 +129,10 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
 
   return (
     <>
-      <header className="py-2 md:py-5 bg-canvas flex flex-row items-center justify-between px-3 md:px-8 sticky top-0 z-10 border-b border-border-weak gap-2">
+      <header className="pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:py-5 bg-canvas flex flex-row items-center justify-between px-3 md:px-8 sticky top-0 z-10 border-b border-border-weak gap-2">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
-          <button className="md:hidden p-1.5 -ml-1 text-text-main shrink-0" onClick={toggleSidebar}>
-            <Menu size={22} />
+          <button aria-label="Buka menu" className="md:hidden -ml-1.5 h-11 w-11 flex items-center justify-center rounded-lg text-text-main shrink-0 active:bg-surface-hover" onClick={toggleSidebar}>
+            <Menu size={24} />
           </button>
           <h1 className="text-base md:text-3xl font-display font-bold text-text-main truncate">
             {currentRole === "user" ? "Dashboard Warga" : currentRole === "admin" ? "Dashboard Pengurus" : "Dokumentasi"}
@@ -152,7 +152,7 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
                   ? `linear-gradient(to right, #b91c1c ${holdProgress}%, #ef4444 ${holdProgress}%)`
                   : undefined
               }}
-              className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl py-1.5 px-2.5 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all text-xs select-none touch-none"
+              className="bg-red-600 hover:bg-red-700 text-white border-none rounded-xl min-h-11 py-2.5 px-3.5 md:py-3 md:px-5 font-bold uppercase tracking-wide cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all text-xs select-none touch-none"
             >
               <AlertTriangle size={15} fill="currentColor" className="shrink-0" />
               <span className="hidden sm:inline">{isHolding ? `HOLD: ${3 - Math.floor((holdProgress / 100) * 3)}s` : "PANIC (TAHAN 3S)"}</span>
@@ -167,17 +167,18 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
 
           <div className="relative" ref={notifDropdownRef}>
             <button
+              aria-label="Pemberitahuan"
               onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-              className="p-2.5 rounded-xl bg-canvas hover:bg-surface-hover border border-border-strong text-text-muted hover:text-text-main relative transition-all cursor-pointer"
+              className="h-11 w-11 flex items-center justify-center rounded-xl bg-canvas hover:bg-surface-hover border border-border-strong text-text-muted hover:text-text-main relative transition-all cursor-pointer"
             >
               <Bell size={20} />
               {notifications.some(n => !n.isRead) && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-canvas animate-pulse" />
+                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-canvas animate-pulse" />
               )}
             </button>
 
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#0c1614] [.light_&]:bg-white border border-border-strong rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="fixed left-3 right-3 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-[#0c1614] [.light_&]:bg-white border border-border-strong rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="p-4 border-b border-border-weak flex justify-between items-center bg-[#0c1614] [.light_&]:bg-white">
                   <h4 className="font-semibold text-sm text-text-main">Pemberitahuan</h4>
                   <button 
@@ -215,7 +216,7 @@ export function Header({ currentRole, toggleSidebar, onProfileClick }: HeaderPro
 
           <button
             onClick={onProfileClick}
-            className="flex items-center gap-2 md:gap-3 pl-2 md:pl-5 border-l border-border-strong hover:opacity-80 transition-all text-left bg-transparent cursor-pointer"
+            className="flex items-center min-h-11 gap-2 md:gap-3 pl-2 md:pl-5 border-l border-border-strong hover:opacity-80 transition-all text-left bg-transparent cursor-pointer"
             id="header-profile-btn"
           >
             <div className="text-right hidden sm:block">

@@ -87,7 +87,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
       "w-64 bg-sidebar border-r border-border-weak flex flex-col h-screen fixed top-0 left-0 z-30 transition-transform duration-300 md:translate-x-0",
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
-      <div className="p-6 relative pb-4">
+      <div className="px-6 pb-4 pt-[max(1.5rem,env(safe-area-inset-top))] relative">
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-serif-title font-semibold tracking-tight">
             <span className="text-text-main">Smart</span><span className="text-accent">Warga</span>
@@ -97,11 +97,12 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
 
 
 
-        <button 
-          className="md:hidden absolute top-6 right-4 text-text-muted hover:text-text-main"
+        <button
+          aria-label="Tutup menu"
+          className="md:hidden absolute top-4 right-2 h-11 w-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text-main active:bg-surface-hover"
           onClick={() => setIsOpen?.(false)}
         >
-          <X size={20} />
+          <X size={22} />
         </button>
       </div>
 
@@ -114,7 +115,7 @@ export function Sidebar({ currentRole, setRole, currentTab, setTab, onLogout, is
               if (setIsOpen) setIsOpen(false);
             }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer",
               currentTab === tab.id
                 ? "bg-primary/15 text-primary font-semibold border border-primary/25 shadow-xs"
                 : "text-text-main/70 hover:bg-primary/10 hover:text-text-main"
