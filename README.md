@@ -5,13 +5,28 @@ SmartWarga adalah platform digital terintegrasi yang dirancang khusus untuk memo
 
 ---
 
+## 🔄 Pembaruan Terbaru (Revamp)
+
+Ringkasan perubahan besar pada iterasi terakhir:
+
+- **Beranda Warga & Pengurus dirancang ulang** menjadi pusat aksi (banner tagihan dinamis, kartu "Perlu Tindakan", KPI, arus kas, dan pintasan cepat). Brankas Digital dipindah ke Profil.
+- **Verifikasi Iuran Warga** dirombak: ringkasan statistik, **antrean verifikasi resi** prioritas, lightbox bukti transfer, serta pencarian/filter/sortir direktori warga.
+- **Lapor Masalah (AI) diperbaiki total**: form tunggal yang ringkas, AI mengisi draf judul/deskripsi/kategori dari foto (bisa disunting, ditandai "Draf AI"), lokasi jujur (GPS + chip), dan **degradasi anggun** saat AI tak tersedia. Sisi pengurus: urgensi AI tampil di tiap baris + konfirmasi/override label.
+- **Pemilihan RT direvamp (UI + sistem)**: memperbaiki bug satu-suara-untuk-semua, status partisipasi divalidasi server (tahan refresh), bar partisipasi/turnout langsung, dan rekap privat hingga ditutup.
+- **Rencana backend** untuk migrasi dari data in-memory ke database persisten: lihat [`BACKEND_PLAN.md`](./BACKEND_PLAN.md).
+
+---
+
 ## 🌟 Fitur Warga (User View)
 
 ### 1. Beranda Warga
-Dashboard utama yang menyajikan ringkasan kondisi terkini secara personal.
-- **Widget Statistik Interaktif**: Tiga kartu klik — Surat Pengantar (jumlah menunggu persetujuan), Berita RT (redirect ke portal berita), dan Status Iuran (redirect ke halaman keuangan).
-- **Banner Selamat Datang**: Tombol cepat "Tonton Video Tutorial" dan "Buat Laporan" untuk aksi paling umum.
-- **Penyimpanan Dokumen Digital**: Akses cepat ke brankas KTP/KK digital.
+Dashboard personal yang menonjolkan aksi dan status terkini.
+- **Banner Tagihan Dinamis**: Status iuran bulan berjalan tampil otomatis dari data — *belum bayar* (tombol "Bayar Sekarang"), *menunggu verifikasi*, atau *lunas*.
+- **Layanan Cepat**: 6 pintasan ikon (Ajukan Surat, Lapor Masalah, Bayar Iuran, Lacak Status, Pasar UMKM, Tombol Darurat).
+- **Status Pengajuan Saya**: Ringkasan surat & laporan milik warga beserta status, langsung menuju Lacak Status.
+- **Berita & Pengumuman**: 3 berita terbaru dengan thumbnail.
+- **Banner Selamat Datang**: Tombol "Tonton Video Tutorial" dan "Buat Laporan".
+- *Brankas Digital & OCR kini dipindahkan ke halaman **Profil Keluarga**.*
 
 ### 2. Surat Pengantar (E-Surat Digital)
 Digitalisasi pengurusan surat pengantar yang biasanya memakan waktu berhari-hari menjadi hitungan menit.
@@ -20,12 +35,13 @@ Digitalisasi pengurusan surat pengantar yang biasanya memakan waktu berhari-hari
 - **Preview PDF Real-Time**: Pratinjau dokumen langsung diperbarui saat warga mengisi formulir, menampilkan nama dari profil dan keperluan yang diketik.
 - **Riwayat Pengajuan**: Tombol langsung yang menavigasi ke tab Lacak Status → sub-tab E-Surat Resmi.
 
-### 3. Lapor Masalah (E-Reporting)
-Sistem pelaporan lingkungan berbasis AI untuk warga.
-- **Kategorisasi**: Infrastruktur, Kebersihan, Keamanan, Sosial, dan Lainnya.
-- **AI Photo Analysis**: Unggah foto masalah, AI menganalisis jenis kerusakan, urgensi, dan lokasi secara otomatis.
-- **Stepper Interaktif**: Proses pelaporan 5 langkah dengan visualisasi analisis AI secara dramatis.
-- **Laporan Publik & Pribadi**: Pantau laporan sendiri atau lihat transparansi laporan warga lain.
+### 3. Lapor Masalah (E-Reporting berbasis AI)
+Form pelaporan tunggal yang ringkas — AI membantu menyusun draf, bukan menghambat.
+- **Draf AI dari Foto**: Unggah foto, AI mengisi draf **Judul, Deskripsi, dan Kategori** (ditandai "✨ Draf AI" dan tetap bisa disunting). Satu state loading jujur — tanpa animasi "scanning" palsu berlama-lama.
+- **Degradasi Anggun**: Tanpa API key / saat AI gagal, form otomatis beralih ke pengisian manual — tidak ada error atau judul generik.
+- **Lokasi Jujur**: Input alamat + tombol **GPS** (geolocation asli) + chip lokasi cepat. Tidak ada lokasi acak yang dikarang AI.
+- **Kategori & Publikasi**: Pilih kategori (saran AI tersorot) dan toggle publikasi ke feed warga.
+- **Laporan Warga Lain**: Feed transparan laporan publik warga lain beserta statusnya.
 
 ### 4. Lacak Status
 Pantau real-time seluruh pengajuan dalam satu halaman.
@@ -50,18 +66,21 @@ Direktori usaha lokal warga RT.
 - **Iklan Berbayar**: Sponsor lokal tampil sebagai karousel di sidebar.
 - **Daftar UMKM Baru**: Warga dapat mendaftarkan usahanya langsung dari aplikasi.
 
-### 8. Pemilihan RT/RW
-Tab khusus untuk proses pemilihan ketua RT secara demokratis.
-- **Fase Nominasi** (aktif): Warga dapat melihat kandidat yang sudah mendaftar beserta foto avatar dan visi misi, serta mendaftarkan diri sebagai calon.
-- **Fase Pemungutan Suara** (aktif): Kartu kandidat dengan foto, nama, dan visi misi — klik untuk memilih, konfirmasi dengan satu tombol. Form pendaftaran di-grey-out otomatis saat fase ini.
-- **Fase Selesai**: Banner pemenang dengan nama ketua RT terpilih.
-- **Fase Tidak Aktif**: Placeholder informatif, semua elemen interaksi di-grey-out.
+### 8. Pemilihan RT
+Proses pemilihan transparan — **satu warga, satu suara** (divalidasi server).
+- **Hero Fase + Partisipasi**: Status fase (Nominasi/Voting/Selesai), batas masa jabatan, dan **bar partisipasi langsung** saat voting (suara masuk / total KK).
+- **Status Partisipasi dari Server**: Sudah memilih/mendaftar dideteksi dari server lewat satu request — **tahan refresh**, tidak hilang saat halaman dimuat ulang.
+- **Identitas dari Profil**: Nama calon diambil otomatis dari profil (tak perlu ketik ulang).
+- **Fase Nominasi**: Lihat kandidat (avatar + visi misi), daftarkan diri; entri milik sendiri ditandai.
+- **Fase Voting**: Kartu kandidat — pilih lalu konfirmasi; setelah memilih tampil "Anda memilih X".
+- **Fase Selesai**: Pemenang + **hasil akhir dengan persentase perolehan suara** dan total partisipasi.
 
 ### 9. Profil Keluarga
 Manajemen data kontak pribadi warga.
 - **Data Terlindungi**: Nama, alamat, RT, dan RW bersifat read-only (diatur RT) — tidak bisa diubah sembarangan.
 - **Kontak Editable**: Hanya nomor WhatsApp dan email yang bisa diperbarui mandiri.
 - **Anggota Keluarga**: Tambah/hapus anggota keluarga dalam satu kartu keluarga.
+- **Brankas Digital & Smart OCR**: Penyimpanan dokumen KTP/KK dengan ekstraksi data OCR (dipindahkan ke sini dari Beranda).
 
 ### 10. AI Chatbot Warga
 Asisten virtual yang mengambang di pojok kanan bawah.
@@ -74,11 +93,13 @@ Asisten virtual yang mengambang di pojok kanan bawah.
 ## 🛠️ Fitur Pengurus (Admin View)
 
 ### 1. Beranda Pengurus
-Pusat kendali ringkas untuk pengurus RT.
-- **3 Metrik Aksi**: Surat Menunggu (redirect ke Validasi Surat), Laporan Aktif (redirect ke Kelola Laporan), Pendaftaran Baru (redirect ke Pendaftaran Warga) — semua langsung ke sub-tab yang tepat.
+Pusat komando yang menonjolkan apa yang butuh tindakan.
+- **Perlu Tindakan Anda**: 4 kartu aksi dengan jumlah *live* (Surat Menunggu, Verifikasi Iuran, Pendaftaran Baru, Laporan Mendesak) — kartu tanpa antrean berubah jadi status "selesai".
+- **KPI Lingkungan**: Kepala Keluarga, Iuran Terkumpul (+ % pelunasan), Laporan Aktif, Donasi Terkumpul.
+- **Laporan Terbaru**: Daftar dengan indikator urgensi & tag "URGEN".
+- **Arus Kas + Penggalangan Dana**: Mini-bar 6 bulan pemasukan/pengeluaran dan progress donasi aktif.
+- **Aksi Cepat**: Pintasan Kelola Berita, Catat Kas, Kelola Laporan, Pemilihan RT.
 - **Alert Pemilihan**: Banner status pemilihan aktif dengan tombol kelola langsung.
-- **Laporan Terbaru**: 4 laporan warga paling baru dengan indikator urgensi warna-warni.
-- **Klik Avatar Profil**: Klik nama/foto di pojok kanan atas header langsung redirect ke halaman Profil Pengurus.
 
 ### 2. Administrasi Warga (3 Sub-tab)
 
@@ -97,15 +118,13 @@ Pusat kendali ringkas untuk pengurus RT.
 - **Total Warga**: Jumlah warga terdaftar tampil di header saat akses dibuka.
 - **Edit Panel Inline**: Klik "Edit" membuka panel expand berisi preview kartu KTP dan Kartu Keluarga, serta form editable untuk semua data warga (NIK, nama, HP, email, agama, status perkawinan, pekerjaan, alamat).
 
-### 3. Kelola Laporan
-Manajemen pengaduan warga dengan triage berbasis AI.
-- **Filter Ganda**: Filter status (TERKIRIM / PROSES / SELESAI) dan filter kategori (Infrastruktur, Kebersihan, Keamanan, Sosial, Lainnya) berjalan bersamaan.
-- **Sorting Cerdas**: Laporan TERKIRIM dan PROSES selalu di atas, SELESAI di bawah; dalam tiap grup diurutkan berdasarkan skor urgensi AI dari tinggi ke rendah.
-- **Alur Kerja Bertahap**:
-  - **TERKIRIM**: Pengurus melihat foto warga, deskripsi, label AI, lalu klik "Validasi" → status berubah ke PROSES.
-  - **PROSES**: Pengurus menulis balasan, klik "Kirim & Selesaikan" → status berubah ke SELESAI.
-  - **SELESAI**: Hanya tampil sebagai arsip read-only.
-- **Foto Laporan Warga**: Gambar yang dilampirkan warga ditampilkan langsung di kartu laporan yang diperluas.
+### 3. Kelola Laporan (Triage AI)
+Manajemen pengaduan warga di mana AI berperan sebagai **mesin prioritas**, bukan label pasif.
+- **Urgensi di Tiap Baris**: Skor urgensi AI tampil langsung pada setiap baris + tag "Prioritas" untuk urgensi ≥ 8; banner peringatan menampilkan jumlah laporan prioritas tinggi.
+- **Panel Analisis AI**: Kategori, bar urgensi, kata kunci, dan status *Dikonfirmasi/Belum ditinjau* — dengan tombol **Konfirmasi Label** dan **Sesuaikan** (override kategori/urgensi/tag, human-in-the-loop).
+- **Filter Ganda & Sorting**: Filter status + kategori; otomatis urut berdasarkan urgensi AI (tertinggi di atas).
+- **Alur Kerja**: TERKIRIM → "Validasi" → PROSES → tulis balasan & "Kirim & Selesaikan" → SELESAI (arsip).
+- **Foto Laporan**: Gambar lampiran warga tampil di kartu yang diperluas.
 
 ### 4. Kelola Berita
 Publikasi pengumuman dan berita lingkungan RT.
@@ -117,17 +136,19 @@ Manajemen direktori usaha dan slot iklan berbayar.
 - Kelola iklan sponsor yang tampil di sidebar carousel.
 
 ### 6. Kelola Kas & Iuran
-Manajemen keuangan RT yang transparan.
-- **Grafik Donat**: Visualisasi penggunaan dana yang sama seperti yang dilihat warga.
-- **Tambah Transaksi Manual**: Input pemasukan/pengeluaran dengan bukti foto kwitansi.
-- **Manajemen Iuran Warga**: Tandai status lunas/tunggak per warga per bulan, kirim reminder.
+Verifikasi iuran dirancang ulang agar tugas utama langsung di depan mata.
+- **Ringkasan Statistik**: Perlu Verifikasi, Lunas Bulan Ini, Belum Bayar, dan Total Terkumpul.
+- **Antrean Verifikasi Resi**: Semua bukti transfer *pending* dari seluruh KK tampil di atas sebagai kartu aksi — thumbnail resi + tombol **Setujui/Tolak inline**, tanpa perlu membuka tiap warga satu per satu.
+- **Lightbox Bukti Transfer**: Klik resi untuk pratinjau besar di dalam aplikasi (tanpa buka tab baru), lengkap dengan detail transfer + tombol "Setujui & Rekam Buku Kas" / "Tolak".
+- **Direktori Warga**: Pencarian + filter status (Perlu Verifikasi / Belum Bayar / Lunas), otomatis menaikkan yang butuh verifikasi ke atas; kartu *expand* berisi kontak, WhatsApp, pengingat, dan riwayat tagihan.
+- **Kas & Pengeluaran**: Grafik donat alokasi dana + pencatatan transaksi manual dengan bukti foto.
 
 ### 7. Pemilihan RT (Kelola)
 Panel manajemen pemilihan dari sisi pengurus.
-- **Setup Periode**: Atur masa jabatan pengurus saat ini dan buka fase nominasi.
-- **Mulai Voting**: Transisi fase dari nominasi ke pemungutan suara.
-- **Hitung Suara & Umumkan**: Tally otomatis, tampilkan pemenang ke seluruh warga.
-- **Reset**: Mulai ulang seluruh siklus pemilihan.
+- **Stepper Fase**: Visualisasi alur Persiapan → Nominasi → Voting → Selesai.
+- **Statistik Partisipasi**: Saat voting tampil Suara Masuk, **% Partisipasi** (vs total KK), dan kandidat **Unggul Sementara**.
+- **Rekap Langsung (privat)**: Perolehan suara hanya terlihat pengurus hingga ditutup — mencegah efek *bandwagon*.
+- **Alur**: Setup masa jabatan → buka nominasi → mulai voting → "Tutup & Umumkan" (dengan konfirmasi) → reset siklus.
 
 ### 8. Profil Pengurus
 Halaman profil khusus pengurus RT.
@@ -151,8 +172,8 @@ Versi admin dari asisten virtual dengan konteks pengurus.
 - **Grafik**: [Recharts](https://recharts.org/) — Area chart, Bar chart, dan Donut/Pie chart.
 - **PDF**: [jsPDF](https://github.com/parallax/jsPDF) + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable) — Generasi PDF surat pengantar di sisi klien.
 - **Ikonografi**: [Lucide React](https://lucide.dev/) — Set ikon vektor bersih dan konsisten.
-- **Backend**: [Express](https://expressjs.com/) — Melayani aset statis dan REST API sederhana (in-memory).
-- **AI/OCR**: [Google Gemini AI (@google/genai)](https://ai.google.dev/) — Ekstraksi data KTP/KK otomatis via structured output.
+- **Backend**: [Express](https://expressjs.com/) — Melayani aset statis dan REST API sederhana (data **in-memory**, reset saat restart). Rencana migrasi ke database persisten ada di [`BACKEND_PLAN.md`](./BACKEND_PLAN.md).
+- **AI/OCR**: [Google Gemini AI (@google/genai)](https://ai.google.dev/) — OCR KTP/KK, analisis foto laporan, klasifikasi urgensi, dan chatbot via structured output. Seluruh fitur AI **degradasi anggun** (fallback) bila `GEMINI_API_KEY` tidak diisi.
 
 ---
 
