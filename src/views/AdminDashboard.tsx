@@ -5,7 +5,8 @@ import {
   Users, UserCheck, FileText, Check, X, Search, Upload, Camera, CheckCircle2, User, Plus, MessageSquare, CreditCard,
   Download, ChevronDown, ChevronUp, Newspaper, Store, Calendar, Megaphone, AlertTriangle, Tag, PhoneCall, LayoutDashboard,
   BrainCircuit, SlidersHorizontal, ArrowUpDown, ThumbsUp, Pencil, ChevronRight, Filter, Vote, Trophy, Clock, UserPlus,
-  Lock, Shield, ShieldCheck, Edit3,
+  Lock, Shield, ShieldCheck, Edit3, Wallet, HeartHandshake, ArrowRight, TrendingUp, TrendingDown, Activity, Receipt,
+  Bell, ZoomIn, Inbox,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -47,43 +48,97 @@ export function AdminDashboard({ currentTab, setTab }: { currentTab: string, set
   );
 }
 
+const arr = (x: any): any[] => (Array.isArray(x) ? x : []);
+const rpShort = (n: number) => {
+  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)} jt`;
+  if (n >= 1_000) return `Rp ${Math.round(n / 1_000)} rb`;
+  return `Rp ${n.toLocaleString("id-ID")}`;
+};
+
 function AdminOverviewTab({ setTab, navigateToValidations }: { setTab: (tab: string) => void, navigateToValidations: (subTab: "letters" | "register" | "data") => void }) {
-  const [stats, setStats] = useState({ letters: 0, reports: 0, highUrgency: 0, balance: "Memuat...", pendingWarga: 2 });
+  const [d, setD] = useState({
+    pendingLetters: 0, activeReports: 0, urgentReports: 0, pendingDues: 0,
+    paidRate: 0, paidCount: 0, totalDues: 0, collected: 0, unpaidDues: 0,
+    totalResidents: 0, monthlyIn: 0, monthlyOut: 0,
+  });
+  const [pendingWarga] = useState(3);
   const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
   const [election, setElection] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/letters").then(r => r.json()).catch(() => []),
       fetch("/api/admin/complaints").then(r => r.json()).catch(() => []),
-      fetch("/api/finance").then(r => r.json()).catch(() => ({ summary: [] })),
+      fetch("/api/finance").then(r => r.json()).catch(() => ({ history: [] })),
       fetch("/api/election").then(r => r.json()).catch(() => null),
-    ]).then(([letters, complaints, finance, elec]) => {
-      const pendingLetters = Array.isArray(letters) ? letters.filter((l: any) => l.status === "pending").length : 0;
-      const activeReports = Array.isArray(complaints) ? complaints.filter((c: any) => c.status !== "SELESAI").length : 0;
-      const urgentReports = Array.isArray(complaints) ? complaints.filter((c: any) => (c.aiLabels?.urgency ?? 0) >= 8).length : 0;
-      const balItem = Array.isArray(finance?.summary) ? finance.summary.find((s: any) => s.label === "Saldo") : null;
-      setStats({ letters: pendingLetters, reports: activeReports, highUrgency: urgentReports, balance: balItem ? `Rp ${balItem.value?.toLocaleString("id-ID")}` : "—", pendingWarga: 2 });
-      setRecentReports(Array.isArray(complaints) ? complaints.slice(0, 4) : []);
+      fetch("/api/admin/residents").then(r => r.json()).catch(() => []),
+      fetch("/api/donations").then(r => r.json()).catch(() => []),
+    ]).then(([letters, complaints, finance, elec, residents, dons]) => {
+      const currentDues = arr(residents).map((r: any) => r.dues?.[r.dues.length - 1]).filter(Boolean);
+      const paidDues = currentDues.filter((x: any) => x.status === "paid");
+      setD({
+        pendingLetters: arr(letters).filter((l: any) => l.status === "pending").length,
+        activeReports: arr(complaints).filter((c: any) => c.status !== "SELESAI").length,
+        urgentReports: arr(complaints).filter((c: any) => (c.aiLabels?.urgency ?? 0) >= 8).length,
+        pendingDues: currentDues.filter((x: any) => x.status === "pending").length,
+        unpaidDues: currentDues.filter((x: any) => x.status === "unpaid").length,
+        paidCount: paidDues.length,
+        totalDues: currentDues.length,
+        collected: paidDues.reduce((s: number, x: any) => s + (x.amount || 0), 0),
+        paidRate: currentDues.length ? Math.round((paidDues.length / currentDues.length) * 100) : 0,
+        totalResidents: arr(residents).length,
+        monthlyIn: (arr(finance?.history).slice(-1)[0]?.Pemasukan ?? 0) * 1000,
+        monthlyOut: (arr(finance?.history).slice(-1)[0]?.Pengeluaran ?? 0) * 1000,
+      });
+      setHistory(arr(finance?.history).slice(-6));
+      setRecentReports(arr(complaints).slice(0, 5));
+      setDonations(arr(dons));
       if (elec?.phase && elec.phase !== "inactive") setElection(elec);
+      setLoading(false);
     });
   }, []);
 
   const today = new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
+  const actions = [
+    { key: "letters", icon: FileText, label: "Surat Menunggu", hint: "Tinjau & tanda tangani", count: d.pendingLetters, onClick: () => navigateToValidations("letters") },
+    { key: "dues", icon: CreditCard, label: "Verifikasi Iuran", hint: "Cek bukti transfer", count: d.pendingDues, onClick: () => setTab("finance_manage") },
+    { key: "register", icon: UserPlus, label: "Pendaftaran Baru", hint: "Validasi KTP warga", count: pendingWarga, onClick: () => navigateToValidations("register") },
+    { key: "urgent", icon: AlertTriangle, label: "Laporan Mendesak", hint: "Urgensi tinggi", count: d.urgentReports, onClick: () => setTab("ai_triage") },
+  ];
+  const totalActions = actions.reduce((s, a) => s + a.count, 0);
+
+  const kpis = [
+    { icon: Users, label: "Kepala Keluarga", value: String(d.totalResidents), sub: "terdaftar aktif", tint: "text-primary bg-primary/10" },
+    { icon: Wallet, label: "Iuran Terkumpul", value: rpShort(d.collected), sub: `${d.paidRate}% pelunasan bulan ini`, tint: "text-emerald-400 bg-emerald-400/10" },
+    { icon: Activity, label: "Laporan Aktif", value: String(d.activeReports), sub: d.urgentReports > 0 ? `${d.urgentReports} perlu prioritas` : "terkendali", tint: "text-amber-400 bg-amber-400/10" },
+    { icon: HeartHandshake, label: "Donasi Terkumpul", value: rpShort(donations.reduce((s, x) => s + (x.raised || 0), 0)), sub: `${donations.length} galang dana aktif`, tint: "text-accent bg-accent/10" },
+  ];
+
+  const maxBar = Math.max(1, ...history.flatMap(h => [h.Pemasukan, h.Pengeluaran]));
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="text-xs text-text-muted">{today}</p>
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-text-main mt-1">Selamat datang, Ketua RT 04</h2>
-          <p className="text-sm text-text-muted mt-1">Berikut ringkasan kondisi warga RT 04 saat ini.</p>
-        </div>
-        <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 w-fit">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-primary">RT 04 — Aman & Kondusif</p>
+    <div className="space-y-6">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-2xl border border-border-weak bg-gradient-to-br from-primary/15 via-surface to-surface p-6 md:p-7">
+        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-text-muted capitalize">{today}</p>
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-text-main mt-1">Selamat datang, Ketua RT 04</h2>
+            <p className="text-sm text-text-muted mt-1.5">
+              {totalActions > 0
+                ? <><span className="font-semibold text-text-main">{totalActions} hal</span> memerlukan perhatian Anda hari ini.</>
+                : "Semua tugas administrasi sudah tertangani. Kerja bagus!"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 w-fit shrink-0">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+            <p className="text-xs font-semibold text-primary">RT 04 — Aman & Kondusif</p>
+          </div>
         </div>
       </div>
 
@@ -105,53 +160,175 @@ function AdminOverviewTab({ setTab, navigateToValidations }: { setTab: (tab: str
         </div>
       )}
 
-      {/* Metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => navigateToValidations("letters")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.letters > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <FileText size={16} className="text-primary mb-2" />
-          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.letters}</p>
-          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Surat Menunggu</p>
-          {stats.letters > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
-        </button>
-        <button onClick={() => setTab("ai_triage")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.highUrgency > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <AlertTriangle size={16} className="text-amber-400 mb-2" />
-          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.reports}</p>
-          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Laporan Aktif</p>
-          {stats.highUrgency > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
-        </button>
-        <button onClick={() => navigateToValidations("register")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.pendingWarga > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <UserCheck size={16} className="text-accent mb-2" />
-          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.pendingWarga}</p>
-          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Pendaftaran Baru</p>
-          {stats.pendingWarga > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
-        </button>
-      </div>
-
-      {/* Recent reports */}
-      {recentReports.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-text-main">Laporan Terbaru</h3>
-            <button onClick={() => setTab("ai_triage")} className="text-xs text-primary hover:underline cursor-pointer">Lihat semua →</button>
-          </div>
-          <div className="space-y-2">
-            {recentReports.map(r => (
-              <div key={r.id} className="bg-surface border border-border-weak rounded-xl px-4 py-3 flex items-center gap-4">
-                <div className={cn("w-1.5 h-8 rounded-full shrink-0", (r.aiLabels?.urgency ?? 0) >= 8 ? "bg-red-500" : (r.aiLabels?.urgency ?? 0) >= 5 ? "bg-amber-400" : "bg-primary")} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-text-main truncate">{r.title}</p>
-                  <p className="text-[11px] text-text-muted">{r.sender} · {r.date}</p>
-                </div>
-                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border shrink-0",
-                  r.status === "SELESAI" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
-                  r.status === "PROSES" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
-                  "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
-                )}>{r.status}</span>
-              </div>
-            ))}
+      {/* ── Action center ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-text-main">Perlu Tindakan Anda</h3>
+            {totalActions > 0 && <span className="text-[10px] font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/25">{totalActions}</span>}
           </div>
         </div>
-      )}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {actions.map(a => {
+            const active = a.count > 0;
+            return (
+              <button
+                key={a.key}
+                onClick={a.onClick}
+                className={cn(
+                  "group relative text-left rounded-xl border p-4 transition-all cursor-pointer",
+                  active ? "bg-surface border-accent/30 hover:border-accent/60 hover:bg-surface-hover" : "bg-surface border-border-weak hover:bg-surface-hover"
+                )}
+              >
+                <div className="flex items-start justify-between">
+                  <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", active ? "bg-accent/15 text-accent" : "bg-primary/10 text-primary")}>
+                    {active ? <a.icon size={17} /> : <Check size={17} />}
+                  </div>
+                  <span className={cn("text-2xl font-display font-bold leading-none", active ? "text-text-main" : "text-text-muted/40")}>{a.count}</span>
+                </div>
+                <p className="text-sm font-semibold text-text-main mt-3">{a.label}</p>
+                <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
+                  {active ? a.hint : "Tidak ada antrean"}
+                  {active && <ArrowRight size={11} className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── KPI strip ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {kpis.map(k => (
+          <div key={k.label} className="bg-surface border border-border-weak rounded-xl p-4">
+            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-3", k.tint)}>
+              <k.icon size={16} />
+            </div>
+            <p className="text-xl font-display font-bold text-text-main leading-tight">{k.value}</p>
+            <p className="text-xs font-medium text-text-main mt-1">{k.label}</p>
+            <p className="text-[11px] text-text-muted mt-0.5">{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Lower grid ── */}
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Recent reports */}
+        <div className="lg:col-span-2 bg-surface border border-border-weak rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-text-main">Laporan Terbaru Warga</h3>
+            <button onClick={() => setTab("ai_triage")} className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1">Lihat semua <ChevronRight size={13} /></button>
+          </div>
+          {loading ? (
+            <div className="space-y-2">{[0, 1, 2].map(i => <div key={i} className="h-14 rounded-xl bg-surface-hover/50 animate-pulse" />)}</div>
+          ) : recentReports.length === 0 ? (
+            <div className="py-10 text-center">
+              <CheckCircle2 size={28} className="text-primary mx-auto mb-2" />
+              <p className="text-sm text-text-muted">Belum ada laporan masuk.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentReports.map(r => {
+                const u = r.aiLabels?.urgency ?? 0;
+                return (
+                  <button key={r.id} onClick={() => setTab("ai_triage")} className="w-full text-left bg-canvas border border-border-weak rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-surface-hover hover:border-border-strong transition cursor-pointer">
+                    <div className={cn("w-1.5 h-9 rounded-full shrink-0", u >= 8 ? "bg-red-500" : u >= 5 ? "bg-amber-400" : "bg-primary")} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm text-text-main truncate">{r.title}</p>
+                        {u >= 8 && <span className="text-[9px] font-bold bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded shrink-0">URGEN</span>}
+                      </div>
+                      <p className="text-[11px] text-text-muted truncate">{r.location} · {r.sender} · {r.date}</p>
+                    </div>
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border shrink-0",
+                      r.status === "SELESAI" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                      r.status === "PROSES" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                      "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
+                    )}>{r.status}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right column: finance + donations */}
+        <div className="space-y-5">
+          {/* Kas snapshot */}
+          <div className="bg-surface border border-border-weak rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-text-main">Arus Kas</h3>
+              <button onClick={() => setTab("finance_manage")} className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1">Kelola <ChevronRight size={13} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="rounded-xl bg-emerald-400/10 border border-emerald-400/20 p-3">
+                <div className="flex items-center gap-1.5 text-emerald-400 mb-1"><TrendingUp size={13} /><span className="text-[10px] font-semibold uppercase tracking-wide">Masuk</span></div>
+                <p className="text-sm font-display font-bold text-text-main">{rpShort(d.monthlyIn)}</p>
+              </div>
+              <div className="rounded-xl bg-accent/10 border border-accent/20 p-3">
+                <div className="flex items-center gap-1.5 text-accent mb-1"><TrendingDown size={13} /><span className="text-[10px] font-semibold uppercase tracking-wide">Keluar</span></div>
+                <p className="text-sm font-display font-bold text-text-main">{rpShort(d.monthlyOut)}</p>
+              </div>
+            </div>
+            {/* mini 6-month bars */}
+            <div className="flex items-end justify-between gap-1.5 h-20 pt-2">
+              {history.map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full flex items-end justify-center gap-0.5 h-16">
+                    <div className="w-1/2 rounded-t bg-primary/70" style={{ height: `${(h.Pemasukan / maxBar) * 100}%` }} title={`Masuk: ${rpShort(h.Pemasukan * 1000)}`} />
+                    <div className="w-1/2 rounded-t bg-accent/70" style={{ height: `${(h.Pengeluaran / maxBar) * 100}%` }} title={`Keluar: ${rpShort(h.Pengeluaran * 1000)}`} />
+                  </div>
+                  <span className="text-[9px] text-text-muted">{h.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Donations */}
+          <div className="bg-surface border border-border-weak rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-text-main mb-4">Penggalangan Dana Aktif</h3>
+            {donations.length === 0 ? (
+              <p className="text-xs text-text-muted text-center py-4">Tidak ada penggalangan dana.</p>
+            ) : (
+              <div className="space-y-4">
+                {donations.map((don: any) => {
+                  const pct = Math.min(100, Math.round(((don.raised || 0) / (don.target || 1)) * 100));
+                  return (
+                    <div key={don.id}>
+                      <p className="text-xs font-semibold text-text-main truncate">{don.title}</p>
+                      <div className="h-2 rounded-full bg-canvas border border-border-weak overflow-hidden mt-2">
+                        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[11px] text-text-muted">{rpShort(don.raised || 0)} <span className="opacity-60">/ {rpShort(don.target || 0)}</span></span>
+                        <span className="text-[11px] font-bold text-primary">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Quick actions ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-text-main mb-3">Aksi Cepat</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { icon: Newspaper, label: "Kelola Berita", onClick: () => setTab("news_manage") },
+            { icon: Receipt, label: "Catat Kas", onClick: () => setTab("finance_manage") },
+            { icon: BrainCircuit, label: "Kelola Laporan", onClick: () => setTab("ai_triage") },
+            { icon: Vote, label: "Pemilihan RT", onClick: () => setTab("election") },
+          ].map(q => (
+            <button key={q.label} onClick={q.onClick} className="flex items-center gap-3 bg-surface border border-border-weak rounded-xl px-4 py-3.5 hover:bg-surface-hover hover:border-border-strong transition cursor-pointer text-left">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><q.icon size={17} /></div>
+              <span className="text-sm font-medium text-text-main">{q.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -954,6 +1131,11 @@ function AdminFinanceTab() {
   // Reminder form states
   const [customReminders, setCustomReminders] = useState<{ [key: string]: string }>({});
 
+  // Dues verification UX states
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "unpaid" | "paid">("all");
+  const [receiptModal, setReceiptModal] = useState<{ image: string; resName: string; resId: string; due: any } | null>(null);
+
   const fetchFinanceAndResidents = () => {
     fetch('/api/finance').then(r => r.json()).then(setLedger).catch(() => {});
     fetch('/api/admin/residents').then(r => r.json()).then(setResidents).catch(() => {});
@@ -1076,193 +1258,258 @@ function AdminFinanceTab() {
       </div>
 
       {subSection === "dues" ? (
-        <div className="space-y-4 font-sans text-text-main">
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center gap-2 text-xs text-text-main leading-relaxed">
-            <Megaphone size={20} className="text-primary shrink-0" />
-            <p>
-              Gunakan panel di bawah ini untuk melihat detail data dari masing-masing Kepala Keluarga (KK). Anda dapat menyetujui, menolak bukti transfer, serta mengirimkan <strong>fitur pengingat saldo tunda</strong> yang seketika mendarat di dasbor halaman warga yang bersangkutan.
-            </p>
-          </div>
+        (() => {
+          // ── Derived data ──
+          const pendingQueue = residents.flatMap((r: any) =>
+            (r.dues || []).filter((d: any) => d.status === "pending").map((d: any) => ({ res: r, due: d }))
+          );
+          const currentDues = residents.map((r: any) => r.dues?.[r.dues.length - 1]).filter(Boolean);
+          const paidNow = currentDues.filter((d: any) => d.status === "paid").length;
+          const unpaidNow = currentDues.filter((d: any) => d.status === "unpaid").length;
+          const collected = residents
+            .flatMap((r: any) => r.dues || [])
+            .filter((d: any) => d.status === "paid")
+            .reduce((s: number, d: any) => s + (d.amount || 0), 0);
 
-          <div className="grid gap-4">
-            {residents.map((res: any) => {
-              const hasPending = res.dues.some((d: any) => d.status === "pending");
-              return (
-                <div 
-                  key={res.id} 
-                  className={cn(
-                    "bg-surface border rounded-xl overflow-hidden transition-all shadow-sm",
-                    hasPending ? "border-accent/40 bg-accent/5" : "border-border-weak hover:border-border-strong"
-                  )}
-                >
-                  {/* Collapsed view banner */}
-                  <div 
-                    onClick={() => setSelectedResidentId(selectedResidentId === res.id ? null : res.id)}
-                    className="p-5 flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
-                        <User size={20} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-text-main text-base">{res.name}</h4>
-                          <span className="text-[10px] bg-canvas border border-border-weak px-2.5 py-0.5 rounded text-text-muted font-mono">{res.id}</span>
-                          {hasPending && (
-                            <span className="bg-accent text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                              Butuh Verifikasi Resi
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-text-muted mt-0.5">{res.address}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right hidden sm:block">
-                        <span className="text-[10px] text-text-muted block">Status Pembayaran</span>
-                        <div className="flex gap-1.5 mt-1">
-                          {res.dues.map((d: any, i: number) => (
-                            <span 
-                              key={i} 
-                              className={cn(
-                                "text-[9px] font-bold px-2 py-0.5 rounded",
-                                d.status === "paid" ? "bg-primary/20 text-primary" : d.status === "pending" ? "bg-accent/20 text-accent animate-pulse" : "bg-red-500/20 text-red-500"
-                              )}
-                            >
-                              {d.month.split(' ')[0]} : {d.status.toUpperCase()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      {selectedResidentId === res.id ? <ChevronUp size={20} className="text-text-muted" /> : <ChevronDown size={20} className="text-text-muted" />}
-                    </div>
+          const rank = (r: any) =>
+            r.dues?.some((d: any) => d.status === "pending") ? 0 :
+            r.dues?.some((d: any) => d.status === "unpaid") ? 1 : 2;
+
+          const filtered = residents
+            .filter((r: any) => !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.address.toLowerCase().includes(search.toLowerCase()))
+            .filter((r: any) => {
+              if (statusFilter === "all") return true;
+              if (statusFilter === "pending") return r.dues?.some((d: any) => d.status === "pending");
+              if (statusFilter === "unpaid") return r.dues?.some((d: any) => d.status === "unpaid");
+              return r.dues?.every((d: any) => d.status === "paid");
+            })
+            .sort((a: any, b: any) => rank(a) - rank(b));
+
+          const stats = [
+            { icon: Receipt, label: "Perlu Verifikasi", value: pendingQueue.length, tint: "text-accent bg-accent/10", border: pendingQueue.length > 0 ? "border-accent/30" : "border-border-weak" },
+            { icon: CheckCircle2, label: "Lunas Bulan Ini", value: `${paidNow}/${currentDues.length}`, tint: "text-primary bg-primary/10", border: "border-border-weak" },
+            { icon: AlertTriangle, label: "Belum Bayar", value: unpaidNow, tint: "text-red-400 bg-red-500/10", border: "border-border-weak" },
+            { icon: Wallet, label: "Total Terkumpul", value: rpShort(collected), tint: "text-emerald-400 bg-emerald-400/10", border: "border-border-weak" },
+          ];
+
+          return (
+            <div className="space-y-5 font-sans text-text-main">
+              {/* ── Stat summary ── */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {stats.map(s => (
+                  <div key={s.label} className={cn("bg-surface border rounded-xl p-4", s.border)}>
+                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-3", s.tint)}><s.icon size={16} /></div>
+                    <p className="text-xl font-display font-bold text-text-main leading-tight">{s.value}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5">{s.label}</p>
                   </div>
+                ))}
+              </div>
 
-                  {/* Expanded detail section (Dashboard Pengurus warga detail) */}
-                  {selectedResidentId === res.id && (
-                    <div className="px-5 pb-6 pt-2 border-t border-border-weak bg-canvas/40 space-y-6 animate-in slide-in-from-top-2 duration-200">
-                      <div className="grid md:grid-cols-2 gap-6 pt-4">
-                        {/* Resident basic info */}
-                        <div className="space-y-3 p-4 bg-surface rounded-2xl border border-border-weak/80 text-xs text-text-main">
-                          <h5 className="font-semibold text-text-main text-sm flex items-center gap-2">
-                            <span className="w-1.5 h-3 bg-primary rounded-full"></span>
-                            Kontak & Kependudukan
-                          </h5>
-                          <p><strong className="text-text-muted">Nama Kepala Keluarga:</strong> <br /><span className="text-sm font-semibold">{res.name}</span></p>
-                          <p><strong className="text-text-muted">Alamat Blok Hunian:</strong> <br /><span className="text-sm font-semibold">{res.address}</span></p>
-                          <p><strong className="text-text-muted">Nomor Telp/WA Kendala:</strong> <br /><span className="text-sm font-semibold font-mono">{res.phone}</span></p>
-                          <a 
-                            href={`https://wa.me/${res.phone.replace(/[^0-9]/g, '')}`} 
-                            target="_blank"
-                            rel="noreferrer"
-                            className="bg-transparent text-primary hover:underline text-xs flex items-center gap-1 font-bold pt-1"
-                          >
-                            <PhoneCall size={12} /> Hubungi Lewat WhatsApp &rarr;
-                          </a>
-                        </div>
+              {/* ── Priority verification queue ── */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-text-main">Antrean Verifikasi Resi</h3>
+                  {pendingQueue.length > 0 && <span className="text-[10px] font-bold bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/25">{pendingQueue.length} menunggu</span>}
+                </div>
 
-                        {/* Custom reminder setter */}
-                        <div className="space-y-3 p-4 bg-surface rounded-2xl border border-border-weak/80 text-xs text-text-main">
-                          <h5 className="font-semibold text-text-main text-sm flex items-center gap-2">
-                            <span className="w-1.5 h-3 bg-accent rounded-full"></span>
-                            Atur & Kirim Pengingat Saldo Bulanan (Reminder)
-                          </h5>
-                          <p className="text-text-muted leading-relaxed">
-                            Kirimkan notifikasi tertulis yang mendesak warga melunasi tunggakan iuran bulanan dari akun dashboard mereka.
-                          </p>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text"
-                              value={customReminders[res.id] || ""}
-                              onChange={e => setCustomReminders({ ...customReminders, [res.id]: e.target.value })}
-                              placeholder="Ketik pengingat (contoh: November belum terlunasi...)"
-                              className="flex-1 bg-canvas border border-border-strong rounded-xl p-2.5 text-xs text-text-main focus:outline-none focus:border-accent"
-                            />
-                            <button
-                              onClick={() => handleSendReminder(res.id)}
-                              className="bg-accent text-white px-4 py-2 text-xs font-bold rounded-xl hover:bg-accent-hover active:scale-[0.98] transition-all shrink-0 cursor-pointer"
-                            >
-                              Kirim Notif
+                {pendingQueue.length === 0 ? (
+                  <div className="bg-surface border border-border-weak rounded-2xl p-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3"><CheckCircle2 size={24} /></div>
+                    <p className="text-sm font-semibold text-text-main">Semua bukti transfer sudah terverifikasi</p>
+                    <p className="text-xs text-text-muted mt-1">Tidak ada resi yang menunggu persetujuan Anda saat ini.</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {pendingQueue.map(({ res, due }: any) => (
+                      <div key={due.id} className="bg-surface border border-accent/30 rounded-2xl overflow-hidden">
+                        <div className="p-4 flex items-start gap-3">
+                          {/* Receipt thumbnail */}
+                          {due.proof?.image ? (
+                            <button onClick={() => setReceiptModal({ image: due.proof.image, resName: res.name, resId: res.id, due })} className="relative shrink-0 group cursor-pointer">
+                              <img src={due.proof.image} alt="Resi" className="w-20 h-20 rounded-lg object-cover border border-border-weak" />
+                              <span className="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ZoomIn size={18} className="text-white" />
+                              </span>
                             </button>
-                          </div>
-                          {res.reminders && res.reminders.length > 0 && (
-                            <p className="text-[10px] text-accent font-semibold flex items-center gap-1 mt-1 font-mono">
-                              🔔 Pengingat Aktif: "{res.reminders[0].message}" ({res.reminders[0].date})
-                            </p>
+                          ) : (
+                            <div className="w-20 h-20 rounded-lg bg-canvas border border-border-weak flex items-center justify-center shrink-0"><Receipt size={20} className="text-text-muted" /></div>
                           )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-sm text-text-main truncate">{res.name}</p>
+                            </div>
+                            <p className="text-[11px] text-text-muted">{due.month}</p>
+                            <div className="mt-1.5 space-y-0.5 text-[11px] text-text-main">
+                              <p className="flex items-center justify-between gap-2"><span className="text-text-muted">Nominal</span><span className="font-bold">Rp {(due.proof?.amount ?? due.amount).toLocaleString("id-ID")}</span></p>
+                              <p className="flex items-center justify-between gap-2"><span className="text-text-muted">Bank</span><span className="font-mono">{due.proof?.bank || "—"}</span></p>
+                              <p className="flex items-center justify-between gap-2"><span className="text-text-muted">Tanggal</span><span>{due.proof?.date || "—"}</span></p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 p-3 pt-0">
+                          <button onClick={() => handleApprovePayment(res.id, due.id)} className="flex-1 bg-primary text-text-inverse py-2 rounded-lg text-xs font-bold hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                            <Check size={14} /> Setujui
+                          </button>
+                          <button onClick={() => handleRejectPayment(res.id, due.id)} className="bg-accent/10 border border-accent/25 text-accent hover:bg-accent/20 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                            <X size={14} /> Tolak
+                          </button>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                      {/* Itemized Dues ledger and check forms */}
-                      <div className="space-y-3">
-                        <h5 className="font-semibold text-text-main text-xs">Histori Tagihan Bulanan & Kelengkapan Resi</h5>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          {res.dues.map((due: any) => (
-                            <div key={due.id} className="bg-surface border border-border-weak p-4 rounded-2xl flex flex-col justify-between space-y-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h6 className="font-semibold text-text-main text-sm">Tagihan {due.month}</h6>
-                                  <p className="text-xs text-text-muted font-bold">Total: Rp {due.amount.toLocaleString('id-ID')}</p>
+              {/* ── Resident directory ── */}
+              <div>
+                <div className="flex items-center justify-between mb-3 gap-3">
+                  <h3 className="text-sm font-semibold text-text-main shrink-0">Direktori Warga</h3>
+                  <div className="flex gap-2 flex-1 justify-end">
+                    <div className="relative flex-1 max-w-[220px]">
+                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama / alamat..." className="w-full pl-9 pr-3 py-2 text-xs bg-surface border border-border-weak rounded-lg outline-none focus:border-primary text-text-main" />
+                    </div>
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="px-3 py-2 text-xs bg-surface border border-border-weak rounded-lg outline-none cursor-pointer text-text-main">
+                      <option value="all">Semua Status</option>
+                      <option value="pending">Perlu Verifikasi</option>
+                      <option value="unpaid">Belum Bayar</option>
+                      <option value="paid">Lunas</option>
+                    </select>
+                  </div>
+                </div>
+
+                {filtered.length === 0 ? (
+                  <div className="bg-surface border border-border-weak rounded-2xl p-8 text-center">
+                    <Inbox size={28} className="text-text-muted mx-auto mb-2" />
+                    <p className="text-sm text-text-muted">Tidak ada warga yang cocok dengan filter.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {filtered.map((res: any) => {
+                      const hasPending = res.dues?.some((d: any) => d.status === "pending");
+                      const hasUnpaid = res.dues?.some((d: any) => d.status === "unpaid");
+                      const open = selectedResidentId === res.id;
+                      return (
+                        <div key={res.id} className={cn("bg-surface border rounded-2xl overflow-hidden transition-all", open ? "border-border-strong" : hasPending ? "border-accent/30" : "border-border-weak hover:border-border-strong")}>
+                          {/* Collapsed header */}
+                          <div onClick={() => setSelectedResidentId(open ? null : res.id)} className="p-4 flex items-center justify-between cursor-pointer gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0"><User size={19} /></div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-text-main text-sm truncate">{res.name}</h4>
+                                  {hasPending && <span className="bg-accent text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">Verifikasi</span>}
                                 </div>
-                                <span className={cn(
-                                  "text-[9px] uppercase font-mono tracking-widest px-2.5 py-1 rounded-md font-bold",
-                                  due.status === "paid" ? "bg-primary/20 text-primary" : due.status === "pending" ? "bg-accent/25 text-accent animate-pulse" : "bg-red-500/20 text-red-500"
-                                )}>
-                                  {due.status === "paid" ? "Lunas" : due.status === "pending" ? "Menunggu Verifikasi" : "Belum Terbayar"}
-                                </span>
+                                <p className="text-[11px] text-text-muted truncate">{res.address}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className={cn("hidden sm:inline-flex text-[10px] font-bold px-2.5 py-1 rounded-lg border",
+                                hasPending ? "bg-accent/10 text-accent border-accent/25" :
+                                hasUnpaid ? "bg-red-500/10 text-red-400 border-red-500/25" :
+                                "bg-primary/10 text-primary border-primary/25"
+                              )}>
+                                {hasPending ? "Menunggu Verifikasi" : hasUnpaid ? "Ada Tunggakan" : "Lunas"}
+                              </span>
+                              {open ? <ChevronUp size={18} className="text-text-muted" /> : <ChevronDown size={18} className="text-text-muted" />}
+                            </div>
+                          </div>
+
+                          {/* Expanded */}
+                          {open && (
+                            <div className="px-4 pb-5 pt-1 border-t border-border-weak bg-canvas/40 space-y-5 animate-in slide-in-from-top-2 duration-200">
+                              <div className="grid md:grid-cols-2 gap-4 pt-4">
+                                {/* Contact */}
+                                <div className="space-y-2.5 p-4 bg-surface rounded-xl border border-border-weak text-xs">
+                                  <h5 className="font-semibold text-text-main text-xs flex items-center gap-2"><span className="w-1.5 h-3 bg-primary rounded-full" />Kontak & Kependudukan</h5>
+                                  <div><span className="text-text-muted">Kepala Keluarga</span><p className="font-semibold text-sm text-text-main">{res.name}</p></div>
+                                  <div><span className="text-text-muted">Alamat</span><p className="font-semibold text-text-main">{res.address}</p></div>
+                                  <div><span className="text-text-muted">Telp / WA</span><p className="font-semibold font-mono text-text-main">{res.phone}</p></div>
+                                  <a href={`https://wa.me/${res.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="text-primary hover:underline text-xs flex items-center gap-1 font-bold pt-1"><PhoneCall size={12} /> Hubungi via WhatsApp &rarr;</a>
+                                </div>
+
+                                {/* Reminder */}
+                                <div className="space-y-2.5 p-4 bg-surface rounded-xl border border-border-weak text-xs">
+                                  <h5 className="font-semibold text-text-main text-xs flex items-center gap-2"><span className="w-1.5 h-3 bg-accent rounded-full" />Kirim Pengingat Iuran</h5>
+                                  <p className="text-text-muted leading-relaxed">Notifikasi akan langsung muncul di dashboard warga terkait.</p>
+                                  <div className="flex gap-2">
+                                    <input type="text" value={customReminders[res.id] || ""} onChange={e => setCustomReminders({ ...customReminders, [res.id]: e.target.value })} placeholder="Pesan pengingat (opsional)..." className="flex-1 bg-canvas border border-border-strong rounded-lg p-2.5 text-xs text-text-main focus:outline-none focus:border-accent" />
+                                    <button onClick={() => handleSendReminder(res.id)} className="bg-accent text-white px-3.5 py-2 text-xs font-bold rounded-lg hover:bg-accent/90 active:scale-[0.98] transition-all shrink-0 cursor-pointer flex items-center gap-1.5"><Bell size={13} /> Kirim</button>
+                                  </div>
+                                  {res.reminders && res.reminders.length > 0 && (
+                                    <p className="text-[10px] text-accent font-medium flex items-start gap-1 mt-1"><Bell size={11} className="mt-0.5 shrink-0" /> Terkirim: "{res.reminders[0].message}" ({res.reminders[0].date})</p>
+                                  )}
+                                </div>
                               </div>
 
-                              {/* Verifying section for pending resi proof */}
-                              {due.status === "pending" && due.proof && (
-                                <div className="p-3 bg-accent/5 rounded-xl border border-accent/20 text-xs space-y-2">
-                                  <p className="font-bold text-accent uppercase text-[9px] tracking-wide">Detail Transfer Warga:</p>
-                                  <ul className="space-y-1 text-text-main text-[11px] font-mono leading-relaxed">
-                                    <li>Bank: {due.proof.bank}</li>
-                                    <li>Pengirim: {due.proof.sender}</li>
-                                    <li>Nominal Transfer: Rp {due.proof.amount.toLocaleString('id-ID')}</li>
-                                    <li>Tanggal Input: {due.proof.date}</li>
-                                  </ul>
-                                  {due.proof.image && (
-                                    <div className="pt-2">
-                                      <p className="text-[9px] text-text-muted mb-1 font-bold">Bukti Resi Transfer:</p>
-                                      <a href={due.proof.image} target="_blank" rel="noreferrer" className="inline-block relative group">
-                                        <img 
-                                          src={due.proof.image} 
-                                          alt="Warga Receipt" 
-                                          className="h-28 w-auto rounded-lg shadow-sm border border-border-weak hover:opacity-95 transition-opacity cursor-pointer text-text-main" 
-                                        />
-                                        <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded uppercase opacity-0 group-hover:opacity-100 transition-opacity">buka tab baru</span>
-                                      </a>
+                              {/* Dues history */}
+                              <div className="space-y-2.5">
+                                <h5 className="font-semibold text-text-main text-xs">Riwayat Tagihan Bulanan</h5>
+                                <div className="grid sm:grid-cols-2 gap-3">
+                                  {res.dues.map((due: any) => (
+                                    <div key={due.id} className="bg-surface border border-border-weak p-4 rounded-xl space-y-3">
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <h6 className="font-semibold text-text-main text-sm">{due.month}</h6>
+                                          <p className="text-xs text-text-muted">Rp {due.amount.toLocaleString("id-ID")}</p>
+                                        </div>
+                                        <span className={cn("text-[9px] uppercase tracking-wide px-2 py-1 rounded font-bold",
+                                          due.status === "paid" ? "bg-primary/15 text-primary" : due.status === "pending" ? "bg-accent/20 text-accent" : "bg-red-500/15 text-red-400"
+                                        )}>
+                                          {due.status === "paid" ? "Lunas" : due.status === "pending" ? "Menunggu" : "Belum Bayar"}
+                                        </span>
+                                      </div>
+                                      {due.status === "pending" && due.proof && (
+                                        <div className="flex items-center gap-2 pt-2 border-t border-border-weak">
+                                          {due.proof.image && (
+                                            <button onClick={() => setReceiptModal({ image: due.proof.image, resName: res.name, resId: res.id, due })} className="shrink-0 relative group">
+                                              <img src={due.proof.image} alt="Resi" className="w-12 h-12 rounded-lg object-cover border border-border-weak" />
+                                              <span className="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><ZoomIn size={14} className="text-white" /></span>
+                                            </button>
+                                          )}
+                                          <div className="flex gap-1.5 flex-1">
+                                            <button onClick={() => handleApprovePayment(res.id, due.id)} className="flex-1 bg-primary text-text-inverse py-2 rounded-lg text-[11px] font-bold hover:bg-primary/90 transition flex items-center justify-center gap-1 cursor-pointer"><Check size={12} /> Setujui</button>
+                                            <button onClick={() => handleRejectPayment(res.id, due.id)} className="bg-accent/10 border border-accent/25 text-accent hover:bg-accent/20 px-3 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer"><X size={12} /></button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                  
-                                  <div className="flex gap-2 pt-2 border-t border-border-weak/50">
-                                    <button
-                                      onClick={() => handleApprovePayment(res.id, due.id)}
-                                      className="flex-1 bg-primary text-text-inverse py-2 rounded-lg text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-primary/10 cursor-pointer"
-                                    >
-                                      <Check size={14} /> Setujui & Rekam Buku Kas
-                                    </button>
-                                    <button
-                                      onClick={() => handleRejectPayment(res.id, due.id)}
-                                      className="bg-accent/10 border border-accent/25 text-accent hover:bg-accent/20 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                                    >
-                                      <X size={14} /> Tolak Bukti
-                                    </button>
-                                  </div>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
                             </div>
-                          ))}
+                          )}
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Receipt lightbox modal ── */}
+              {receiptModal && (
+                <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setReceiptModal(null)}>
+                  <div className="bg-surface rounded-2xl border border-border-strong max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-4 border-b border-border-weak">
+                      <div>
+                        <p className="font-semibold text-sm text-text-main">Bukti Transfer — {receiptModal.resName}</p>
+                        <p className="text-[11px] text-text-muted">{receiptModal.due.month} · Rp {(receiptModal.due.proof?.amount ?? receiptModal.due.amount).toLocaleString("id-ID")} · {receiptModal.due.proof?.bank}</p>
                       </div>
+                      <button onClick={() => setReceiptModal(null)} className="text-text-muted hover:text-text-main cursor-pointer"><X size={20} /></button>
                     </div>
-                  )}
+                    <div className="bg-canvas max-h-[60vh] overflow-auto flex items-center justify-center p-4">
+                      <img src={receiptModal.image} alt="Bukti transfer" className="max-w-full h-auto rounded-lg" />
+                    </div>
+                    <div className="flex gap-2 p-4 border-t border-border-weak">
+                      <button onClick={() => { handleApprovePayment(receiptModal.resId, receiptModal.due.id); setReceiptModal(null); }} className="flex-1 bg-primary text-text-inverse py-2.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition flex items-center justify-center gap-1.5 cursor-pointer"><Check size={14} /> Setujui & Rekam Buku Kas</button>
+                      <button onClick={() => { handleRejectPayment(receiptModal.resId, receiptModal.due.id); setReceiptModal(null); }} className="bg-accent/10 border border-accent/25 text-accent hover:bg-accent/20 px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"><X size={14} /> Tolak Bukti</button>
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <div className="space-y-6">
           {/* Pie chart — spending breakdown */}
@@ -2280,6 +2527,7 @@ function AITriageTab() {
   const [filterCategory, setFilterCategory] = useState("Semua");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [overrideReport, setOverrideReport] = useState<any>(null);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -2323,6 +2571,20 @@ function AITriageTab() {
     setExpandedId(null);
   };
 
+  const handleConfirmAI = async (id: string) => {
+    await fetch(`/api/admin/complaints/${id}/confirm`, { method: "POST" }).catch(() => {});
+    setReports(prev => prev.map(r => r.id === id ? { ...r, aiLabels: { ...r.aiLabels, confirmed: true } } : r));
+  };
+
+  const handleOverride = async (id: string, category: string, urgency: number, tags: string[]) => {
+    await fetch(`/api/admin/complaints/${id}/override`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, urgency, tags }),
+    }).catch(() => {});
+    setReports(prev => prev.map(r => r.id === id ? { ...r, category, aiLabels: { category, urgency, tags, confirmed: true } } : r));
+  };
+
   const categories = ["Semua", "Infrastruktur", "Kebersihan", "Keamanan", "Sosial", "Lainnya"];
   const statuses = ["Semua", "TERKIRIM", "PROSES", "SELESAI"];
 
@@ -2342,18 +2604,29 @@ function AITriageTab() {
     proses: reports.filter(r => r.status === "PROSES").length,
     selesai: reports.filter(r => r.status === "SELESAI").length,
   };
+  const highPriority = reports.filter(r => (r.aiLabels?.urgency ?? 0) >= 8 && r.status !== "SELESAI").length;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold font-display text-text-main">Kelola Laporan Warga</h2>
-          <p className="text-sm text-text-muted mt-1">Tinjau, validasi, dan tindak lanjuti laporan dari warga RT 04.</p>
+          <p className="text-sm text-text-muted mt-1">AI memberi peringkat urgensi tiap laporan agar Anda menangani yang terpenting lebih dulu.</p>
         </div>
-        <button onClick={fetchReports} className="text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer">
+        <button onClick={fetchReports} className="text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer shrink-0">
           Refresh
         </button>
       </div>
+
+      {/* AI priority banner */}
+      {highPriority > 0 && (
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/25 rounded-xl p-3.5">
+          <div className="w-9 h-9 rounded-lg bg-red-500/15 text-red-400 flex items-center justify-center shrink-0"><AlertTriangle size={18} /></div>
+          <p className="text-xs text-text-main">
+            <span className="font-bold text-red-400">{highPriority} laporan prioritas tinggi</span> (urgensi AI ≥ 8) menunggu penanganan. Laporan dengan skor tertinggi ditampilkan paling atas.
+          </p>
+        </div>
+      )}
 
       {/* Status summary */}
       <div className="grid grid-cols-3 gap-3">
@@ -2427,12 +2700,26 @@ function AITriageTab() {
                     report.status === "PROSES" ? "bg-amber-400" : "bg-emerald-500"
                   )} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-text-main truncate">{report.title}</p>
-                    <p className="text-xs text-text-muted mt-0.5">{report.sender} · {report.location} · {report.date}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm text-text-main truncate">{report.title}</p>
+                      {(labels?.urgency ?? 0) >= 8 && report.status !== "SELESAI" && (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded uppercase tracking-wide"><AlertTriangle size={9} /> Prioritas</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-muted mt-0.5 truncate">{report.sender} · {report.location} · {report.date}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {labels && (
+                      <span title="Skor urgensi AI" className={cn("hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border tabular-nums",
+                        (labels.urgency ?? 0) >= 8 ? "bg-red-500/15 text-red-400 border-red-500/30" :
+                        (labels.urgency ?? 0) >= 5 ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                        "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                      )}>
+                        <Activity size={10} /> {(labels.urgency ?? 0).toFixed(1)}
+                      </span>
+                    )}
                     {labels?.category && (
-                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border hidden sm:inline", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>
+                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border hidden md:inline", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>
                         {labels.category}
                       </span>
                     )}
@@ -2461,16 +2748,49 @@ function AITriageTab() {
                       <div className="flex-1 space-y-2">
                         <p className="text-xs text-text-muted">Deskripsi laporan:</p>
                         <p className="text-sm text-text-main leading-relaxed">{report.description || report.message || "Tidak ada deskripsi tambahan."}</p>
-                        {labels && (
-                          <div className="flex items-center gap-2 flex-wrap pt-1">
-                            <span className="text-[10px] text-text-muted">AI:</span>
-                            <UrgencyBar value={labels.urgency} />
-                            {labels.tags?.map((t: string) => (
-                              <span key={t} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">{t}</span>
-                            ))}
-                          </div>
+                      </div>
+                    </div>
+
+                    {/* AI triage panel */}
+                    <div className="bg-canvas border border-border-weak rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <BrainCircuit size={14} className="text-primary" />
+                          <span className="text-xs font-semibold text-text-main">Analisis Prioritas AI</span>
+                          {labels?.confirmed
+                            ? <span className="text-[9px] font-bold bg-primary/15 text-primary border border-primary/30 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><Check size={9} /> Dikonfirmasi</span>
+                            : <span className="text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full">Belum ditinjau</span>}
+                        </div>
+                        {labels?.category && (
+                          <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", CATEGORY_COLORS[labels.category] ?? CATEGORY_COLORS.Lainnya)}>{labels.category}</span>
                         )}
                       </div>
+                      {labels ? (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] text-text-muted w-16 shrink-0">Urgensi</span>
+                            <UrgencyBar value={labels.urgency ?? 0} />
+                          </div>
+                          {labels.tags?.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] text-text-muted w-16 shrink-0">Kata kunci</span>
+                              {labels.tags.map((t: string) => (
+                                <span key={t} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 pt-1 border-t border-border-weak/60">
+                            {!labels.confirmed && (
+                              <button onClick={() => handleConfirmAI(report.id)} className="text-[11px] font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer flex items-center gap-1"><Check size={12} /> Konfirmasi Label</button>
+                            )}
+                            <button onClick={() => setOverrideReport(report)} className="text-[11px] font-bold text-text-muted border border-border-weak px-3 py-1.5 rounded-lg hover:bg-surface-hover hover:text-text-main transition cursor-pointer flex items-center gap-1"><SlidersHorizontal size={12} /> Sesuaikan</button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-text-muted">AI sedang mengklasifikasikan laporan ini… segarkan sebentar lagi, atau atur label secara manual.
+                          <button onClick={() => setOverrideReport(report)} className="ml-1 text-primary font-semibold hover:underline cursor-pointer">Atur manual</button>
+                        </p>
+                      )}
                     </div>
 
                     {/* Workflow actions */}
@@ -2529,6 +2849,14 @@ function AITriageTab() {
           })}
         </div>
       )}
+
+      {overrideReport && (
+        <OverrideModal
+          report={overrideReport}
+          onSave={handleOverride}
+          onClose={() => setOverrideReport(null)}
+        />
+      )}
     </div>
   );
 }
@@ -2577,6 +2905,7 @@ function ElectionTab() {
   };
 
   const handleTally = async () => {
+    if (!confirm("Tutup pemungutan suara dan umumkan pemenang sekarang? Tindakan ini tidak dapat dibatalkan.")) return;
     const res = await fetch("/api/admin/election/tally", { method: "POST" });
     if (res.ok) fetchElection();
     else alert((await res.json()).error);
@@ -2592,45 +2921,57 @@ function ElectionTab() {
 
   const phase = election?.phase || "inactive";
   const totalVotes = (election?.votes || []).length;
+  const eligible = election?.eligibleVoters ?? 0;
+  const turnoutPct = eligible > 0 ? Math.round((totalVotes / eligible) * 100) : 0;
+  const candidates: any[] = election?.candidates || [];
+  const sortedCands = [...candidates].sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
+  const leader = sortedCands[0];
+
+  const phases = ["inactive", "nominating", "voting", "completed"];
+  const phaseIdx = phases.indexOf(phase);
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-display font-semibold text-text-main">Manajemen Pemilihan RT</h2>
-        <p className="text-sm text-text-muted mt-1">Kelola siklus masa jabatan dan proses e-voting demokratis untuk pemilihan Ketua RT.</p>
+        <p className="text-sm text-text-muted mt-1">Jalankan siklus pemilihan Ketua RT yang transparan — dari nominasi hingga penghitungan suara.</p>
       </div>
 
-      {/* Phase indicator */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {[
-          { key: "inactive", label: "Tidak Aktif", icon: Clock },
-          { key: "nominating", label: "Nominasi", icon: UserPlus },
-          { key: "voting", label: "Pemungutan Suara", icon: Vote },
-          { key: "completed", label: "Selesai", icon: Trophy },
-        ].map((p, i) => {
-          const phases = ["inactive", "nominating", "voting", "completed"];
-          const phaseIdx = phases.indexOf(phase);
-          const stepIdx = phases.indexOf(p.key);
-          const isDone = stepIdx < phaseIdx;
-          const isCurrent = p.key === phase;
-          return (
-            <React.Fragment key={p.key}>
-              <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border", isCurrent ? "bg-primary/15 text-primary border-primary/30" : isDone ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "text-text-muted border-border-weak")}>
-                <p.icon size={13} />
-                {p.label}
-              </div>
-              {i < 3 && <span className="text-text-muted text-xs">→</span>}
-            </React.Fragment>
-          );
-        })}
+      {/* Phase stepper */}
+      <div className="bg-surface border border-border-weak rounded-2xl p-4">
+        <div className="flex items-center">
+          {[
+            { key: "inactive", label: "Persiapan", icon: SlidersHorizontal },
+            { key: "nominating", label: "Nominasi", icon: UserPlus },
+            { key: "voting", label: "Voting", icon: Vote },
+            { key: "completed", label: "Selesai", icon: Trophy },
+          ].map((p, i) => {
+            const done = i < phaseIdx;
+            const current = p.key === phase;
+            return (
+              <React.Fragment key={p.key}>
+                <div className="flex flex-col items-center gap-1.5 shrink-0">
+                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all",
+                    current ? "bg-primary text-text-inverse border-primary ring-4 ring-primary/15" :
+                    done ? "bg-primary/15 text-primary border-primary/40" :
+                    "bg-canvas text-text-muted border-border-weak")}>
+                    {done ? <Check size={15} /> : <p.icon size={15} />}
+                  </div>
+                  <span className={cn("text-[10px] font-semibold", current ? "text-primary" : done ? "text-text-main/70" : "text-text-muted")}>{p.label}</span>
+                </div>
+                {i < 3 && <div className={cn("flex-1 h-0.5 mx-1 -mt-5 rounded-full", i < phaseIdx ? "bg-primary/40" : "bg-border-weak")} />}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {/* Phase: inactive → setup form */}
       {phase === "inactive" && (
-        <div className="bg-surface border border-border-weak rounded-xl p-6 space-y-5 max-w-xl">
+        <div className="bg-surface border border-border-weak rounded-2xl p-6 space-y-5 max-w-xl">
           <div>
-            <h3 className="font-semibold text-text-main mb-1">Daftarkan Masa Jabatan Ketua RT Saat Ini</h3>
-            <p className="text-xs text-text-muted">Isi data masa jabatan Ketua RT yang sedang menjabat untuk memulai proses perencanaan pemilihan berikutnya.</p>
+            <h3 className="font-semibold text-text-main mb-1">Mulai Siklus Pemilihan Baru</h3>
+            <p className="text-xs text-text-muted">Isi data masa jabatan Ketua RT saat ini. Saat disimpan, fase nominasi terbuka dan semua warga otomatis menerima notifikasi.</p>
           </div>
           <form onSubmit={handleSetup} className="space-y-4">
             <div>
@@ -2651,8 +2992,8 @@ function ElectionTab() {
               <label className="block text-xs font-medium text-text-muted mb-1">Sudah Menjabat Berapa Tahun?</label>
               <input type="number" min="0" max="30" value={yearsServed} onChange={e => setYearsServed(e.target.value)} placeholder="Contoh: 2" className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
             </div>
-            <button type="submit" disabled={saving} className="bg-primary text-text-inverse font-semibold px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors text-sm cursor-pointer disabled:opacity-60">
-              {saving ? "Menyimpan..." : "Mulai Proses Nominasi"}
+            <button type="submit" disabled={saving} className="bg-primary text-text-inverse font-semibold px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors text-sm cursor-pointer disabled:opacity-60 flex items-center gap-2">
+              {saving ? "Menyimpan..." : <>Buka Fase Nominasi <ArrowRight size={15} /></>}
             </button>
           </form>
         </div>
@@ -2661,31 +3002,35 @@ function ElectionTab() {
       {/* Phase: nominating */}
       {phase === "nominating" && (
         <div className="space-y-4">
-          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
             <UserPlus size={18} className="text-primary mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-text-main">Fase Nominasi Aktif</p>
-              <p className="text-xs text-text-muted mt-0.5">Masa jabatan <strong>{election?.term?.currentRT}</strong> berakhir pada <strong>{election?.term?.endDate}</strong>. Warga yang berminat dapat mendaftarkan diri sebagai calon Ketua RT melalui dashboard mereka.</p>
+              <p className="text-xs text-text-muted mt-0.5">Masa jabatan <strong>{election?.term?.currentRT}</strong> berakhir <strong>{election?.term?.endDate}</strong>. Warga mendaftar sebagai calon lewat dashboard mereka.</p>
             </div>
           </div>
 
-          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-border-weak flex items-center justify-between">
-              <h3 className="font-semibold text-text-main text-sm">Kandidat Terdaftar ({election?.candidates?.length || 0})</h3>
-              <button onClick={handleStartVoting} disabled={(election?.candidates?.length || 0) < 1} className="bg-primary text-text-inverse text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                Tutup Nominasi & Mulai Voting
+          <div className="bg-surface border border-border-weak rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-border-weak flex items-center justify-between gap-3">
+              <h3 className="font-semibold text-text-main text-sm">Kandidat Terdaftar ({candidates.length})</h3>
+              <button onClick={handleStartVoting} disabled={candidates.length < 1} className="bg-primary text-text-inverse text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0">
+                Tutup Nominasi & Mulai Voting <ArrowRight size={13} />
               </button>
             </div>
-            {(election?.candidates?.length || 0) === 0 ? (
-              <div className="p-8 text-center text-text-muted text-sm">Belum ada kandidat yang mendaftar. Notifikasi telah dikirim ke semua warga.</div>
+            {candidates.length === 0 ? (
+              <div className="p-10 text-center">
+                <UserPlus size={28} className="text-text-muted mx-auto mb-2 opacity-40" />
+                <p className="text-sm text-text-muted">Belum ada kandidat. Notifikasi sudah dikirim ke semua warga.</p>
+                <p className="text-xs text-text-muted/70 mt-1">Minimal 1 kandidat diperlukan untuk memulai voting.</p>
+              </div>
             ) : (
               <div className="divide-y divide-border-weak">
-                {election.candidates.map((c: any, i: number) => (
+                {candidates.map((c: any, i: number) => (
                   <div key={c.id} className="p-4 flex items-start gap-4">
                     <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0">{i + 1}</div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="font-semibold text-text-main text-sm">{c.name}</p>
-                      {c.visiMisi && <p className="text-xs text-text-muted mt-1 leading-relaxed">{c.visiMisi}</p>}
+                      {c.visiMisi ? <p className="text-xs text-text-muted mt-1 leading-relaxed">{c.visiMisi}</p> : <p className="text-xs text-text-muted/60 italic mt-1">Visi misi belum diisi</p>}
                       <p className="text-[10px] text-text-muted mt-1">Terdaftar: {c.nominatedAt}</p>
                     </div>
                   </div>
@@ -2699,33 +3044,52 @@ function ElectionTab() {
       {/* Phase: voting */}
       {phase === "voting" && (
         <div className="space-y-4">
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3">
-            <Vote size={18} className="text-blue-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-text-main">Pemungutan Suara Berlangsung</p>
-              <p className="text-xs text-text-muted mt-0.5">Total suara masuk: <strong>{totalVotes}</strong>. Warga dapat memberikan suara melalui dashboard mereka.</p>
+          {/* Turnout stat */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-surface border border-border-weak rounded-xl p-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-2"><Vote size={16} /></div>
+              <p className="text-2xl font-display font-bold text-text-main">{totalVotes}</p>
+              <p className="text-[11px] text-text-muted">Suara Masuk</p>
+            </div>
+            <div className="bg-surface border border-border-weak rounded-xl p-4">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2"><Users size={16} /></div>
+              <p className="text-2xl font-display font-bold text-text-main">{turnoutPct}%</p>
+              <p className="text-[11px] text-text-muted">Partisipasi ({totalVotes}/{eligible} KK)</p>
+            </div>
+            <div className="bg-surface border border-border-weak rounded-xl p-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2"><Trophy size={16} /></div>
+              <p className="text-sm font-display font-bold text-text-main truncate">{leader && leader.voteCount > 0 ? leader.name : "—"}</p>
+              <p className="text-[11px] text-text-muted">Unggul Sementara</p>
             </div>
           </div>
 
-          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-border-weak flex items-center justify-between">
-              <h3 className="font-semibold text-text-main text-sm">Rekapitulasi Sementara</h3>
-              <button onClick={handleTally} className="bg-accent text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors cursor-pointer">
-                Tutup Voting & Umumkan Pemenang
+          <div className="bg-surface border border-border-weak rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-border-weak flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-text-main text-sm">Rekapitulasi Sementara</h3>
+                <p className="text-[11px] text-text-muted mt-0.5">Hasil hanya terlihat oleh pengurus — warga melihatnya setelah ditutup.</p>
+              </div>
+              <button onClick={handleTally} className="bg-accent text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors cursor-pointer shrink-0">
+                Tutup & Umumkan Pemenang
               </button>
             </div>
             <div className="divide-y divide-border-weak">
-              {election.candidates.map((c: any) => (
-                <div key={c.id} className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
-                    <span className="font-bold text-text-main text-sm">{c.voteCount} suara</span>
+              {sortedCands.map((c: any, i: number) => {
+                const pct = totalVotes > 0 ? Math.round(((c.voteCount || 0) / totalVotes) * 100) : 0;
+                return (
+                  <div key={c.id} className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="font-semibold text-text-main text-sm flex items-center gap-2">
+                        {i === 0 && c.voteCount > 0 && <Trophy size={13} className="text-amber-400" />}{c.name}
+                      </p>
+                      <span className="font-bold text-text-main text-sm tabular-nums">{c.voteCount || 0} suara · {pct}%</span>
+                    </div>
+                    <div className="w-full bg-canvas rounded-full h-2 overflow-hidden border border-border-weak">
+                      <div className={cn("rounded-full h-full transition-all duration-500", i === 0 && c.voteCount > 0 ? "bg-primary" : "bg-primary/50")} style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-canvas rounded-full h-2">
-                    <div className="bg-primary rounded-full h-2 transition-all duration-500" style={{ width: totalVotes > 0 ? `${(c.voteCount / totalVotes) * 100}%` : "0%" }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -2734,32 +3098,36 @@ function ElectionTab() {
       {/* Phase: completed */}
       {phase === "completed" && (
         <div className="space-y-4">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6 text-center space-y-3">
-            <Trophy size={40} className="text-emerald-400 mx-auto" />
+          <div className="bg-gradient-to-br from-emerald-500/15 to-surface border border-emerald-500/25 rounded-2xl p-6 text-center space-y-2">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto"><Trophy size={28} /></div>
             <div>
               <p className="text-xs text-text-muted">Ketua RT Terpilih</p>
               <h3 className="text-2xl font-display font-bold text-text-main">{election.winner}</h3>
-              <p className="text-xs text-text-muted mt-1">Diumumkan: {election.announcedAt}</p>
+              <p className="text-xs text-text-muted mt-1">Diumumkan {election.announcedAt} · {totalVotes} suara sah · {turnoutPct}% partisipasi</p>
             </div>
           </div>
 
-          <div className="bg-surface border border-border-weak rounded-xl overflow-hidden">
+          <div className="bg-surface border border-border-weak rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-border-weak">
               <h3 className="font-semibold text-text-main text-sm">Hasil Akhir Pemungutan Suara</h3>
             </div>
             <div className="divide-y divide-border-weak">
-              {[...election.candidates].sort((a: any, b: any) => b.voteCount - a.voteCount).map((c: any, i: number) => (
-                <div key={c.id} className="p-4 flex items-center gap-4">
-                  {i === 0 ? <Trophy size={18} className="text-amber-400 shrink-0" /> : <span className="w-[18px] text-center text-text-muted font-bold text-sm">{i + 1}</span>}
-                  <div className="flex-1">
-                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
-                    <div className="w-full bg-canvas rounded-full h-1.5 mt-1.5">
-                      <div className="bg-primary rounded-full h-1.5" style={{ width: totalVotes > 0 ? `${(c.voteCount / totalVotes) * 100}%` : "0%" }} />
+              {sortedCands.map((c: any, i: number) => {
+                const pct = totalVotes > 0 ? Math.round(((c.voteCount || 0) / totalVotes) * 100) : 0;
+                const won = c.name === election.winner;
+                return (
+                  <div key={c.id} className="p-4 flex items-center gap-4">
+                    {i === 0 ? <Trophy size={18} className="text-amber-400 shrink-0" /> : <span className="w-[18px] text-center text-text-muted font-bold text-sm">{i + 1}</span>}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-text-main text-sm flex items-center gap-2">{c.name}{won && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Terpilih</span>}</p>
+                      <div className="w-full bg-canvas rounded-full h-1.5 mt-1.5 overflow-hidden">
+                        <div className={cn("h-1.5 rounded-full", won ? "bg-emerald-400" : "bg-primary/60")} style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
+                    <span className="font-bold text-text-main text-sm shrink-0 tabular-nums">{c.voteCount || 0} · {pct}%</span>
                   </div>
-                  <span className="font-bold text-text-main text-sm shrink-0">{c.voteCount} suara</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

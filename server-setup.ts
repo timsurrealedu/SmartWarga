@@ -481,16 +481,32 @@ export function createApp() {
 
   // ── Election / E-Voting ───────────────────────────────────────────────────────
 
-  app.get("/api/election", (_req, res) => {
-    const { term, phase, candidates, winner, announcedAt } = electionData;
+  app.get("/api/election", (req, res) => {
+    const { term, phase, candidates, winner, announcedAt, votes } = electionData;
+    // Hide per-candidate tallies until the election is over to avoid bandwagon bias.
     const sanitizedCandidates = candidates.map((c: any) => ({
       id: c.id, name: c.name, visiMisi: c.visiMisi, nominatedAt: c.nominatedAt,
       voteCount: phase === "completed" ? c.voteCount : undefined,
     }));
-    res.json({ phase, term, candidates: sanitizedCandidates, winner, announcedAt });
+    // Return the requesting voter's participation state so the client is stateless
+    // about it (survives refresh) — single request, no extra round-trips.
+    const voterId = req.query.voterId as string | undefined;
+    const myVote = voterId ? votes.find((v: any) => v.voterId === voterId) : null;
+    const myCandidate = voterId ? candidates.find((c: any) => c.residentId === voterId) : null;
+    res.json({
+      phase, term, candidates: sanitizedCandidates, winner, announcedAt,
+      totalVotes: votes.length,
+      eligibleVoters: residentsData.length,
+      me: voterId ? {
+        hasVoted: !!myVote,
+        votedCandidateId: myVote?.candidateId || null,
+        hasNominated: !!myCandidate,
+        myCandidateId: myCandidate?.id || null,
+      } : null,
+    });
   });
 
-  app.get("/api/admin/election", (_req, res) => res.json(electionData));
+  app.get("/api/admin/election", (_req, res) => res.json({ ...electionData, eligibleVoters: residentsData.length }));
 
   app.post("/api/admin/election/setup", (req, res) => {
     const { currentRT, startDate, endDate, yearsServed } = req.body;
@@ -721,11 +737,17 @@ Aturan Komunikasi:
       const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
       if (!match) return res.status(400).json({ error: "Invalid image base64 format" });
 
+      // Graceful degradation: no key → tell the client AI is unavailable so it
+      // can fall back to manual entry instead of showing a broken state.
+      if (!process.env.GEMINI_API_KEY) {
+        return res.json({ available: false, title: "", category: "", description: "" });
+      }
+
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash",
         contents: [
           { inlineData: { mimeType: match[1], data: match[2] } },
-          { text: `Analisis foto keluhan warga ini dengan seksama. Tentukan judul keluhan yang singkat, jelas, dan informatif (misal: 'Jalanan Berlubang', 'Sampah Menumpuk di Got', 'Lampu Jalan Padam'). Kategorikan keluhan tersebut ke dalam salah satu dari empat kategori berikut saja: 'Infrastruktur', 'Kebersihan', 'Keamanan', atau 'Lainnya'. Berikan deskripsi singkat hasil analisis gambar tersebut mengenai apa kerusakannya dan potensi dampaknya secara formal. Format output harus berupa JSON murni sesuai schema.` },
+          { text: `Analisis foto keluhan warga ini dengan seksama. Tentukan judul keluhan yang singkat, jelas, dan informatif (misal: 'Jalanan Berlubang', 'Sampah Menumpuk di Got', 'Lampu Jalan Padam'). Kategorikan keluhan tersebut ke dalam salah satu dari empat kategori berikut saja: 'Infrastruktur', 'Kebersihan', 'Keamanan', atau 'Lainnya'. Berikan deskripsi 1-2 kalimat yang menjelaskan apa kerusakannya dan potensi dampaknya secara faktual dan jelas (bukan formal kaku). Format output harus berupa JSON murni sesuai schema.` },
         ],
         config: {
           responseMimeType: "application/json",
@@ -733,10 +755,11 @@ Aturan Komunikasi:
         },
       });
 
-      res.json(JSON.parse((response.text || "{}").trim()));
+      res.json({ available: true, ...JSON.parse((response.text || "{}").trim()) });
     } catch (error: any) {
       console.error("AI Report Analysis error:", error);
-      res.status(500).json({ error: error.message || "Failed to analyze image" });
+      // Degrade gracefully rather than erroring the client flow.
+      res.json({ available: false, title: "", category: "", description: "" });
     }
   });
 

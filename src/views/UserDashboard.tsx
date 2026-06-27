@@ -7,6 +7,7 @@ import {
   Home, Heart, Briefcase, HelpingHand, Truck, MoreHorizontal, ShieldAlert,
   Newspaper, Store, Calendar, Tag, AlertTriangle, Building, Megaphone, Users,
   FileText, Sparkles, ChevronRight, ChevronLeft, Vote, Trophy, UserPlus, X,
+  Navigation, Loader2, Trash2, CheckCircle,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar,
@@ -30,7 +31,7 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
   useEffect(() => {
     fetch('/api/user/letters').then(r => r.json()).then(setLetters);
     fetch('/api/finance').then(r => r.json()).then(setFinance);
-    fetch('/api/election').then(r => r.json()).then(data => {
+    fetch(`/api/election?voterId=${VOTER_ID}`).then(r => r.json()).then(data => {
       if (data.phase !== "inactive") setElection(data);
     }).catch(() => {});
   }, []);
@@ -70,7 +71,12 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <ElectionModal election={election} onVoted={() => fetch('/api/election').then(r => r.json()).then(setElection)} />
+              <button
+                onClick={() => setTab("election_warga")}
+                className="text-xs font-semibold bg-primary text-text-inverse px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer shrink-0"
+              >
+                {election.phase === "nominating" ? "Daftar Calon" : "Berikan Suara"}
+              </button>
               <button onClick={() => setShowElectionBanner(false)} className="text-text-muted hover:text-text-main transition-colors cursor-pointer"><X size={16} /></button>
             </div>
           </motion.div>
@@ -110,7 +116,7 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
           {currentTab === "reports" && <ReportingTab setTab={setTab} />}
           {currentTab === "tracking" && <TrackingTab setTab={setTab} initialType={trackingInitialType} />}
           {currentTab === "panic" && <PanicTab />}
-          {currentTab === "election_warga" && <WargaElectionTab election={election} onRefresh={() => fetch('/api/election').then(r => r.json()).then(setElection)} />}
+          {currentTab === "election_warga" && <WargaElectionTab election={election} onRefresh={() => fetch(`/api/election?voterId=${VOTER_ID}`).then(r => r.json()).then(setElection)} />}
           {currentTab === "profile" && <ProfileTab />}
         </motion.div>
       </AnimatePresence>
@@ -121,9 +127,29 @@ export function UserDashboard({ currentTab, setTab }: { currentTab: string, setT
   );
 }
 
+// Single demo warga identity (RES-01 = Bpk. Rahardian, the seeded resident).
+// Centralized so nomination/vote/participation all key off the same id.
+const VOTER_ID = "RES-01";
+
+const arr = (x: any): any[] => (Array.isArray(x) ? x : []);
+const rpFull = (n: number) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+
+const letterStatusMeta: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Menunggu", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+  approved: { label: "Disetujui", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+  rejected: { label: "Ditolak", cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+};
+const reportStatusCls: Record<string, string> = {
+  SELESAI: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  PROSES: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  TERKIRIM: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+};
+
 function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string) => void }) {
-  const activeLettersCount = letters.filter(l => l.status === "pending").length;
   const [showVideo, setShowVideo] = useState(false);
+  const [dues, setDues] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [news, setNews] = useState<any[]>([]);
   const [profileName, setProfileName] = useState(() => {
     const stored = localStorage.getItem("user-profile");
     if (stored) {
@@ -155,8 +181,36 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
     return () => window.removeEventListener("profile-updated", handleUpdate);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/user/dues").then(r => r.json()).then(x => setDues(arr(x))).catch(() => {});
+    fetch("/api/user/reports").then(r => r.json()).then(x => setReports(arr(x))).catch(() => {});
+    fetch("/api/news").then(r => r.json()).then(x => setNews(arr(x))).catch(() => {});
+  }, []);
+
+  const isMine = (s: string) => s === profileName || (s || "").includes("Rahardian");
+  const currentDue = dues.length ? dues[dues.length - 1] : null;
+  const myLetters = letters.filter(l => isMine(l.name));
+  const myReports = reports.filter(r => isMine(r.sender));
+  const activeLetters = myLetters.filter(l => l.status === "pending").length;
+  const activeReports = myReports.filter(r => r.status !== "SELESAI").length;
+
+  const submissions = [
+    ...myLetters.map(l => ({ kind: "surat" as const, id: l.id, title: l.type, date: l.date, status: l.status })),
+    ...myReports.map(r => ({ kind: "lapor" as const, id: r.id, title: r.title, date: r.date, status: r.status })),
+  ].slice(0, 5);
+
+  const quickActions = [
+    { icon: FileText, label: "Ajukan Surat", tint: "bg-primary/10 text-primary", onClick: () => setTab("letters") },
+    { icon: MessageSquare, label: "Lapor Masalah", tint: "bg-amber-500/10 text-amber-400", onClick: () => setTab("reports") },
+    { icon: CreditCard, label: "Bayar Iuran", tint: "bg-emerald-500/10 text-emerald-400", onClick: () => setTab("finance_dues") },
+    { icon: Search, label: "Lacak Status", tint: "bg-blue-500/10 text-blue-400", onClick: () => setTab("tracking") },
+    { icon: Store, label: "Pasar UMKM", tint: "bg-violet-500/10 text-violet-400", onClick: () => setTab("market") },
+    { icon: ShieldAlert, label: "Tombol Darurat", tint: "bg-red-500/10 text-red-400", onClick: () => setTab("panic") },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* ── Welcome banner ── */}
       <div className="welcome-banner rounded-2xl p-5 sm:p-8 relative overflow-hidden shadow-lg">
         <div className="relative z-10 w-full md:w-2/3">
           <h1 className="text-xl sm:text-3xl font-display font-bold mb-1.5 welcome-title text-balance">
@@ -195,12 +249,12 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
               </button>
             </div>
             <div className="relative pt-[56.25%] bg-black">
-              <iframe 
+              <iframe
                 className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
-                title="Video Bantuan" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Video Bantuan"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen>
               </iframe>
             </div>
@@ -211,39 +265,121 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button onClick={() => setTab("letters")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
-            <FileCheck size={15} />
+      {/* ── Iuran action banner ── */}
+      {currentDue && (
+        currentDue.status === "unpaid" ? (
+          <div className="rounded-2xl border border-accent/30 bg-accent/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
+              <AlertCircle size={22} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-text-main">Tagihan Iuran {currentDue.month} belum dibayar</p>
+              <p className="text-xs text-text-muted mt-0.5">Total tagihan <span className="font-bold text-text-main">{rpFull(currentDue.amount)}</span> — bayar sekarang via QRIS atau transfer.</p>
+            </div>
+            <button onClick={() => setTab("finance_dues")} className="bg-accent text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-orange-600 transition cursor-pointer shrink-0 w-full sm:w-auto">
+              Bayar Sekarang
+            </button>
           </div>
-          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Surat Pengantar</p>
-          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">{activeLettersCount}</p>
-        </button>
-        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-violet-500/25 transition-colors shrink-0">
-            <Newspaper size={15} />
+        ) : currentDue.status === "pending" ? (
+          <div className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0"><Clock size={22} /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-text-main">Bukti pembayaran iuran {currentDue.month} sedang diverifikasi</p>
+              <p className="text-xs text-text-muted mt-0.5">Pengurus RT akan mengonfirmasi pembayaran Anda dalam 1×24 jam.</p>
+            </div>
+            <button onClick={() => setTab("finance_dues")} className="text-xs font-bold text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition cursor-pointer shrink-0">Lihat</button>
           </div>
-          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Berita RT</p>
-          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">3</p>
-        </button>
-        <button onClick={() => setTab("finance_dues")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
-            <CheckCircle2 size={15} />
+        ) : (
+          <div className="rounded-2xl border border-primary/25 bg-primary/10 p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0"><CheckCircle2 size={22} /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-text-main">Iuran {currentDue.month} sudah lunas</p>
+              <p className="text-xs text-text-muted mt-0.5">Terima kasih telah membayar tepat waktu. Kontribusi Anda menjaga lingkungan tetap nyaman.</p>
+            </div>
+            <button onClick={() => setTab("finance_dues")} className="text-xs font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition cursor-pointer shrink-0">Riwayat</button>
           </div>
-          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Status Iuran</p>
-          <p className="text-lg sm:text-2xl font-bold text-primary mt-0.5">Lunas</p>
-        </button>
-        <button onClick={() => setTab("reports")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-amber-500/20 transition-colors shrink-0">
-            <MessageSquare size={15} />
-          </div>
-          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Laporan Saya</p>
-          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">0</p>
-        </button>
+        )
+      )}
+
+      {/* ── Quick actions ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-text-main mb-3">Layanan Cepat</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {quickActions.map(q => (
+            <button key={q.label} onClick={q.onClick} className="bg-surface border border-border-weak rounded-xl p-3 sm:p-4 flex flex-col items-center text-center gap-2 hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer">
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", q.tint)}>
+                <q.icon size={18} />
+              </div>
+              <span className="text-[11px] sm:text-xs font-medium text-text-main leading-tight">{q.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="pt-8">
-        <StorageTab />
+      {/* ── Lower grid: submissions + news ── */}
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Status pengajuan saya */}
+        <div className="lg:col-span-2 bg-surface border border-border-weak rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-text-main">Status Pengajuan Saya</h3>
+              <p className="text-[11px] text-text-muted mt-0.5">{activeLetters} surat aktif · {activeReports} laporan diproses</p>
+            </div>
+            <button onClick={() => setTab("tracking")} className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1">Lacak semua <ChevronRight size={13} /></button>
+          </div>
+
+          {submissions.length === 0 ? (
+            <div className="py-10 text-center border border-dashed border-border-weak rounded-xl">
+              <FileCheck size={28} className="text-text-muted mx-auto mb-2" />
+              <p className="text-sm text-text-muted">Belum ada pengajuan.</p>
+              <button onClick={() => setTab("letters")} className="mt-3 text-xs font-semibold text-primary border border-primary/30 px-4 py-2 rounded-lg hover:bg-primary/10 transition cursor-pointer">Ajukan Surat Pertama</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {submissions.map(s => {
+                const meta = s.kind === "surat" ? letterStatusMeta[s.status] : null;
+                return (
+                  <button key={`${s.kind}-${s.id}`} onClick={() => setTab("tracking")} className="w-full text-left bg-canvas border border-border-weak rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-surface-hover hover:border-border-strong transition cursor-pointer">
+                    <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", s.kind === "surat" ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-400")}>
+                      {s.kind === "surat" ? <FileText size={16} /> : <MessageSquare size={16} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-text-main truncate">{s.title}</p>
+                      <p className="text-[11px] text-text-muted">{s.kind === "surat" ? "Surat Pengantar" : "Laporan"} · {s.date}</p>
+                    </div>
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border shrink-0", s.kind === "surat" ? meta?.cls : reportStatusCls[s.status] || reportStatusCls.TERKIRIM)}>
+                      {s.kind === "surat" ? meta?.label : s.status}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Berita & pengumuman */}
+        <div className="bg-surface border border-border-weak rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-text-main">Berita & Pengumuman</h3>
+            <button onClick={() => setTab("news_gotong_royong")} className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1">Semua <ChevronRight size={13} /></button>
+          </div>
+          {news.length === 0 ? (
+            <p className="text-xs text-text-muted text-center py-6">Belum ada berita.</p>
+          ) : (
+            <div className="space-y-3">
+              {news.slice(0, 3).map(n => (
+                <button key={n.id} onClick={() => setTab("news_gotong_royong")} className="w-full text-left flex gap-3 group cursor-pointer">
+                  <img src={n.image} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 border border-border-weak" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded">{n.category}</span>
+                    <p className="text-xs font-semibold text-text-main mt-1 line-clamp-2 group-hover:text-primary transition-colors">{n.title}</p>
+                    <p className="text-[10px] text-text-muted mt-0.5">{n.date}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1287,23 +1423,47 @@ function PanicTab() {
   );
 }
 
+const REPORT_CATEGORIES = [
+  { id: "Infrastruktur", label: "Infrastruktur", desc: "Jalan, lampu, fasilitas umum", emoji: "🚧" },
+  { id: "Kebersihan", label: "Kebersihan", desc: "Sampah, selokan, bau", emoji: "🧹" },
+  { id: "Keamanan", label: "Keamanan", desc: "Kriminal, parkir liar, gangguan", emoji: "👮" },
+  { id: "Lainnya", label: "Lainnya", desc: "Masalah lingkungan lainnya", emoji: "📋" },
+];
+
+const QUICK_LOCATIONS = [
+  "Jl. Merdeka (dekat Pos Ronda)",
+  "Lapangan Blok D",
+  "Gang Melati Blok A2",
+  "Gerbang Utama RT 05",
+];
+
+const normalizeCategory = (c: string) => {
+  const lc = (c || "").toLowerCase();
+  if (lc.includes("infrastruktur")) return "Infrastruktur";
+  if (lc.includes("bersih") || lc.includes("sampah") || lc.includes("kebersihan")) return "Kebersihan";
+  if (lc.includes("aman") || lc.includes("tertib") || lc.includes("keamanan")) return "Keamanan";
+  return "Lainnya";
+};
+
 function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
   const [reports, setReports] = useState<any[]>([]);
   const [subTab, setSubTab] = useState<"create" | "public">("create");
-  
-  // Wizard States
-  const [step, setStep] = useState(1);
+
+  // Form state
   const [image, setImage] = useState<string | null>(null);
-  const [location, setLocation] = useState("");
-  const [category, setCategory] = useState("Infrastruktur");
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  
+
+  // AI + flow state
+  const [aiState, setAiState] = useState<"idle" | "analyzing" | "done" | "unavailable">("idle");
+  const [aiFilled, setAiFilled] = useState<{ title: boolean; description: boolean; category: boolean }>({ title: false, description: false, category: false });
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [analyzingImage, setAnalyzingImage] = useState(false);
-  const [analyzingLocation, setAnalyzingLocation] = useState(false);
-  const [analyzingCategory, setAnalyzingCategory] = useState(false);
-  const [aiStatus, setAiStatus] = useState("Menunggu unggahan foto...");
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     fetch('/api/user/reports').then(r => r.json()).then(data => {
@@ -1312,174 +1472,98 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
     }).catch(() => setReports([]));
   }, []);
 
-  const triggerAIAnalysis = async (imgData: string) => {
-    setAnalyzingImage(true);
-    setAiStatus("Membaca data biner gambar...");
-    
-    const statuses = [
-      "Mengaktifkan modul Computer Vision RT-AI...",
-      "Membaca koordinat piksel & anomali kontras...",
-      "Mengidentifikasi objek kerusakan atau sampah...",
-      "Mencocokkan titik kerusakan dengan zonasi RT 05...",
-      "Mengklasifikasikan kategori (Kebersihan / Infrastruktur / Keamanan)...",
-      "Merumuskan usulan draf judul dan perbaikan otomatis...",
-      "Menyelesaikan draf analisis foto..."
-    ];
-    
-    let statusIdx = 0;
-    const interval = setInterval(() => {
-      if (statusIdx < statuses.length) {
-        setAiStatus(statuses[statusIdx]);
-        statusIdx++;
-      }
-    }, 700);
-
+  const analyzePhoto = async (imgData: string) => {
+    setAiState("analyzing");
     try {
       const res = await fetch("/api/user/reports/analyze-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imgData })
+        body: JSON.stringify({ image: imgData }),
       });
-      
-      const locationsRT05 = [
-        "Jl. Merdeka RT 05 / RW 12 (Dekat Pos Ronda Utama)",
-        "Jl. Kenanga Blok C No. 14, RT 05 / RW 12",
-        "Jl. Melati RT 05 / RW 12 (Samping Lapangan Olahraga)",
-        "Area Fasilitas Umum Blok D No. 22, RT 05 / RW 12"
-      ];
-      const randomLoc = locationsRT05[Math.floor(Math.random() * locationsRT05.length)];
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.title) setTitle(data.title);
-        
-        if (data.category) {
-          const catLower = data.category.toLowerCase();
-          if (catLower.includes("infrastruktur")) setCategory("Infrastruktur");
-          else if (catLower.includes("bersih") || catLower.includes("sampah") || catLower.includes("kebersihan")) setCategory("Kebersihan");
-          else if (catLower.includes("aman") || catLower.includes("tertib") || catLower.includes("keamanan")) setCategory("Keamanan");
-          else setCategory("Lainnya");
-        }
-
-        // Delay the transition so the user sees step 1 completion, then go to step 2 with location loader
-        setTimeout(() => {
-          clearInterval(interval);
-          setAnalyzingImage(false);
-          setStep(2);
-          setAnalyzingLocation(true);
-
-          // Simulate AI location tracking
-          setTimeout(() => {
-            setLocation(randomLoc);
-            setAnalyzingLocation(false);
-          }, 3500);
-        }, 5200);
-
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.available && (data.title || data.description)) {
+        // Only fill fields the user hasn't already typed into.
+        const fill = { title: false, description: false, category: false };
+        setTitle(prev => { if (!prev && data.title) { fill.title = true; return data.title; } return prev; });
+        setDescription(prev => { if (!prev && data.description) { fill.description = true; return data.description; } return prev; });
+        setCategory(prev => { if (!prev && data.category) { fill.category = true; return normalizeCategory(data.category); } return prev; });
+        setAiFilled(fill);
+        setAiState("done");
       } else {
-        // Fallback standard values on failure
-        setTitle("Laporan Temuan Masalah Lingkungan");
-        setCategory("Infrastruktur");
-        
-        setTimeout(() => {
-          clearInterval(interval);
-          setAnalyzingImage(false);
-          setStep(2);
-          setAnalyzingLocation(true);
-          setTimeout(() => {
-            setLocation(randomLoc);
-            setAnalyzingLocation(false);
-          }, 3500);
-        }, 5200);
+        setAiState("unavailable");
       }
     } catch (e) {
       console.error("AI photo analysis error:", e);
-      setTitle("Laporan Temuan Masalah Lingkungan");
-      setCategory("Infrastruktur");
-      const locationsRT05 = [
-        "Jl. Merdeka RT 05 / RW 12 (Dekat Pos Ronda Utama)",
-        "Jl. Kenanga Blok C No. 14, RT 05 / RW 12",
-        "Jl. Melati RT 05 / RW 12 (Samping Lapangan Olahraga)",
-        "Area Fasilitas Umum Blok D No. 22, RT 05 / RW 12"
-      ];
-      const randomLoc = locationsRT05[Math.floor(Math.random() * locationsRT05.length)];
-      
-      setTimeout(() => {
-        clearInterval(interval);
-        setAnalyzingImage(false);
-        setStep(2);
-        setAnalyzingLocation(true);
-        setTimeout(() => {
-          setLocation(randomLoc);
-          setAnalyzingLocation(false);
-        }, 3500);
-      }, 5200);
+      setAiState("unavailable");
     }
+  };
+
+  const readImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Str = reader.result as string;
+      setImage(base64Str);
+      analyzePhoto(base64Str);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Str = reader.result as string;
-        setImage(base64Str);
-        // Automatically trigger AI automated image analysis!
-        triggerAIAnalysis(base64Str);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
+    if (file) readImageFile(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Str = reader.result as string;
-        setImage(base64Str);
-        triggerAIAnalysis(base64Str);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (file && file.type.startsWith("image/")) readImageFile(file);
   };
 
+  const removeImage = () => {
+    setImage(null);
+    setAiState("idle");
+    setAiFilled({ title: false, description: false, category: false });
+  };
+
+  const useMyLocation = () => {
+    setLocError("");
+    if (!navigator.geolocation) { setLocError("Perangkat tidak mendukung GPS."); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setLocation(`📍 ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        setLocating(false);
+      },
+      () => { setLocError("Tidak bisa mengakses lokasi. Masukkan alamat manual."); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const canSubmit = title.trim() && location.trim() && category;
+
   const handleSubmitReport = async () => {
-    if (!title) {
-      alert("Masukkan judul laporan!");
-      return;
-    }
-    if (!location) {
-      alert("Tentukan lokasi laporan!");
-      return;
-    }
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/user/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, location, image, isPublic, category })
+        body: JSON.stringify({ title, location, image, isPublic, category, description }),
       });
       if (res.ok) {
         const newReport = await res.json();
         setReports([newReport, ...reports]);
-        
-        // Trigger standard notification for reporting
         await fetch("/api/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: "Laporan Baru Diterima",
             message: `Laporan Anda '${title}' berhasil dikirim ke Pengurus wilayah.`,
-            category: "letter"
-          })
+            category: "letter",
+          }),
         });
-
-        setStep(5); // Go to success step!
+        setSubmitted(true);
       } else {
         alert("Gagal mengirim laporan.");
       }
@@ -1491,14 +1575,24 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
     }
   };
 
-  const resetWizard = () => {
+  const resetForm = () => {
     setImage(null);
-    setLocation("");
-    setCategory("Infrastruktur");
     setTitle("");
+    setDescription("");
+    setCategory("");
+    setLocation("");
     setIsPublic(true);
-    setStep(1);
+    setAiState("idle");
+    setAiFilled({ title: false, description: false, category: false });
+    setLocError("");
+    setSubmitted(false);
   };
+
+  const AiTag = () => (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+      <Sparkles size={9} /> Draf AI
+    </span>
+  );
 
   const filteredPublicReports = Array.isArray(reports) ? reports.filter(r => r.isPublic) : [];
 
@@ -1533,504 +1627,136 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
       </div>
 
       {subTab === "create" ? (
-        <div className="max-w-3xl mx-auto space-y-8 py-4">
-          
-          {/* STEP INDICATORS HEADER MATCHING SCREENSHOT */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-2xl font-bold font-display text-text-main self-start mb-6">Lapor Masalah</h3>
-            
-            {/* Steps Row */}
-            <div className="relative w-full flex items-start justify-between px-4 sm:px-12 mb-8">
-              
-              {/* Connecting line background with high-fidelity animated progress */}
-              <div className="absolute left-[2.25rem] right-[2.25rem] sm:left-[4.25rem] sm:right-[4.25rem] top-5 h-[4px] bg-[#1a3832] [.light_&]:bg-primary/25 rounded-full z-0 overflow-hidden">
-                <motion.div 
-                  className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(74,222,128,0.5)]"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${((step - 1) / 4) * 100}%` }}
-                  transition={{ type: "spring", stiffness: 60, damping: 13 }}
-                />
+        <div className="max-w-2xl mx-auto">
+          {!submitted ? (
+            <div className="bg-[#0c1614] [.light_&]:bg-[#f2fbf7] border border-border-strong/30 [.light_&]:border-primary/25 rounded-3xl p-6 md:p-7 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-56 h-56 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative space-y-6">
+
+                {/* Intro */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><Sparkles size={18} /></div>
+                  <div>
+                    <h3 className="font-display font-bold text-text-main text-lg">Buat Laporan</h3>
+                    <p className="text-xs text-text-muted mt-0.5 leading-relaxed">Unggah foto dan AI akan membantu menyusun draf judul, deskripsi, dan kategori. Anda tetap bisa menyuntingnya sebelum mengirim.</p>
+                  </div>
+                </div>
+
+                {/* Photo */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-text-muted">Foto Masalah <span className="font-normal text-text-muted/70">· opsional, membantu AI</span></label>
+                  {!image ? (
+                    <div onDragOver={e => e.preventDefault()} onDrop={handleDrop} className="border-2 border-dashed border-primary/25 rounded-2xl bg-canvas/30 hover:bg-canvas/50 transition p-6 flex flex-col items-center text-center cursor-pointer relative min-h-[150px] justify-center">
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary border border-primary/20 mb-2"><Camera size={22} /></div>
+                      <p className="text-sm font-semibold text-text-main">Ketuk atau seret foto ke sini</p>
+                      <p className="text-[11px] text-text-muted mt-0.5">JPG / PNG • maks 10 MB</p>
+                    </div>
+                  ) : (
+                    <div className="relative rounded-2xl overflow-hidden border border-border-strong/30">
+                      <img src={image} alt="Preview" className="w-full max-h-56 object-cover" />
+                      <button onClick={removeImage} className="absolute top-2 right-2 bg-black/60 hover:bg-red-600 text-white p-1.5 rounded-lg transition cursor-pointer"><Trash2 size={14} /></button>
+                      {aiState === "analyzing" && (
+                        <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
+                          <Loader2 size={22} className="text-primary animate-spin" />
+                          <p className="text-xs font-semibold text-white">AI sedang membaca foto…</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* AI status banner */}
+                  {aiState === "done" && (
+                    <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 text-xs text-primary font-medium animate-in fade-in">
+                      <Sparkles size={14} className="shrink-0" /> Draf terisi otomatis oleh AI — periksa & sunting bila perlu.
+                    </div>
+                  )}
+                  {aiState === "unavailable" && (
+                    <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-amber-400/90 font-medium">
+                      <AlertCircle size={14} className="shrink-0" /> Analisis AI tidak tersedia saat ini — silakan isi judul & deskripsi secara manual.
+                    </div>
+                  )}
+                </div>
+
+                {/* Title */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-text-muted">Judul Laporan {aiFilled.title && <AiTag />}</label>
+                  <input value={title} onChange={e => { setTitle(e.target.value); setAiFilled(p => ({ ...p, title: false })); }} placeholder="Misal: Lampu jalan mati di depan Blok D" className="w-full bg-canvas/50 border border-border-strong/30 rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary" />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-text-muted">Deskripsi <span className="font-normal text-text-muted/70">· bantu pengurus</span> {aiFilled.description && <AiTag />}</label>
+                  <textarea value={description} onChange={e => { setDescription(e.target.value); setAiFilled(p => ({ ...p, description: false })); }} rows={3} placeholder="Jelaskan masalahnya: sejak kapan, seberapa parah, dan dampaknya…" className="w-full bg-canvas/50 border border-border-strong/30 rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none" />
+                </div>
+
+                {/* Category */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-text-muted">Kategori {aiFilled.category && <AiTag />}</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {REPORT_CATEGORIES.map(cat => {
+                      const sel = category === cat.id;
+                      return (
+                        <button key={cat.id} type="button" onClick={() => { setCategory(cat.id); setAiFilled(p => ({ ...p, category: false })); }} className={cn("p-3 rounded-xl border text-left transition cursor-pointer", sel ? "bg-primary/15 border-primary text-text-main" : "bg-canvas/40 border-border-strong/40 text-text-muted hover:border-primary/40")}>
+                          <span className="text-lg">{cat.emoji}</span>
+                          <p className="text-[11px] font-bold text-text-main mt-1">{cat.label}</p>
+                          <p className="text-[9px] text-text-muted leading-tight mt-0.5 hidden sm:block">{cat.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-text-muted">Lokasi Masalah</label>
+                  <div className="flex gap-2">
+                    <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Contoh: Jl. Merdeka No. 12 (dekat pos satpam)" className="flex-1 bg-canvas/50 border border-border-strong/30 rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary" />
+                    <button type="button" onClick={useMyLocation} disabled={locating} className="shrink-0 px-3 rounded-xl border border-primary/30 text-primary text-xs font-bold hover:bg-primary/10 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50">
+                      {locating ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}<span className="hidden sm:inline">GPS</span>
+                    </button>
+                  </div>
+                  {locError && <p className="text-[11px] text-amber-400">{locError}</p>}
+                  <div className="flex flex-wrap gap-1.5">
+                    {QUICK_LOCATIONS.map(loc => (
+                      <button key={loc} type="button" onClick={() => setLocation(loc)} className="text-[10px] px-2.5 py-1 rounded-full border border-border-weak text-text-muted hover:border-primary/40 hover:text-text-main transition cursor-pointer">{loc}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Public toggle */}
+                <div className="flex items-center justify-between border border-border-weak rounded-xl p-3.5 bg-canvas/30">
+                  <div>
+                    <h5 className="text-xs font-bold text-text-main">Publikasikan ke feed warga</h5>
+                    <p className="text-[10px] text-text-muted mt-0.5">Warga lain bisa melihat & ikut memantau laporan ini.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
+                    <div className="w-10 h-5 bg-canvas/60 border border-border-strong rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                  </label>
+                </div>
+
+                {/* Submit */}
+                <button type="button" onClick={handleSubmitReport} disabled={!canSubmit || submitting} className="w-full bg-primary text-text-inverse py-3.5 rounded-xl text-sm font-bold hover:brightness-105 transition flex items-center justify-center gap-2 shadow-lg shadow-primary/15 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                  {submitting ? <><Loader2 size={16} className="animate-spin" /> Mengirim…</> : <>Kirim Laporan <ChevronRight size={16} /></>}
+                </button>
+                {!canSubmit && <p className="text-[11px] text-text-muted text-center">Lengkapi judul, kategori, dan lokasi untuk mengirim.</p>}
               </div>
-
-              {[
-                { number: 1, label: "Foto" },
-                { number: 2, label: "Lokasi" },
-                { number: 3, label: "Kategori" },
-                { number: 4, label: "Tinjau" },
-                { number: 5, label: "Selesai" }
-              ].map((s) => {
-                const isActive = step === s.number;
-                const isCompleted = step > s.number;
-                return (
-                  <div key={s.number} className="flex flex-col items-center flex-1 relative z-10">
-                    <button
-                      type="button"
-                      disabled={s.number > step && s.number !== 5}
-                      onClick={() => s.number < step && setStep(s.number)}
-                      className={cn(
-                        "w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 relative z-10",
-                        isActive 
-                          ? "bg-primary text-text-inverse ring-4 ring-primary/20 scale-110 shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" 
-                          : isCompleted 
-                            ? "bg-[#0a1311] [.light_&]:bg-[#f4f6f5] text-primary border-2 border-primary cursor-pointer" 
-                            : "bg-[#0a1311] [.light_&]:bg-[#f4f6f5] border border-border-strong/50 text-text-muted cursor-not-allowed"
-                      )}
-                    >
-                      {isCompleted && s.number !== 5 ? "✓" : s.number}
-                    </button>
-                    <span 
-                      className={cn(
-                        "text-[11px] font-semibold mt-2 transition-all",
-                        isActive ? "text-primary font-bold" : isCompleted ? "text-text-main/80" : "text-text-muted"
-                      )}
-                    >
-                      {s.label}
-                    </span>
-                  </div>
-                );
-              })}
             </div>
-          </div>
-
-          {/* MAIN WIZARD CONTAINER CARD */}
-          <div className="bg-[#0c1614] [.light_&]:bg-[#f2fbf7] border border-border-strong/30 [.light_&]:border-primary/25 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden text-text-main">
-            
-            {/* Subtle mesh background effect */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full filter blur-3xl pointer-events-none" />
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6 relative z-10"
-              >
-                {/* STEP 1: UPLOAD FOTO */}
-                {step === 1 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main font-display">Unggah Foto Masalah</h4>
-                      <p className="text-xs text-text-muted/80 mt-1 leading-relaxed">
-                        Ambil foto yang jelas. AI kami akan menganalisis, mengusulkan kategori, lokasi, rincian otomatis, dan langsung membawa Anda ke tahap peninjauan.
-                      </p>
-                    </div>
-
-                    {/* Drag & Drop Area */}
-                    <div 
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      className="border-2 border-primary/20 border-dashed rounded-2xl bg-canvas/30 hover:bg-canvas/50 transition-all p-8 flex flex-col items-center justify-center text-center cursor-pointer relative group min-h-[220px]"
-                    >
-                      <input 
-                        type="file" 
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                        accept="image/*" 
-                        onChange={handleImageChange} 
-                        id="reporting-photo-input"
-                      />
-
-                      {analyzingImage ? (
-                        <div className="space-y-6 py-6 px-4 w-full flex flex-col items-center justify-center animate-in fade-in duration-300">
-                          {/* Outer scanning visualizer box */}
-                          <div className="relative w-44 h-28 border border-primary/30 rounded-xl bg-primary/5 overflow-hidden flex items-center justify-center">
-                            
-                            {/* Tech Corner Brackets */}
-                            <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-primary" />
-                            <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-primary" />
-                            <div className="absolute bottom-1 left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-primary" />
-                            <div className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-primary" />
-                            
-                            {/* Sci-Fi Grid Overlay */}
-                            <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#4ade80_1px,transparent_1px),linear-gradient(to_bottom,#4ade80_1px,transparent_1px)] bg-[size:10px_10px]" />
-                            
-                            {/* Moving Laser Scanning Line */}
-                            <motion.div 
-                              className="absolute left-0 right-0 h-0.5 bg-primary/70 shadow-[0_0_8px_#4ade80] z-10"
-                              animate={{ top: ["5%", "95%", "5%"] }}
-                              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-                            />
-                            
-                            {/* Futuristic pulse icon */}
-                            <div className="relative z-0 text-primary animate-pulse text-xs font-mono font-bold tracking-widest bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-md">
-                              AI SCANNING
-                            </div>
-                          </div>
-
-                          {/* Dynamic status feedback */}
-                          <div className="text-center space-y-1.5 max-w-xs">
-                            <p className="text-sm text-primary font-bold tracking-wide animate-pulse">Menganalisis Keluhan Anda...</p>
-                            <p className="text-[11px] text-text-muted font-mono h-4 overflow-hidden text-ellipsis whitespace-nowrap">
-                              {aiStatus}
-                            </p>
-                          </div>
-                        </div>
-                      ) : image ? (
-                        <div className="space-y-4">
-                          <div className="relative inline-block border border-border-strong rounded-xl overflow-hidden shadow-lg">
-                            <img src={image} alt="Upload Preview" className="max-h-48 w-auto rounded-xl" />
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setImage(null);
-                              }}
-                              className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 transition-colors shadow-md cursor-pointer"
-                              id="btn-remove-report-photo"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <p className="text-xs text-primary font-bold">✓ Foto berhasil diunggah dan dianalisis AI</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto border border-primary/25 group-hover:scale-105 transition-transform duration-300">
-                            <Camera size={26} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-text-main">Ketuk atau seret untuk ambil / unggah foto</p>
-                            <p className="text-xs text-text-muted mt-1">JPG / PNG • maks 10 MB</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* AI Ready Badge */}
-                    <div className="bg-[#142320] [.light_&]:bg-[#e6f5f0] border border-primary/20 rounded-xl p-3 flex items-center gap-3 text-xs text-text-muted/90">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Sparkles size={16} />
-                      </div>
-                      <p>Proses pelaporan kini sepenuhnya otomatis dengan kecerdasan buatan (AI) RT.</p>
-                    </div>
-
-                    {/* Action Button */}
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="w-full bg-primary text-text-inverse py-3.5 rounded-xl text-xs font-bold tracking-wider hover:brightness-105 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-primary/15 cursor-pointer"
-                      id="btn-next-to-location"
-                    >
-                      Lanjut ke Lokasi <ChevronRight size={14} />
-                    </button>
-                  </div>
-                )}
-
-                {/* STEP 2: LOKASI MASALAH */}
-                {step === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main font-display">Tentukan Lokasi Masalah</h4>
-                      <p className="text-xs text-text-muted/80 mt-1 leading-relaxed">
-                        Tentukan lokasi tempat masalah ditemukan agar petugas dapat langsung menuju ke sana.
-                      </p>
-                    </div>
-
-                    {analyzingLocation ? (
-                      <div className="h-64 rounded-2xl border border-primary/30 bg-[#142320]/40 [.light_&]:bg-[#e6f5f0]/40 flex flex-col items-center justify-center text-center p-6 relative overflow-hidden animate-in fade-in duration-300">
-                        {/* Moving Laser Scanning Line */}
-                        <motion.div 
-                          className="absolute left-0 right-0 h-0.5 bg-primary/70 shadow-[0_0_8px_#4ade80] z-10"
-                          animate={{ top: ["5%", "95%", "5%"] }}
-                          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                        />
-                        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3 border border-primary/30">
-                          <MapPin size={24} />
-                        </div>
-                        <p className="text-sm font-bold text-primary animate-pulse">RT-AI sedang memindai koordinat lokasi...</p>
-                        <p className="text-xs text-text-muted mt-1 max-w-xs font-mono">Mencocokkan metadata geospasial gambar dengan klaster RT 05 / RW 12</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-medium text-text-muted">Detail Lokasi / Alamat</label>
-                          <input 
-                            type="text" 
-                            value={location}
-                            onChange={e => setLocation(e.target.value)}
-                            placeholder="Contoh: Jl. Merdeka No. 12 (dekat pos satpam RT 05)"
-                            className="w-full bg-[#142320] [.light_&]:bg-[#e6f5f0]/50 border border-border-strong/20 rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary transition-all"
-                            id="input-report-location"
-                          />
-                        </div>
-
-                        {/* Interactive CSS Mock Map */}
-                        <div className="relative h-44 rounded-2xl overflow-hidden border border-border-strong/20 bg-[#142320]/40 [.light_&]:bg-[#e6f5f0]/40 flex items-center justify-center">
-                          {/* Map Grid Pattern */}
-                          <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:14px_24px]" />
-                          
-                          <div className="relative text-center p-4 space-y-2 z-10">
-                            <div className="w-10 h-10 bg-accent/20 text-accent border border-accent/40 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                              <MapPin size={20} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-text-main">Peta Wilayah Terintegrasi RT 05</p>
-                              <p className="text-[10px] text-text-muted">{location || "Masukkan lokasi di atas untuk memperbarui koordinat"}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="flex-1 bg-transparent border border-border-strong text-text-muted py-3.5 rounded-xl text-xs font-bold hover:text-text-main transition-colors cursor-pointer flex items-center justify-center gap-1"
-                        id="btn-back-to-photo"
-                      >
-                        <ChevronLeft size={14} /> Kembali
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!location.trim()) {
-                            alert("Masukkan detail lokasi terlebih dahulu!");
-                            return;
-                          }
-                          setStep(3);
-                          setAnalyzingCategory(true);
-                          setTimeout(() => {
-                            setAnalyzingCategory(false);
-                          }, 3200);
-                        }}
-                        className="flex-1 bg-primary text-text-inverse py-3.5 rounded-xl text-xs font-bold tracking-wider hover:brightness-105 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-primary/15 cursor-pointer"
-                        id="btn-next-to-category"
-                      >
-                        Lanjut ke Kategori <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 3: PILIH KATEGORI */}
-                {step === 3 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main font-display">Pilih Kategori Masalah</h4>
-                      <p className="text-xs text-text-muted/80 mt-1 leading-relaxed">
-                        Pilih kategori masalah yang paling sesuai. AI kami menyarankan kategori berdasarkan analisis foto jika tersedia.
-                      </p>
-                    </div>
-
-                    {analyzingCategory ? (
-                      <div className="h-64 rounded-2xl border border-primary/30 bg-[#142320]/40 [.light_&]:bg-[#e6f5f0]/40 flex flex-col items-center justify-center text-center p-6 relative overflow-hidden animate-in fade-in duration-300">
-                        {/* Moving Laser Scanning Line */}
-                        <motion.div 
-                          className="absolute left-0 right-0 h-0.5 bg-primary/70 shadow-[0_0_8px_#4ade80] z-10"
-                          animate={{ top: ["5%", "95%", "5%"] }}
-                          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                        />
-                        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center animate-pulse mb-3 border border-primary/30">
-                          <Sparkles size={24} />
-                        </div>
-                        <p className="text-sm font-bold text-primary animate-pulse">RT-AI sedang menganalisis objek pengaduan...</p>
-                        <p className="text-xs text-text-muted mt-1 max-w-xs font-mono">Mengidentifikasi klaster klasifikasi masalah lingkungan (Kebersihan / Infrastruktur / Keamanan)</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        {[
-                          { id: "Infrastruktur", label: "Infrastruktur (Lampu, Jalan)", desc: "Jalan rusak, lampu padam, fasilitas umum rusak", emoji: "🚧" },
-                          { id: "Kebersihan", label: "Kebersihan (Sampah, Selokan)", desc: "Sampah menumpuk, selokan tersumbat, bau menyengat", emoji: "🧹" },
-                          { id: "Keamanan", label: "Keamanan & Ketertiban", desc: "Kriminalitas, keributan, parkir liar, kecurigaan", emoji: "👮" },
-                          { id: "Lainnya", label: "Lainnya", desc: "Masalah umum lainnya di sekitar lingkungan", emoji: "📋" }
-                        ].map((cat) => {
-                          const isSelected = category === cat.id;
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setCategory(cat.id)}
-                              className={cn(
-                                "p-4 rounded-2xl border text-left transition-all flex flex-col gap-2 relative cursor-pointer",
-                                isSelected 
-                                  ? "bg-primary/20 border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] text-text-main" 
-                                  : "bg-[#142320]/40 [.light_&]:bg-[#e6f5f0]/40 border-border-strong text-text-muted hover:border-primary/40 hover:text-text-main"
-                              )}
-                              id={`category-btn-${cat.id}`}
-                            >
-                              <span className="text-2xl">{cat.emoji}</span>
-                              <div>
-                                <h5 className="font-bold text-xs text-text-main leading-tight">{cat.label}</h5>
-                                <p className="text-[10px] text-text-muted mt-1 leading-relaxed">{cat.desc}</p>
-                              </div>
-                              {isSelected && (
-                                <span className="absolute top-3 right-3 text-primary text-xs font-bold">
-                                  ✓ Terpilih
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setStep(2)}
-                        className="flex-1 bg-transparent border border-border-strong text-text-muted py-3.5 rounded-xl text-xs font-bold hover:text-text-main transition-colors cursor-pointer flex items-center justify-center gap-1"
-                        id="btn-back-to-location"
-                      >
-                        <ChevronLeft size={14} /> Kembali
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStep(4)}
-                        className="flex-1 bg-primary text-text-inverse py-3.5 rounded-xl text-xs font-bold tracking-wider hover:brightness-105 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-primary/15 cursor-pointer"
-                        id="btn-next-to-review"
-                      >
-                        Lanjut ke Tinjau <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 4: TINJAU LAPORAN */}
-                {step === 4 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main font-display">Tinjau Laporan Anda</h4>
-                      <p className="text-xs text-text-muted/80 mt-1 leading-relaxed">
-                        Periksa kembali detail laporan Anda sebelum dikirim ke petugas RT/RW.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Review details Card */}
-                      <div className="bg-[#142320] [.light_&]:bg-[#e6f5f0] border border-border-strong/20 rounded-2xl p-4 space-y-4">
-                        
-                        {/* Upper row: Photo & Category */}
-                        <div className="flex gap-4">
-                          {image ? (
-                            <img src={image} alt="Report Photo" className="w-16 h-16 object-cover rounded-xl border border-border-strong/30 shrink-0" />
-                          ) : (
-                            <div className="w-16 h-16 bg-primary/10 rounded-xl border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                              <Camera size={20} />
-                            </div>
-                          )}
-                          <div>
-                            <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 font-bold px-2 py-0.5 rounded uppercase">
-                              {category}
-                            </span>
-                            <p className="text-xs font-semibold text-text-muted mt-1.5 flex items-center gap-1">
-                              <MapPin size={12} className="text-accent" /> {location}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Title input field */}
-                        <div className="space-y-1.5 border-t border-border-weak/20 pt-3">
-                          <label className="block text-xs font-medium text-text-muted">Judul Laporan</label>
-                          <input 
-                            type="text" 
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder="Misal: Lampu jalan mati di depan blok D nomor 12"
-                            className="w-full bg-canvas/40 border border-border-strong/20 rounded-xl p-3 text-xs text-text-main outline-none focus:border-primary"
-                            required
-                            id="input-report-title"
-                          />
-                        </div>
-
-                        {/* Public Visibility Toggle */}
-                        <div className="flex items-center justify-between border-t border-border-weak/20 pt-3">
-                          <div>
-                            <h5 className="text-xs font-bold text-text-main">Publikasikan Laporan</h5>
-                            <p className="text-[10px] text-text-muted mt-0.5">Warga lain dapat melihat keluhan ini di feed sosial RT.</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only peer" 
-                              checked={isPublic} 
-                              onChange={e => setIsPublic(e.target.checked)} 
-                              id="toggle-report-public"
-                            />
-                            <div className="w-10 h-5 bg-canvas/60 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/30 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-border-strong after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setStep(3)}
-                        className="flex-1 bg-transparent border border-border-strong text-text-muted py-3.5 rounded-xl text-xs font-bold hover:text-text-main transition-colors cursor-pointer flex items-center justify-center gap-1"
-                        id="btn-back-to-category-from-review"
-                      >
-                        <ChevronLeft size={14} /> Kembali
-                      </button>
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={handleSubmitReport}
-                        className="flex-1 bg-primary text-text-inverse py-3.5 rounded-xl text-xs font-bold tracking-wider hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-primary/15 cursor-pointer"
-                        id="btn-submit-report"
-                      >
-                        {submitting ? (
-                          <>
-                            <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                            Kirim Laporan...
-                          </>
-                        ) : (
-                          <>
-                            Kirim Laporan <ChevronRight size={14} />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 5: SELESAI */}
-                {step === 5 && (
-                  <div className="text-center py-6 space-y-6">
-                    <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 border border-emerald-500/35 rounded-full flex items-center justify-center mx-auto text-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-in zoom-in duration-300">
-                      ✓
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="text-xl font-bold text-text-main font-display">Laporan Berhasil Terkirim!</h4>
-                      <p className="text-xs text-text-muted/80 max-w-md mx-auto leading-relaxed">
-                        Terima kasih atas kepedulian Anda terhadap lingkungan. Laporan Anda '{title}' telah berhasil disimpan dan diteruskan ke Pengurus RT/RW untuk verifikasi lapangan.
-                      </p>
-                    </div>
-
-                    <div className="bg-[#142320] [.light_&]:bg-[#e6f5f0] border border-border-strong/20 rounded-xl p-4 max-w-sm mx-auto text-[11px] text-text-muted text-left flex gap-2">
-                      <span>ℹ️</span>
-                      <span>Laporan Anda telah tercatat dengan pengaman ID otomatis. Pantau terus progresnya secara real-time pada tab Lacak Status di sidebar.</span>
-                    </div>
-
-                    <div className="flex gap-3 max-w-sm mx-auto">
-                      <button
-                        type="button"
-                        onClick={resetWizard}
-                        className="flex-1 bg-transparent border border-border-strong text-text-muted py-3 rounded-xl text-xs font-bold hover:text-text-main transition-colors cursor-pointer"
-                        id="btn-create-new-report"
-                      >
-                        Buat Laporan Baru
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTab("tracking")}
-                        className="flex-1 bg-primary text-text-inverse py-3 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-primary/20"
-                        id="btn-go-to-tracking"
-                      >
-                        Lacak Laporan
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          ) : (
+            /* SUCCESS */
+            <div className="bg-[#0c1614] [.light_&]:bg-[#f2fbf7] border border-border-strong/30 [.light_&]:border-primary/25 rounded-3xl p-8 text-center space-y-5 shadow-xl">
+              <div className="w-16 h-16 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto animate-in zoom-in"><CheckCircle size={32} /></div>
+              <div className="space-y-1.5">
+                <h4 className="text-xl font-bold font-display text-text-main">Laporan Terkirim!</h4>
+                <p className="text-xs text-text-muted max-w-sm mx-auto leading-relaxed">Laporan "{title}" diteruskan ke pengurus RT. AI akan menilai tingkat urgensinya untuk membantu prioritas penanganan. Pantau progres di tab Lacak Status.</p>
+              </div>
+              <div className="flex gap-3 max-w-sm mx-auto">
+                <button type="button" onClick={resetForm} className="flex-1 border border-border-strong text-text-muted py-3 rounded-xl text-xs font-bold hover:text-text-main transition cursor-pointer">Buat Laporan Baru</button>
+                <button type="button" onClick={() => setTab("tracking")} className="flex-1 bg-primary text-text-inverse py-3 rounded-xl text-xs font-bold hover:brightness-105 transition cursor-pointer">Lacak Laporan</button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* PUBLIC REPORTS TAB ("Laporan Warga Lain") */
@@ -3567,216 +3293,143 @@ function DonationSection() {
 // WARGA ELECTION TAB
 // ==========================================
 function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: () => void }) {
-  // Nomination state
-  const [nomName, setNomName] = useState("");
   const [nomVisiMisi, setNomVisiMisi] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [hasNominated, setHasNominated] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Voting state
-  const [selectedCandidate, setSelectedCandidate] = useState<string>("");
-  const [hasVoted, setHasVoted] = useState(false);
-  const [votingMsg, setVotingMsg] = useState("");
+  const profileName = (() => {
+    try {
+      const stored = localStorage.getItem("user-profile");
+      if (stored) return JSON.parse(stored).name || "Rahardian Pratama";
+    } catch { /* noop */ }
+    return "Rahardian Pratama";
+  })();
 
   const phase = election?.phase || "inactive";
   const candidates: any[] = election?.candidates || [];
+  const me = election?.me || { hasVoted: false, votedCandidateId: null, hasNominated: false, myCandidateId: null };
+  const totalVotes = election?.totalVotes ?? 0;
+  const eligible = election?.eligibleVoters ?? 0;
+  const turnoutPct = eligible > 0 ? Math.round((totalVotes / eligible) * 100) : 0;
 
   const avatarUrl = (name: string) =>
     `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=4ade80&fontColor=052e16&fontSize=38&fontWeight=700`;
 
   const handleNominate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nomName) return;
+    setErrorMsg("");
     setSubmitting(true);
     try {
       const res = await fetch("/api/nominations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nomName, visiMisi: nomVisiMisi, residentId: "RES-01" }),
+        body: JSON.stringify({ name: profileName, visiMisi: nomVisiMisi, residentId: VOTER_ID }),
       });
       const data = await res.json();
-      if (res.ok) { setHasNominated(true); onRefresh(); }
-      else setVotingMsg(data.error || "Gagal mendaftar.");
+      if (res.ok) { setNomVisiMisi(""); onRefresh(); }
+      else setErrorMsg(data.error || "Gagal mendaftar.");
     } finally { setSubmitting(false); }
   };
 
   const handleVote = async () => {
     if (!selectedCandidate) return;
+    setErrorMsg("");
     setSubmitting(true);
     try {
       const res = await fetch("/api/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterId: "RES-01", candidateId: selectedCandidate }),
+        body: JSON.stringify({ voterId: VOTER_ID, candidateId: selectedCandidate }),
       });
       const data = await res.json();
-      if (res.ok) { setHasVoted(true); setVotingMsg("Suara Anda berhasil dicatat. Terima kasih telah berpartisipasi!"); onRefresh(); }
-      else setVotingMsg(data.error || "Gagal memberikan suara.");
+      if (res.ok) onRefresh();
+      else setErrorMsg(data.error || "Gagal memberikan suara.");
     } finally { setSubmitting(false); }
   };
 
+  const phaseMeta: Record<string, { label: string; sub: string; tint: string; icon: any }> = {
+    inactive: { label: "Belum Ada Pemilihan Aktif", sub: "Pengurus RT akan mengumumkan jadwal pemilihan melalui portal ini.", tint: "text-text-muted", icon: Vote },
+    nominating: { label: "Pendaftaran Calon Dibuka", sub: `${candidates.length} kandidat terdaftar · masa jabatan ${election?.term?.currentRT || "Ketua RT"} segera berakhir.`, tint: "text-primary", icon: UserPlus },
+    voting: { label: "Pemungutan Suara Berlangsung", sub: `${candidates.length} kandidat bersaing · pilih satu yang terbaik menurut Anda.`, tint: "text-blue-400", icon: Vote },
+    completed: { label: "Pemilihan Selesai", sub: `Ketua RT terpilih: ${election?.winner}. Terima kasih atas partisipasi seluruh warga.`, tint: "text-emerald-400", icon: Trophy },
+  };
+  const pm = phaseMeta[phase];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300">
       <div>
-        <h2 className="text-2xl font-display font-semibold text-text-main">Pemilihan Ketua RT/RW</h2>
-        <p className="text-sm text-text-muted mt-1">Lihat kandidat, visi misi, dan ikuti proses pemilihan ketua RT.</p>
+        <h2 className="text-2xl font-display font-semibold text-text-main">Pemilihan Ketua RT</h2>
+        <p className="text-sm text-text-muted mt-1">Proses pemilihan yang transparan dan demokratis — satu warga, satu suara.</p>
       </div>
 
-      {/* Phase status banner */}
+      {/* Phase hero */}
       <div className={cn(
-        "rounded-xl p-4 flex items-center gap-3 border",
+        "rounded-2xl border p-5 relative overflow-hidden",
         phase === "inactive" ? "bg-surface border-border-weak" :
         phase === "nominating" ? "bg-primary/10 border-primary/25" :
         phase === "voting" ? "bg-blue-500/10 border-blue-500/25" :
         "bg-emerald-500/10 border-emerald-500/25"
       )}>
-        <Vote size={20} className={cn(
-          phase === "inactive" ? "text-text-muted" :
-          phase === "nominating" ? "text-primary" :
-          phase === "voting" ? "text-blue-400" : "text-emerald-400"
-        )} />
-        <div>
-          <p className="font-semibold text-sm text-text-main">
-            {phase === "inactive" && "Belum Ada Pemilihan Aktif"}
-            {phase === "nominating" && "Pendaftaran Calon Sedang Dibuka"}
-            {phase === "voting" && "Pemungutan Suara Sedang Berlangsung"}
-            {phase === "completed" && `Pemilihan Selesai — Ketua Terpilih: ${election?.winner}`}
-          </p>
-          <p className="text-xs text-text-muted mt-0.5">
-            {phase === "inactive" && "Pengurus RT akan mengumumkan jadwal pemilihan melalui portal ini."}
-            {phase === "nominating" && `${candidates.length} kandidat terdaftar. Masa jabatan ${election?.term?.currentRT || "Ketua RT"} akan segera berakhir.`}
-            {phase === "voting" && `${candidates.length} kandidat. Pilih satu kandidat favorit Anda.`}
-            {phase === "completed" && "Terima kasih atas partisipasi seluruh warga RT."}
-          </p>
-        </div>
-      </div>
-
-      {/* ── INACTIVE: placeholder ── */}
-      {phase === "inactive" && (
-        <div className="bg-surface border border-border-weak rounded-xl p-12 text-center">
-          <Vote size={40} className="text-text-muted mx-auto mb-4 opacity-40" />
-          <p className="font-semibold text-text-main">Tidak ada pemilihan yang aktif saat ini</p>
-          <p className="text-sm text-text-muted mt-1">Pantau pengumuman RT untuk informasi jadwal pemilihan berikutnya.</p>
-        </div>
-      )}
-
-      {/* ── VOTING: ballot cards + greyed-out registration ── */}
-      {phase === "voting" && (
-        <div className="space-y-6">
-          {hasVoted ? (
-            <div className="bg-surface border border-border-weak rounded-xl p-10 text-center">
-              <CheckCircle2 size={48} className="text-primary mx-auto mb-4" />
-              <p className="font-bold text-text-main text-lg">Suara Anda Sudah Tercatat!</p>
-              <p className="text-sm text-text-muted mt-1">{votingMsg}</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-text-main flex items-center gap-2">
-                <Vote size={16} className="text-blue-400" />
-                Pilih Kandidat Ketua RT
-              </h3>
-              {votingMsg && (
-                <p className="text-sm text-accent bg-accent/10 px-4 py-2 rounded-xl">{votingMsg}</p>
-              )}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {candidates.map((c: any) => {
-                  const isSelected = selectedCandidate === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedCandidate(c.id)}
-                      className={cn(
-                        "flex flex-col items-center text-center p-5 rounded-xl border transition-all cursor-pointer group",
-                        isSelected
-                          ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
-                          : "border-border-weak bg-surface hover:border-primary/40 hover:bg-surface-hover"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-20 h-20 rounded-full overflow-hidden mb-3 ring-4 transition-all",
-                        isSelected ? "ring-primary" : "ring-border-weak group-hover:ring-primary/40"
-                      )}>
-                        <img
-                          src={avatarUrl(c.name)}
-                          alt={c.name}
-                          className="w-full h-full object-cover"
-                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                      </div>
-                      <p className="font-bold text-text-main text-sm leading-snug mb-1">{c.name}</p>
-                      {c.visiMisi ? (
-                        <p className="text-xs text-text-muted leading-relaxed line-clamp-4 mt-1">{c.visiMisi}</p>
-                      ) : (
-                        <p className="text-xs text-text-muted italic mt-1">Visi misi belum diisi</p>
-                      )}
-                      {isSelected && (
-                        <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                          <CheckCircle2 size={11} /> Dipilih
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-text-muted">
-                  {selectedCandidate
-                    ? `Anda memilih: ${candidates.find(c => c.id === selectedCandidate)?.name}`
-                    : "Klik kartu kandidat untuk memilih."}
-                </p>
-                <button
-                  onClick={handleVote}
-                  disabled={!selectedCandidate || submitting}
-                  className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed text-sm"
-                >
-                  {submitting ? "Mengirim..." : "Konfirmasi Pilihan Saya"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Greyed-out registration */}
-          <div className="opacity-40 pointer-events-none select-none">
-            <div className="bg-surface border border-border-weak rounded-xl p-5">
-              <h3 className="font-semibold text-text-muted mb-4 flex items-center gap-2">
-                <UserPlus size={16} /> Daftarkan Diri sebagai Calon
-                <span className="text-[10px] bg-canvas border border-border-weak px-2 py-0.5 rounded text-text-muted ml-auto">Pendaftaran ditutup</span>
-              </h3>
-              <div className="space-y-3">
-                <div className="h-10 bg-canvas border border-border-weak rounded-xl" />
-                <div className="h-20 bg-canvas border border-border-weak rounded-xl" />
-                <div className="h-10 bg-border-weak rounded-xl" />
-              </div>
-            </div>
+        <div className="flex items-start gap-3">
+          <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-canvas/40", pm.tint)}><pm.icon size={22} /></div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-text-main">{pm.label}</p>
+            <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{pm.sub}</p>
+            {election?.term?.endDate && phase !== "completed" && phase !== "inactive" && (
+              <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1"><Clock size={12} /> Batas masa jabatan: <strong className="text-text-main">{election.term.endDate}</strong></p>
+            )}
           </div>
         </div>
+
+        {/* Live turnout during voting */}
+        {phase === "voting" && (
+          <div className="mt-4 pt-4 border-t border-blue-500/20">
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <span className="text-text-muted">Partisipasi warga</span>
+              <span className="font-bold text-text-main">{totalVotes} / {eligible} suara · {turnoutPct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-canvas/60 overflow-hidden border border-blue-500/20">
+              <div className="h-full rounded-full bg-blue-400 transition-all duration-500" style={{ width: `${turnoutPct}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {errorMsg && (
+        <div className="text-sm text-accent bg-accent/10 border border-accent/20 px-4 py-2.5 rounded-xl flex items-center gap-2">
+          <AlertCircle size={15} className="shrink-0" /> {errorMsg}
+        </div>
       )}
 
-      {/* ── NOMINATING: candidate list + registration form ── */}
+      {/* ── INACTIVE ── */}
+      {phase === "inactive" && (
+        <div className="bg-surface border border-border-weak rounded-2xl p-12 text-center">
+          <Vote size={40} className="text-text-muted mx-auto mb-4 opacity-40" />
+          <p className="font-semibold text-text-main">Tidak ada pemilihan yang aktif saat ini</p>
+          <p className="text-sm text-text-muted mt-1">Pantau pengumuman RT untuk jadwal pemilihan berikutnya.</p>
+        </div>
+      )}
+
+      {/* ── NOMINATING ── */}
       {phase === "nominating" && (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-5">
           {/* Candidate list */}
-          <div className="bg-surface border border-border-weak rounded-xl p-5">
-            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
-              <Users size={16} className="text-primary" /> Kandidat Terdaftar
-            </h3>
+          <div className="bg-surface border border-border-weak rounded-2xl p-5">
+            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2 text-sm"><Users size={16} className="text-primary" /> Kandidat Terdaftar ({candidates.length})</h3>
             {candidates.length === 0 ? (
-              <p className="text-sm text-text-muted text-center py-8">Belum ada kandidat yang mendaftar.</p>
+              <div className="text-center py-10">
+                <UserPlus size={26} className="text-text-muted mx-auto mb-2 opacity-40" />
+                <p className="text-sm text-text-muted">Belum ada kandidat. Jadilah yang pertama!</p>
+              </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {candidates.map((c: any) => (
-                  <div key={c.id} className="p-4 rounded-xl border border-border-weak bg-canvas flex gap-3 items-start">
-                    <img
-                      src={avatarUrl(c.name)}
-                      alt={c.name}
-                      className="w-10 h-10 rounded-full shrink-0 border border-border-weak"
-                    />
+                  <div key={c.id} className={cn("p-3.5 rounded-xl border flex gap-3 items-start", c.id === me.myCandidateId ? "border-primary/40 bg-primary/5" : "border-border-weak bg-canvas")}>
+                    <img src={avatarUrl(c.name)} alt={c.name} className="w-10 h-10 rounded-full shrink-0 border border-border-weak" />
                     <div className="min-w-0">
-                      <p className="font-semibold text-text-main text-sm">{c.name}</p>
-                      {c.visiMisi && (
-                        <p className="text-xs text-text-muted leading-relaxed mt-1">{c.visiMisi}</p>
-                      )}
+                      <p className="font-semibold text-text-main text-sm flex items-center gap-1.5">{c.name}{c.id === me.myCandidateId && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">Anda</span>}</p>
+                      {c.visiMisi ? <p className="text-xs text-text-muted leading-relaxed mt-1">{c.visiMisi}</p> : <p className="text-xs text-text-muted/60 italic mt-1">Visi misi belum diisi</p>}
                     </div>
                   </div>
                 ))}
@@ -3784,40 +3437,30 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
             )}
           </div>
 
-          {/* Registration form */}
-          <div className="bg-surface border border-border-weak rounded-xl p-5">
-            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
-              <UserPlus size={16} className="text-primary" /> Daftarkan Diri sebagai Calon
-            </h3>
-            {hasNominated ? (
-              <div className="text-center py-8">
+          {/* Registration */}
+          <div className="bg-surface border border-border-weak rounded-2xl p-5">
+            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2 text-sm"><UserPlus size={16} className="text-primary" /> Daftarkan Diri sebagai Calon</h3>
+            {me.hasNominated ? (
+              <div className="text-center py-10">
                 <CheckCircle2 size={40} className="text-primary mx-auto mb-3" />
-                <p className="font-semibold text-text-main text-sm">Pendaftaran Berhasil!</p>
-                <p className="text-xs text-text-muted mt-1">Nama Anda telah ditambahkan ke daftar kandidat.</p>
+                <p className="font-semibold text-text-main text-sm">Anda sudah terdaftar sebagai calon!</p>
+                <p className="text-xs text-text-muted mt-1">Nama Anda tampil di daftar kandidat. Semoga sukses!</p>
               </div>
             ) : (
               <form onSubmit={handleNominate} className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-text-muted">Nama Lengkap (sesuai KTP)</label>
-                  <input
-                    value={nomName} onChange={e => setNomName(e.target.value)} required
-                    placeholder="Nama lengkap Anda"
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary"
-                  />
+                  <label className="block text-xs font-semibold text-text-muted">Nama Calon</label>
+                  <div className="w-full bg-canvas border border-border-weak rounded-xl p-3 text-sm text-text-main font-medium flex items-center justify-between">
+                    {profileName}
+                    <span className="text-[10px] text-text-muted bg-surface border border-border-weak px-1.5 py-0.5 rounded">dari profil</span>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-text-muted">Visi & Misi (opsional)</label>
-                  <textarea
-                    value={nomVisiMisi} onChange={e => setNomVisiMisi(e.target.value)} rows={4}
-                    placeholder="Tulis visi dan misi Anda untuk RT/RW..."
-                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none"
-                  />
+                  <label className="block text-xs font-semibold text-text-muted">Visi & Misi <span className="font-normal text-text-muted/70">· yakinkan warga</span></label>
+                  <textarea value={nomVisiMisi} onChange={e => setNomVisiMisi(e.target.value)} rows={5} placeholder="Apa yang akan Anda perjuangkan untuk RT? Mis: transparansi kas, keamanan 24 jam, kegiatan warga…" className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none" />
                 </div>
-                <button
-                  type="submit" disabled={submitting}
-                  className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60"
-                >
-                  {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran Calon"}
+                <button type="submit" disabled={submitting} className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-xl hover:bg-primary/90 transition cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2">
+                  {submitting ? <><Loader2 size={15} className="animate-spin" /> Mendaftar…</> : "Konfirmasi Pendaftaran Calon"}
                 </button>
               </form>
             )}
@@ -3825,12 +3468,83 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
         </div>
       )}
 
-      {/* ── COMPLETED: winner ── */}
+      {/* ── VOTING ── */}
+      {phase === "voting" && (
+        me.hasVoted ? (
+          <div className="bg-surface border border-border-weak rounded-2xl p-10 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4"><CheckCircle2 size={32} /></div>
+            <p className="font-bold text-text-main text-lg">Suara Anda Sudah Tercatat</p>
+            <p className="text-sm text-text-muted mt-1">
+              Anda memilih <strong className="text-text-main">{candidates.find(c => c.id === me.votedCandidateId)?.name || "kandidat"}</strong>. Terima kasih telah berpartisipasi!
+            </p>
+            <p className="text-xs text-text-muted mt-4">Hasil akan diumumkan setelah pemungutan suara ditutup pengurus RT.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-text-main flex items-center gap-2 text-sm"><Vote size={16} className="text-blue-400" /> Pilih Kandidat Ketua RT</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {candidates.map((c: any) => {
+                const isSelected = selectedCandidate === c.id;
+                return (
+                  <button key={c.id} onClick={() => setSelectedCandidate(c.id)} className={cn(
+                    "flex flex-col items-center text-center p-5 rounded-2xl border transition-all cursor-pointer group",
+                    isSelected ? "border-blue-400 bg-blue-500/10 shadow-lg shadow-blue-500/10" : "border-border-weak bg-surface hover:border-blue-400/40 hover:bg-surface-hover"
+                  )}>
+                    <div className={cn("w-20 h-20 rounded-full overflow-hidden mb-3 ring-4 transition-all", isSelected ? "ring-blue-400" : "ring-border-weak group-hover:ring-blue-400/40")}>
+                      <img src={avatarUrl(c.name)} alt={c.name} className="w-full h-full object-cover" />
+                    </div>
+                    <p className="font-bold text-text-main text-sm leading-snug mb-1">{c.name}</p>
+                    {c.visiMisi ? <p className="text-xs text-text-muted leading-relaxed line-clamp-4 mt-1">{c.visiMisi}</p> : <p className="text-xs text-text-muted/60 italic mt-1">Visi misi belum diisi</p>}
+                    {isSelected && <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full"><CheckCircle2 size={11} /> Dipilih</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface border border-border-weak rounded-2xl p-4 sticky bottom-2">
+              <p className="text-xs text-text-muted">
+                {selectedCandidate ? <>Pilihan Anda: <strong className="text-text-main">{candidates.find(c => c.id === selectedCandidate)?.name}</strong>. Suara tidak dapat diubah setelah dikonfirmasi.</> : "Klik kartu kandidat untuk memilih."}
+              </p>
+              <button onClick={handleVote} disabled={!selectedCandidate || submitting} className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition cursor-pointer disabled:cursor-not-allowed text-sm shrink-0 flex items-center gap-2 w-full sm:w-auto justify-center">
+                {submitting ? <><Loader2 size={15} className="animate-spin" /> Mengirim…</> : "Konfirmasi Pilihan Saya"}
+              </button>
+            </div>
+          </div>
+        )
+      )}
+
+      {/* ── COMPLETED ── */}
       {phase === "completed" && (
-        <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-8 text-center">
-          <Trophy size={48} className="text-emerald-400 mx-auto mb-4" />
-          <p className="font-bold text-text-main text-xl mb-1">Selamat kepada {election?.winner}!</p>
-          <p className="text-sm text-text-muted">Ketua RT terpilih melalui proses pemilihan demokratis warga RT.</p>
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-emerald-500/15 to-surface border border-emerald-500/25 rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto mb-4"><Trophy size={32} /></div>
+            <p className="text-xs text-text-muted">Ketua RT Terpilih</p>
+            <h3 className="text-2xl font-display font-bold text-text-main mt-1">{election?.winner}</h3>
+            <p className="text-xs text-text-muted mt-2">Diumumkan {election?.announcedAt} · {totalVotes} suara sah dari {eligible} warga ({turnoutPct}% partisipasi)</p>
+          </div>
+          <div className="bg-surface border border-border-weak rounded-2xl p-5">
+            <h3 className="font-semibold text-text-main text-sm mb-4">Hasil Akhir Pemungutan Suara</h3>
+            <div className="space-y-3">
+              {[...candidates].sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0)).map((c, i) => {
+                const pct = totalVotes > 0 ? Math.round(((c.voteCount || 0) / totalVotes) * 100) : 0;
+                const won = c.name === election?.winner;
+                return (
+                  <div key={c.id}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-text-main flex items-center gap-2">
+                        {i === 0 ? <Trophy size={14} className="text-amber-400" /> : <span className="w-3.5 text-center text-text-muted text-xs">{i + 1}</span>}
+                        {c.name}
+                        {won && <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Terpilih</span>}
+                      </span>
+                      <span className="text-sm font-bold text-text-main tabular-nums">{c.voteCount || 0} · {pct}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-canvas overflow-hidden border border-border-weak">
+                      <div className={cn("h-full rounded-full", won ? "bg-emerald-400" : "bg-primary/60")} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -4021,6 +3735,11 @@ function ProfileTab() {
             Sesuai regulasi administrasi RT 05, data anggota keluarga disinkronkan secara terpusat dengan database kependudukan. Penambahan atau pengurangan anggota keluarga wajib melalui verifikasi manual Ketua RT dengan membawa berkas Kartu Keluarga fisik.
           </div>
         </div>
+      </div>
+
+      {/* Brankas Digital & Smart OCR */}
+      <div className="border-t border-border-weak pt-8">
+        <StorageTab />
       </div>
     </div>
   );
@@ -4291,133 +4010,3 @@ function AIChatbot() {
   );
 }
 
-function ElectionModal({ election, onVoted }: { election: any; onVoted: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [visiMisi, setVisiMisi] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState("");
-  const [hasNominated, setHasNominated] = useState(false);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const handleNominate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/nominations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, visiMisi, residentId: "RES-01" }),
-      });
-      const data = await res.json();
-      if (res.ok) { setHasNominated(true); setMsg("Pendaftaran berhasil! Kandidat Anda telah terdaftar."); onVoted(); }
-      else setMsg(data.error || "Gagal mendaftar.");
-    } finally { setSubmitting(false); }
-  };
-
-  const handleVote = async () => {
-    if (!selectedCandidate) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterId: "RES-01", candidateId: selectedCandidate }),
-      });
-      const data = await res.json();
-      if (res.ok) { setHasVoted(true); setMsg("Suara Anda berhasil dicatat. Terima kasih!"); onVoted(); }
-      else setMsg(data.error || "Gagal memberikan suara.");
-    } finally { setSubmitting(false); }
-  };
-
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs font-semibold bg-primary text-text-inverse px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer shrink-0"
-      >
-        {election.phase === "nominating" ? "Daftar Calon" : "Berikan Suara"}
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.2 }}
-              className="bg-surface border border-border-strong rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-text-main">
-                  {election.phase === "nominating" ? "📝 Daftar sebagai Calon Ketua RT" : "🗳️ Berikan Suara Anda"}
-                </h3>
-                <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-main cursor-pointer"><X size={18} /></button>
-              </div>
-
-              {msg && (
-                <div className={cn("text-sm px-3 py-2 rounded-lg", msg.includes("berhasil") ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent")}>
-                  {msg}
-                </div>
-              )}
-
-              {election.phase === "nominating" && !hasNominated && (
-                <form onSubmit={handleNominate} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Nama Lengkap Anda</label>
-                    <input value={name} onChange={e => setName(e.target.value)} required placeholder="Sesuai KTP terdaftar" className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Visi & Misi (opsional)</label>
-                    <textarea value={visiMisi} onChange={e => setVisiMisi(e.target.value)} rows={3} placeholder="Tulis visi & misi Anda sebagai calon Ketua RT..." className="w-full bg-canvas border border-border-strong rounded-lg p-2.5 text-sm text-text-main focus:outline-none focus:border-primary resize-none" />
-                  </div>
-                  <button type="submit" disabled={submitting} className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60">
-                    {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran"}
-                  </button>
-                </form>
-              )}
-
-              {election.phase === "voting" && !hasVoted && (
-                <div className="space-y-3">
-                  <p className="text-xs text-text-muted">Pilih salah satu kandidat di bawah ini:</p>
-                  <div className="space-y-2">
-                    {election.candidates.map((c: any) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setSelectedCandidate(c.id)}
-                        className={cn(
-                          "w-full text-left p-3 rounded-xl border transition-all cursor-pointer",
-                          selectedCandidate === c.id
-                            ? "border-primary bg-primary/10"
-                            : "border-border-weak hover:border-primary/40 bg-canvas"
-                        )}
-                      >
-                        <p className="font-semibold text-sm text-text-main">{c.name}</p>
-                        {c.visiMisi && <p className="text-xs text-text-muted mt-1 line-clamp-2">{c.visiMisi}</p>}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={handleVote} disabled={!selectedCandidate || submitting} className="w-full bg-primary text-text-inverse font-semibold py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60">
-                    {submitting ? "Menyimpan..." : "Konfirmasi Pilihan"}
-                  </button>
-                </div>
-              )}
-
-              {(hasNominated || hasVoted) && (
-                <div className="text-center py-4 space-y-2">
-                  <CheckCircle2 size={40} className="text-primary mx-auto" />
-                  <p className="font-semibold text-text-main text-sm">{msg}</p>
-                  <button onClick={() => setOpen(false)} className="text-xs text-text-muted hover:text-text-main cursor-pointer">Tutup</button>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
