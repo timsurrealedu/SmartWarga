@@ -3562,28 +3562,51 @@ function DonationSection() {
 // WARGA ELECTION TAB
 // ==========================================
 function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: () => void }) {
-  const [name, setName] = useState("");
-  const [visiMisi, setVisiMisi] = useState("");
+  // Nomination state
+  const [nomName, setNomName] = useState("");
+  const [nomVisiMisi, setNomVisiMisi] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [hasNominated, setHasNominated] = useState(false);
-  const [msg, setMsg] = useState("");
+
+  // Voting state
+  const [selectedCandidate, setSelectedCandidate] = useState<string>("");
+  const [hasVoted, setHasVoted] = useState(false);
+  const [votingMsg, setVotingMsg] = useState("");
 
   const phase = election?.phase || "inactive";
-  const isNominating = phase === "nominating";
+  const candidates: any[] = election?.candidates || [];
+
+  const avatarUrl = (name: string) =>
+    `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=4ade80&fontColor=052e16&fontSize=38&fontWeight=700`;
 
   const handleNominate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    if (!nomName) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/nominations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, visiMisi, residentId: "RES-01" }),
+        body: JSON.stringify({ name: nomName, visiMisi: nomVisiMisi, residentId: "RES-01" }),
       });
       const data = await res.json();
-      if (res.ok) { setHasNominated(true); setMsg("Pendaftaran berhasil! Nama Anda telah ditambahkan ke daftar kandidat."); onRefresh(); }
-      else setMsg(data.error || "Gagal mendaftar.");
+      if (res.ok) { setHasNominated(true); onRefresh(); }
+      else setVotingMsg(data.error || "Gagal mendaftar.");
+    } finally { setSubmitting(false); }
+  };
+
+  const handleVote = async () => {
+    if (!selectedCandidate) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voterId: "RES-01", candidateId: selectedCandidate }),
+      });
+      const data = await res.json();
+      if (res.ok) { setHasVoted(true); setVotingMsg("Suara Anda berhasil dicatat. Terima kasih telah berpartisipasi!"); onRefresh(); }
+      else setVotingMsg(data.error || "Gagal memberikan suara.");
     } finally { setSubmitting(false); }
   };
 
@@ -3591,7 +3614,7 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div>
         <h2 className="text-2xl font-display font-semibold text-text-main">Pemilihan Ketua RT/RW</h2>
-        <p className="text-sm text-text-muted mt-1">Lihat kandidat, visi misi, dan daftarkan diri sebagai calon pemimpin RT.</p>
+        <p className="text-sm text-text-muted mt-1">Lihat kandidat, visi misi, dan ikuti proses pemilihan ketua RT.</p>
       </div>
 
       {/* Phase status banner */}
@@ -3616,85 +3639,194 @@ function WargaElectionTab({ election, onRefresh }: { election: any, onRefresh: (
           </p>
           <p className="text-xs text-text-muted mt-0.5">
             {phase === "inactive" && "Pengurus RT akan mengumumkan jadwal pemilihan melalui portal ini."}
-            {phase === "nominating" && `${election?.candidates?.length || 0} kandidat terdaftar. Masa jabatan ${election?.term?.currentRT || "Ketua RT"} akan segera berakhir.`}
-            {phase === "voting" && `${election?.candidates?.length || 0} kandidat. Pengurus sedang mengelola proses pemungutan suara.`}
+            {phase === "nominating" && `${candidates.length} kandidat terdaftar. Masa jabatan ${election?.term?.currentRT || "Ketua RT"} akan segera berakhir.`}
+            {phase === "voting" && `${candidates.length} kandidat. Pilih satu kandidat favorit Anda.`}
             {phase === "completed" && "Terima kasih atas partisipasi seluruh warga RT."}
           </p>
         </div>
       </div>
 
-      <div className={cn("grid md:grid-cols-2 gap-6", !isNominating && "opacity-60 pointer-events-none select-none")}>
-        {/* Candidate list */}
-        <div className="bg-surface border border-border-weak rounded-xl p-5">
-          <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
-            <Users size={16} className="text-primary" /> Daftar Kandidat
-            {!isNominating && <span className="text-[10px] bg-surface border border-border-weak px-2 py-0.5 rounded text-text-muted ml-auto">Hanya aktif saat pendaftaran</span>}
-          </h3>
-          {(!election || !election.candidates || election.candidates.length === 0) ? (
-            <p className="text-sm text-text-muted text-center py-8">Belum ada kandidat yang mendaftar.</p>
+      {/* ── INACTIVE: placeholder ── */}
+      {phase === "inactive" && (
+        <div className="bg-surface border border-border-weak rounded-xl p-12 text-center">
+          <Vote size={40} className="text-text-muted mx-auto mb-4 opacity-40" />
+          <p className="font-semibold text-text-main">Tidak ada pemilihan yang aktif saat ini</p>
+          <p className="text-sm text-text-muted mt-1">Pantau pengumuman RT untuk informasi jadwal pemilihan berikutnya.</p>
+        </div>
+      )}
+
+      {/* ── VOTING: ballot cards + greyed-out registration ── */}
+      {phase === "voting" && (
+        <div className="space-y-6">
+          {hasVoted ? (
+            <div className="bg-surface border border-border-weak rounded-xl p-10 text-center">
+              <CheckCircle2 size={48} className="text-primary mx-auto mb-4" />
+              <p className="font-bold text-text-main text-lg">Suara Anda Sudah Tercatat!</p>
+              <p className="text-sm text-text-muted mt-1">{votingMsg}</p>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {election.candidates.map((c: any, i: number) => (
-                <div key={c.id} className="p-4 rounded-xl border border-border-weak bg-canvas">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm shrink-0">{i + 1}</div>
-                    <p className="font-semibold text-text-main text-sm">{c.name}</p>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-text-main flex items-center gap-2">
+                <Vote size={16} className="text-blue-400" />
+                Pilih Kandidat Ketua RT
+              </h3>
+              {votingMsg && (
+                <p className="text-sm text-accent bg-accent/10 px-4 py-2 rounded-xl">{votingMsg}</p>
+              )}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {candidates.map((c: any) => {
+                  const isSelected = selectedCandidate === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCandidate(c.id)}
+                      className={cn(
+                        "flex flex-col items-center text-center p-5 rounded-xl border transition-all cursor-pointer group",
+                        isSelected
+                          ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                          : "border-border-weak bg-surface hover:border-primary/40 hover:bg-surface-hover"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-20 h-20 rounded-full overflow-hidden mb-3 ring-4 transition-all",
+                        isSelected ? "ring-primary" : "ring-border-weak group-hover:ring-primary/40"
+                      )}>
+                        <img
+                          src={avatarUrl(c.name)}
+                          alt={c.name}
+                          className="w-full h-full object-cover"
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      </div>
+                      <p className="font-bold text-text-main text-sm leading-snug mb-1">{c.name}</p>
+                      {c.visiMisi ? (
+                        <p className="text-xs text-text-muted leading-relaxed line-clamp-4 mt-1">{c.visiMisi}</p>
+                      ) : (
+                        <p className="text-xs text-text-muted italic mt-1">Visi misi belum diisi</p>
+                      )}
+                      {isSelected && (
+                        <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                          <CheckCircle2 size={11} /> Dipilih
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-text-muted">
+                  {selectedCandidate
+                    ? `Anda memilih: ${candidates.find(c => c.id === selectedCandidate)?.name}`
+                    : "Klik kartu kandidat untuk memilih."}
+                </p>
+                <button
+                  onClick={handleVote}
+                  disabled={!selectedCandidate || submitting}
+                  className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed text-sm"
+                >
+                  {submitting ? "Mengirim..." : "Konfirmasi Pilihan Saya"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Greyed-out registration */}
+          <div className="opacity-40 pointer-events-none select-none">
+            <div className="bg-surface border border-border-weak rounded-xl p-5">
+              <h3 className="font-semibold text-text-muted mb-4 flex items-center gap-2">
+                <UserPlus size={16} /> Daftarkan Diri sebagai Calon
+                <span className="text-[10px] bg-canvas border border-border-weak px-2 py-0.5 rounded text-text-muted ml-auto">Pendaftaran ditutup</span>
+              </h3>
+              <div className="space-y-3">
+                <div className="h-10 bg-canvas border border-border-weak rounded-xl" />
+                <div className="h-20 bg-canvas border border-border-weak rounded-xl" />
+                <div className="h-10 bg-border-weak rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── NOMINATING: candidate list + registration form ── */}
+      {phase === "nominating" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Candidate list */}
+          <div className="bg-surface border border-border-weak rounded-xl p-5">
+            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
+              <Users size={16} className="text-primary" /> Kandidat Terdaftar
+            </h3>
+            {candidates.length === 0 ? (
+              <p className="text-sm text-text-muted text-center py-8">Belum ada kandidat yang mendaftar.</p>
+            ) : (
+              <div className="space-y-3">
+                {candidates.map((c: any) => (
+                  <div key={c.id} className="p-4 rounded-xl border border-border-weak bg-canvas flex gap-3 items-start">
+                    <img
+                      src={avatarUrl(c.name)}
+                      alt={c.name}
+                      className="w-10 h-10 rounded-full shrink-0 border border-border-weak"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-text-main text-sm">{c.name}</p>
+                      {c.visiMisi && (
+                        <p className="text-xs text-text-muted leading-relaxed mt-1">{c.visiMisi}</p>
+                      )}
+                    </div>
                   </div>
-                  {c.visiMisi && (
-                    <p className="text-xs text-text-muted leading-relaxed pl-11">{c.visiMisi}</p>
-                  )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Registration form */}
+          <div className="bg-surface border border-border-weak rounded-xl p-5">
+            <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
+              <UserPlus size={16} className="text-primary" /> Daftarkan Diri sebagai Calon
+            </h3>
+            {hasNominated ? (
+              <div className="text-center py-8">
+                <CheckCircle2 size={40} className="text-primary mx-auto mb-3" />
+                <p className="font-semibold text-text-main text-sm">Pendaftaran Berhasil!</p>
+                <p className="text-xs text-text-muted mt-1">Nama Anda telah ditambahkan ke daftar kandidat.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleNominate} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-text-muted">Nama Lengkap (sesuai KTP)</label>
+                  <input
+                    value={nomName} onChange={e => setNomName(e.target.value)} required
+                    placeholder="Nama lengkap Anda"
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary"
+                  />
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-text-muted">Visi & Misi (opsional)</label>
+                  <textarea
+                    value={nomVisiMisi} onChange={e => setNomVisiMisi(e.target.value)} rows={4}
+                    placeholder="Tulis visi dan misi Anda untuk RT/RW..."
+                    className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none"
+                  />
+                </div>
+                <button
+                  type="submit" disabled={submitting}
+                  className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran Calon"}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
+      )}
 
-        {/* Registration form */}
-        <div className="bg-surface border border-border-weak rounded-xl p-5">
-          <h3 className="font-semibold text-text-main mb-4 flex items-center gap-2">
-            <UserPlus size={16} className="text-primary" /> Daftarkan Diri sebagai Calon
-          </h3>
-          {hasNominated ? (
-            <div className="text-center py-8">
-              <CheckCircle2 size={40} className="text-primary mx-auto mb-3" />
-              <p className="font-semibold text-text-main text-sm">Pendaftaran Berhasil!</p>
-              <p className="text-xs text-text-muted mt-1">{msg}</p>
-            </div>
-          ) : (
-            <form onSubmit={handleNominate} className="space-y-3">
-              {msg && <p className="text-xs text-accent bg-accent/10 px-3 py-2 rounded-lg">{msg}</p>}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-text-muted">Nama Lengkap (sesuai KTP)</label>
-                <input
-                  value={name} onChange={e => setName(e.target.value)} required
-                  placeholder="Nama lengkap Anda"
-                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-text-muted">Visi & Misi (opsional)</label>
-                <textarea
-                  value={visiMisi} onChange={e => setVisiMisi(e.target.value)} rows={4}
-                  placeholder="Tulis visi dan misi Anda untuk RT/RW..."
-                  className="w-full bg-canvas border border-border-strong rounded-xl p-3 text-sm text-text-main outline-none focus:border-primary resize-none"
-                />
-              </div>
-              <button
-                type="submit" disabled={submitting}
-                className="w-full bg-primary text-text-inverse font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-60"
-              >
-                {submitting ? "Mendaftar..." : "Konfirmasi Pendaftaran Calon"}
-              </button>
-            </form>
-          )}
+      {/* ── COMPLETED: winner ── */}
+      {phase === "completed" && (
+        <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-8 text-center">
+          <Trophy size={48} className="text-emerald-400 mx-auto mb-4" />
+          <p className="font-bold text-text-main text-xl mb-1">Selamat kepada {election?.winner}!</p>
+          <p className="text-sm text-text-muted">Ketua RT terpilih melalui proses pemilihan demokratis warga RT.</p>
         </div>
-      </div>
-
-      {!isNominating && phase !== "inactive" && (
-        <p className="text-center text-xs text-text-muted">
-          {phase === "voting" ? "Pendaftaran calon telah ditutup. Pemungutan suara dikelola langsung oleh Pengurus RT." : ""}
-          {phase === "completed" ? "Pemilihan telah selesai. Selamat kepada Ketua RT yang baru!" : ""}
-        </p>
       )}
     </div>
   );
