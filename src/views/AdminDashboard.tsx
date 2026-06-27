@@ -106,24 +106,24 @@ function AdminOverviewTab({ setTab, navigateToValidations }: { setTab: (tab: str
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <button onClick={() => navigateToValidations("letters")} className={cn("bg-surface border rounded-xl p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.letters > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <FileText size={18} className="text-primary mb-3" />
-          <p className="text-2xl font-display font-bold text-text-main">{stats.letters}</p>
-          <p className="text-xs text-text-muted mt-1">Surat Menunggu</p>
-          {stats.letters > 0 && <span className="mt-2 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
+      <div className="grid grid-cols-3 gap-3">
+        <button onClick={() => navigateToValidations("letters")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.letters > 0 ? "border-amber-500/25" : "border-border-weak")}>
+          <FileText size={16} className="text-primary mb-2" />
+          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.letters}</p>
+          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Surat Menunggu</p>
+          {stats.letters > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
         </button>
-        <button onClick={() => setTab("ai_triage")} className={cn("bg-surface border rounded-xl p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.highUrgency > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <AlertTriangle size={18} className="text-amber-400 mb-3" />
-          <p className="text-2xl font-display font-bold text-text-main">{stats.reports}</p>
-          <p className="text-xs text-text-muted mt-1">Laporan Aktif</p>
-          {stats.highUrgency > 0 && <span className="mt-2 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
+        <button onClick={() => setTab("ai_triage")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.highUrgency > 0 ? "border-amber-500/25" : "border-border-weak")}>
+          <AlertTriangle size={16} className="text-amber-400 mb-2" />
+          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.reports}</p>
+          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Laporan Aktif</p>
+          {stats.highUrgency > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
         </button>
-        <button onClick={() => navigateToValidations("register")} className={cn("bg-surface border rounded-xl p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.pendingWarga > 0 ? "border-amber-500/25" : "border-border-weak")}>
-          <UserCheck size={18} className="text-accent mb-3" />
-          <p className="text-2xl font-display font-bold text-text-main">{stats.pendingWarga}</p>
-          <p className="text-xs text-text-muted mt-1">Pendaftaran Baru</p>
-          {stats.pendingWarga > 0 && <span className="mt-2 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
+        <button onClick={() => navigateToValidations("register")} className={cn("bg-surface border rounded-xl p-3 sm:p-5 text-left hover:bg-surface-hover transition-all cursor-pointer", stats.pendingWarga > 0 ? "border-amber-500/25" : "border-border-weak")}>
+          <UserCheck size={16} className="text-accent mb-2" />
+          <p className="text-xl sm:text-2xl font-display font-bold text-text-main">{stats.pendingWarga}</p>
+          <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 leading-tight">Pendaftaran Baru</p>
+          {stats.pendingWarga > 0 && <span className="mt-1.5 inline-block text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded">Perlu tindakan</span>}
         </button>
       </div>
 

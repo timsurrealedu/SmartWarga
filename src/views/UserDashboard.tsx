@@ -156,24 +156,24 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="welcome-banner rounded-3xl p-8 relative overflow-hidden shadow-lg">
+    <div className="space-y-4">
+      <div className="welcome-banner rounded-2xl p-5 sm:p-8 relative overflow-hidden shadow-lg">
         <div className="relative z-10 w-full md:w-2/3">
-          <h1 className="text-3xl font-display font-bold mb-2 welcome-title">
+          <h1 className="text-xl sm:text-3xl font-display font-bold mb-1.5 welcome-title text-balance">
             Selamat datang, {profileName}
           </h1>
-          <p className="welcome-subtitle mb-6 max-w-lg">
-            Sistem Digital SmartWarga siap membantu administrasi dan keamanan lingkungan Anda. Apa yang ingin Anda lakukan hari ini?
+          <p className="welcome-subtitle mb-4 sm:mb-6 max-w-lg text-sm sm:text-base">
+            Sistem Digital SmartWarga siap membantu administrasi dan keamanan lingkungan Anda.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button
               onClick={() => setShowVideo(true)}
-              className="bg-accent text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-2 cursor-pointer">
+              className="bg-accent text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-2 cursor-pointer">
               <span>▶ Tonton Video Tutorial</span>
             </button>
             <button
               onClick={() => setTab("reports")}
-              className="bg-surface/10 border border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
+              className="bg-surface/10 border border-white/20 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm font-semibold transition-colors cursor-pointer hover:bg-surface/20">
               Buat Laporan
             </button>
           </div>
@@ -211,29 +211,34 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <button onClick={() => setTab("letters")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-             <FileCheck size={24} />
+      <div className="grid grid-cols-2 gap-3">
+        <button onClick={() => setTab("letters")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
+            <FileCheck size={15} />
           </div>
-          <h3 className="font-semibold font-display text-text-main">Surat Pengantar</h3>
-          <p className="text-3xl font-bold text-text-main mt-2">{activeLettersCount}</p>
-          <span className="text-xs text-text-muted mt-1">Menunggu persetujuan RT</span>
+          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Surat Pengantar</p>
+          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">{activeLettersCount}</p>
         </button>
-        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-12 h-12 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-4 group-hover:bg-violet-500/25 transition-colors">
-             <Newspaper size={24} />
+        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-violet-500/25 transition-colors shrink-0">
+            <Newspaper size={15} />
           </div>
-          <h3 className="font-semibold font-display text-text-main">Berita RT</h3>
-          <p className="text-sm text-text-muted mt-2 leading-relaxed">Pengumuman & agenda terbaru</p>
-          <span className="text-xs text-primary font-semibold mt-2">Lihat semua →</span>
+          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Berita RT</p>
+          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">Baru</p>
         </button>
-        <button onClick={() => setTab("finance_dues")} className="bg-surface p-6 rounded-2xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
-          <div className="w-12 h-12 rounded-full bg-primary text-text-inverse flex items-center justify-center mb-4 group-hover:opacity-90 transition-opacity">
-             <CheckCircle2 size={24} />
+        <button onClick={() => setTab("finance_dues")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
+            <CheckCircle2 size={15} />
           </div>
-          <h3 className="font-semibold font-display text-text-main">Status Iuran</h3>
-          <p className="text-xl font-medium text-primary mt-3 bg-primary/20 px-3 py-1 rounded-full">Lunas (Okt)</p>
+          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Status Iuran</p>
+          <p className="text-lg sm:text-2xl font-bold text-primary mt-0.5">Lunas</p>
+        </button>
+        <button onClick={() => setTab("reports")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-amber-500/20 transition-colors shrink-0">
+            <MessageSquare size={15} />
+          </div>
+          <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Laporan Saya</p>
+          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">0</p>
         </button>
       </div>
 
@@ -1506,19 +1511,19 @@ function ReportingTab({ setTab }: { setTab: (tab: string) => void }) {
         </div>
         
         <div className="flex bg-surface rounded-xl p-1 border border-border-weak">
-          <button 
+          <button
             onClick={() => setSubTab("create")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5", 
+              "flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5",
               subTab === "create" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >
             <Plus size={14} /> Lapor Masalah
           </button>
-          <button 
+          <button
             onClick={() => setSubTab("public")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5", 
+              "flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5",
               subTab === "public" ? "bg-primary text-text-inverse shadow-sm" : "text-text-muted hover:text-text-main"
             )}
           >

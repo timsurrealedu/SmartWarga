@@ -5,246 +5,225 @@ SmartWarga adalah platform digital terintegrasi yang dirancang khusus untuk memo
 
 ---
 
-## 🌟 Detail Fitur Unggulan
+## 🌟 Fitur Warga (User View)
 
-### 1. Landing Page Modern & Informatif
-Halaman awal yang dirancang dengan estetika bento-grid untuk memberikan kesan profesional dan terpercaya sejak pertama kali diakses.
--   **Value Proposition**: Menampilkan manfaat utama digitalisasi bagi lingkungan secara visual.
--   **Statistik Real-time**: Widget yang menunjukkan kecepatan layanan (misal: "10 menit untuk pengurusan surat").
--   **Akses Cepat**: Tombol navigasi yang membedakan alur pendaftaran warga baru dan login admin pengurus.
+### 1. Beranda Warga
+Dashboard utama yang menyajikan ringkasan kondisi terkini secara personal.
+- **Widget Statistik Interaktif**: Tiga kartu klik — Surat Pengantar (jumlah menunggu persetujuan), Berita RT (redirect ke portal berita), dan Status Iuran (redirect ke halaman keuangan).
+- **Banner Selamat Datang**: Tombol cepat "Tonton Video Tutorial" dan "Buat Laporan" untuk aksi paling umum.
+- **Penyimpanan Dokumen Digital**: Akses cepat ke brankas KTP/KK digital.
 
-### 2. Smart Registration dengan Teknologi OCR
-Mengurangi human error dan mempercepat proses pendaftaran warga melalui otomatisasi.
--   **Ekstraksi Data Otomatis**: Warga hanya perlu mengunggah foto KTP atau KK. Sistem akan memindai teks dan mengisi formulir (Nama, NIK, Alamat) secara otomatis.
--   **Verifikasi NIK**: Validasi format NIK 16 digit untuk memastikan keaslian data kependudukan.
--   **Status Menunggu**: Sistem secara otomatis menempatkan pendaftar baru dalam daftar tunggu untuk diverifikasi oleh Ketua RT.
-
-### 3. E-Reporting & Tiketing Lingkungan (Pengaduan Warga) Berbasis AI
-Solusi digital interaktif untuk mengirim pengaduan lingkungan yang didukung asisten kecerdasan buatan.
--   **Kategorisasi Laporan**: Pilihan kategori seperti Infrastruktur (lampu jalan, lubang), Kebersihan (sampah menumpuk), dan Keamanan (parkir liar).
--   **Alur Privasi Ganda**:
-    -   **Laporan Saya**: Ruang bagi warga untuk membuat laporan baru dan memantau progresnya secara eksklusif.
-    -   **Laporan Publik**: Daftar laporan yang telah dipublikasikan agar warga lain tidak melaporkan masalah yang sama dan dapat memantau transparansi penanganan masalah lingkungan.
--   **AI Photo Analysis**: Warga dapat mengunggah foto permasalahan, lalu sistem AI akan melakukan analisis foto secara cerdas untuk memindai jenis kerusakan, memperkirakan lokasi koordinat, mengidentifikasi tingkat urgensi, serta merumuskan deskripsi laporan otomatis.
--   **Interactive Multi-Step Stepper**: Proses pelaporan dipandu dengan stepper interaktif 5-langkah yang memvisualisasikan progress analisis gambar, penentuan kategori, konfirmasi lokasi, hingga sinkronisasi data ke server RT secara dramatis dan interaktif.
--   **Tracking Status**: Perubahan status laporan secara real-time (Pending → Diproses → Selesai) yang diupdate oleh admin.
-
-### 4. Sistem Layanan E-Surat Digital
+### 2. Surat Pengantar (E-Surat Digital)
 Digitalisasi pengurusan surat pengantar yang biasanya memakan waktu berhari-hari menjadi hitungan menit.
--   **Menu Template Sesuai Kebutuhan**: Pilihan jenis surat mulai dari Domisili, SKU (Surat Keterangan Usaha), SKTM (Surat Keterangan Tidak Mampu), hingga Akta Kelahiran/Kematian.
--   **PDF Auto-Generation**: Setelah admin memberikan persetujuan, sistem secara otomatis menghasilkan file PDF resmi dengan tata letak surat standar pemerintahan.
--   **Keamanan QR Code**: Setiap surat yang terbit dilengkapi dengan kode unik untuk verifikasi keaslian tanpa perlu tanda tangan basah yang repetitif.
+- **Template Surat Lengkap**: Domisili, SKU, SKTM, Nikah (N1–N4), Pengantar SKCK, Izin Keramaian, dan lainnya.
+- **Tanda Tangan Digital**: Warga menandatangani pengajuan langsung di canvas browser sebelum mengirim.
+- **Preview PDF Real-Time**: Pratinjau dokumen langsung diperbarui saat warga mengisi formulir, menampilkan nama dari profil dan keperluan yang diketik.
+- **Riwayat Pengajuan**: Tombol langsung yang menavigasi ke tab Lacak Status → sub-tab E-Surat Resmi.
 
-### 5. Transparansi Kas RT & Keuangan Terintegrasi
-Membasmi ketidakpercayaan warga dengan pelaporan keuangan yang jujur dan dapat diverifikasi.
--   **Dashboard Visual Keuangan**: Grafik batang dan donat yang membedakan alokasi iuran (Keamanan, Kebersihan, Sosial).
--   **Audit Digital**: Setiap transaksi pengeluaran wajib disertai unggahan foto bukti kwitansi atau nota belanja.
--   **Laporan Bulanan Instan**: Warga dapat melihat ringkasan pemasukan total, pengeluaran total, dan saldo kas terakhir kapan saja tanpa menunggu rapat warga.
+### 3. Lapor Masalah (E-Reporting)
+Sistem pelaporan lingkungan berbasis AI untuk warga.
+- **Kategorisasi**: Infrastruktur, Kebersihan, Keamanan, Sosial, dan Lainnya.
+- **AI Photo Analysis**: Unggah foto masalah, AI menganalisis jenis kerusakan, urgensi, dan lokasi secara otomatis.
+- **Stepper Interaktif**: Proses pelaporan 5 langkah dengan visualisasi analisis AI secara dramatis.
+- **Laporan Publik & Pribadi**: Pantau laporan sendiri atau lihat transparansi laporan warga lain.
 
-### 6. Dashboard Admin & Manajemen Kepengurusan
-Pusat kendali bagi Ketua RT atau RW untuk mengatur seluruh gerak-gerik administrasi.
--   **Antrean Verifikasi Warga**: List warga baru yang masuk melalui sistem OCR untuk disetujui atau ditolak berdasarkan validitas domisili.
--   **Manajemen Persetujuan Surat**: Admin menerima notifikasi setiap ada permohonan surat baru dan dapat memprosesnya dengan satu klik.
--   **Monitoring Darurat (Panic Button)**: Panel khusus yang siaga menerima sinyal bahaya jika ada warga yang menekan tombol darurat, lengkap dengan lokasi dan identitas pelapor.
+### 4. Lacak Status
+Pantau real-time seluruh pengajuan dalam satu halaman.
+- **Dua Sub-tab**: Aduan Lingkungan dan E-Surat Resmi — navigasi otomatis dari tombol di halaman Surat Pengantar langsung membuka sub-tab E-Surat.
+- **Timeline Progres**: Visualisasi alur status (Terkirim → Proses → Selesai) dengan estimasi waktu penyelesaian.
 
-### 7. Cloud Document Storage (Dokumen Digital)
-Brankas digital bagi warga untuk menyimpan dokumen penting agar selalu tersedia saat dibutuhkan.
--   **Repository KTP/KK**: Menghilangkan kebutuhan untuk sering mencari fotokopi dokumen saat pengurusan administrasi mendadak.
--   **Akses Cepat**: Fitur klik-untuk-unduh yang memungkinkan warga mencetak dokumen mereka langsung dari dashboard.
+### 5. Keuangan & Iuran
+Transparansi kas RT yang dapat diakses warga kapan saja.
+- **Grafik Donat**: Visualisasi alokasi dana RT (Keamanan, Kebersihan, Sosial, dll.) dengan total di tengah.
+- **Riwayat Iuran Pribadi**: Status lunas/tunggak per bulan beserta bukti pembayaran.
+- **Pembayaran QRIS**: Simulasi pembayaran iuran digital dengan nominal dinamis.
+- **Donasi Gotong Royong**: Fitur donasi sukarela untuk kegiatan lingkungan.
 
-### 8. Floating Database-Aware SmartWarga AI Chatbot (Asisten Cerdas Warga)
-Fitur asisten virtual interaktif yang mengambang di pojok kanan bawah, siap membantu warga 24/7 dengan data dinamis lingkungan RT.
--   **Database-Aware Context**: Chatbot terintegrasi langsung dengan database internal RT (seperti saldo kas, histori iuran, rincian pengeluaran, status dokumen, dll.) untuk memberikan jawaban yang akurat, real-time, dan kontekstual.
--   **Premium Formatting Engine**: Balasan dari AI diformat secara indah dengan dukungan render bold text (`**teks**`), bulleted lists, numbered lists, dan spasi paragraf yang dinamis untuk memudahkan pembacaan warga.
--   **Smart Auto-Scroll**: Kolom percakapan dilengkapi dengan fitur *auto-scroll* otomatis ke pesan paling baru setiap kali AI sedang mengetik atau memberikan respons baru demi pengalaman berkirim pesan yang mulus.
--   **Demo Quick Prompts**: Tersedia tombol shortcut pertanyaan cepat (misal: "Cek Saldo Kas RT", "Rincian Iuran Bulanan", dll.) untuk mempercepat interaksi warga dengan AI.
+### 6. Portal Berita & Gotong Royong
+Pusat informasi dan kegiatan komunitas RT.
+- **Pengumuman RT**: Berita, agenda, dan pengumuman resmi dari pengurus.
+- **Jadwal Gotong Royong**: Kalender kegiatan warga dengan RSVP dan reminder.
+
+### 7. Pasar & UMKM
+Direktori usaha lokal warga RT.
+- **Listing Produk/Jasa**: Tampilan kartu UMKM dengan foto, deskripsi, dan tombol WhatsApp langsung.
+- **Iklan Berbayar**: Sponsor lokal tampil sebagai karousel di sidebar.
+- **Daftar UMKM Baru**: Warga dapat mendaftarkan usahanya langsung dari aplikasi.
+
+### 8. Pemilihan RT/RW
+Tab khusus untuk proses pemilihan ketua RT secara demokratis.
+- **Fase Nominasi** (aktif): Warga dapat melihat kandidat yang sudah mendaftar beserta foto avatar dan visi misi, serta mendaftarkan diri sebagai calon.
+- **Fase Pemungutan Suara** (aktif): Kartu kandidat dengan foto, nama, dan visi misi — klik untuk memilih, konfirmasi dengan satu tombol. Form pendaftaran di-grey-out otomatis saat fase ini.
+- **Fase Selesai**: Banner pemenang dengan nama ketua RT terpilih.
+- **Fase Tidak Aktif**: Placeholder informatif, semua elemen interaksi di-grey-out.
+
+### 9. Profil Keluarga
+Manajemen data kontak pribadi warga.
+- **Data Terlindungi**: Nama, alamat, RT, dan RW bersifat read-only (diatur RT) — tidak bisa diubah sembarangan.
+- **Kontak Editable**: Hanya nomor WhatsApp dan email yang bisa diperbarui mandiri.
+- **Anggota Keluarga**: Tambah/hapus anggota keluarga dalam satu kartu keluarga.
+
+### 10. AI Chatbot Warga
+Asisten virtual yang mengambang di pojok kanan bawah.
+- **Database-Aware**: Terhubung ke data RT untuk menjawab pertanyaan soal saldo kas, status iuran, jadwal gotong royong, dan lainnya secara real-time.
+- **Quick Prompts**: Tombol shortcut pertanyaan umum (Cek Saldo, Status Iuran, Jadwal RT, dll.).
+- **Rich Text Formatting**: Jawaban AI dirender dengan bold, bullet list, dan paragraf terstruktur.
+
+---
+
+## 🛠️ Fitur Pengurus (Admin View)
+
+### 1. Beranda Pengurus
+Pusat kendali ringkas untuk pengurus RT.
+- **3 Metrik Aksi**: Surat Menunggu (redirect ke Validasi Surat), Laporan Aktif (redirect ke Kelola Laporan), Pendaftaran Baru (redirect ke Pendaftaran Warga) — semua langsung ke sub-tab yang tepat.
+- **Alert Pemilihan**: Banner status pemilihan aktif dengan tombol kelola langsung.
+- **Laporan Terbaru**: 4 laporan warga paling baru dengan indikator urgensi warna-warni.
+- **Klik Avatar Profil**: Klik nama/foto di pojok kanan atas header langsung redirect ke halaman Profil Pengurus.
+
+### 2. Administrasi Warga (3 Sub-tab)
+
+#### Validasi Surat
+- **Sorting Otomatis**: Surat pending selalu muncul di atas; yang sudah disetujui/ditolak tenggelam ke bawah.
+- **Filter & Pencarian**: Filter status (Menunggu/Disetujui/Ditolak) dan pencarian nama berfungsi secara real-time.
+- **Tombol Tunggal "Tinjau"**: Tidak ada tombol tolak di list — hanya "Tinjau" yang membuka modal review berisi detail surat, tanda tangan warga, canvas tanda tangan digital pengurus, serta tombol Tolak dan Setujui & Tanda Tangani.
+
+#### Pendaftaran Warga
+- **Antrian Self-Registration**: Daftar warga yang mendaftar mandiri via aplikasi (dengan OCR KTP) menunggu verifikasi ketua RT — tampil dengan NIK, nama, nomor HP, waktu pengiriman, dan preview kartu KTP simulasi.
+- **Tinjau Inline**: Klik "Tinjau" membuka panel expand berisi data lengkap yang bisa diedit, preview KTP, serta tombol Tolak / Setujui & Tambahkan.
+- **Pendaftaran Manual (Walk-in)**: Fitur scan KTP/KK untuk warga yang datang langsung ke kantor RT, dengan AI OCR yang sama.
+
+#### Data Warga
+- **Keamanan Digital Signature**: Akses terkunci dengan canvas tanda tangan pengurus — hanya bisa dibuka setelah pengurus membubuhkan tanda tangan digital.
+- **Total Warga**: Jumlah warga terdaftar tampil di header saat akses dibuka.
+- **Edit Panel Inline**: Klik "Edit" membuka panel expand berisi preview kartu KTP dan Kartu Keluarga, serta form editable untuk semua data warga (NIK, nama, HP, email, agama, status perkawinan, pekerjaan, alamat).
+
+### 3. Kelola Laporan
+Manajemen pengaduan warga dengan triage berbasis AI.
+- **Filter Ganda**: Filter status (TERKIRIM / PROSES / SELESAI) dan filter kategori (Infrastruktur, Kebersihan, Keamanan, Sosial, Lainnya) berjalan bersamaan.
+- **Sorting Cerdas**: Laporan TERKIRIM dan PROSES selalu di atas, SELESAI di bawah; dalam tiap grup diurutkan berdasarkan skor urgensi AI dari tinggi ke rendah.
+- **Alur Kerja Bertahap**:
+  - **TERKIRIM**: Pengurus melihat foto warga, deskripsi, label AI, lalu klik "Validasi" → status berubah ke PROSES.
+  - **PROSES**: Pengurus menulis balasan, klik "Kirim & Selesaikan" → status berubah ke SELESAI.
+  - **SELESAI**: Hanya tampil sebagai arsip read-only.
+- **Foto Laporan Warga**: Gambar yang dilampirkan warga ditampilkan langsung di kartu laporan yang diperluas.
+
+### 4. Kelola Berita
+Publikasi pengumuman dan berita lingkungan RT.
+- Buat, edit, dan hapus berita/pengumuman yang tampil di Portal Berita warga.
+
+### 5. Kelola UMKM & Iklan
+Manajemen direktori usaha dan slot iklan berbayar.
+- Verifikasi listing UMKM baru dari warga.
+- Kelola iklan sponsor yang tampil di sidebar carousel.
+
+### 6. Kelola Kas & Iuran
+Manajemen keuangan RT yang transparan.
+- **Grafik Donat**: Visualisasi penggunaan dana yang sama seperti yang dilihat warga.
+- **Tambah Transaksi Manual**: Input pemasukan/pengeluaran dengan bukti foto kwitansi.
+- **Manajemen Iuran Warga**: Tandai status lunas/tunggak per warga per bulan, kirim reminder.
+
+### 7. Pemilihan RT (Kelola)
+Panel manajemen pemilihan dari sisi pengurus.
+- **Setup Periode**: Atur masa jabatan pengurus saat ini dan buka fase nominasi.
+- **Mulai Voting**: Transisi fase dari nominasi ke pemungutan suara.
+- **Hitung Suara & Umumkan**: Tally otomatis, tampilkan pemenang ke seluruh warga.
+- **Reset**: Mulai ulang seluruh siklus pemilihan.
+
+### 8. Profil Pengurus
+Halaman profil khusus pengurus RT.
+- **Data Terlindungi**: Nama, jabatan, RT/RW, dan periode bersifat read-only (diatur sistem).
+- **Kontak Editable**: Nomor WhatsApp dan email dinas bisa diperbarui mandiri.
+- **Info Card**: Ringkasan kontak yang ditampilkan ke warga sebagai informasi resmi RT.
+
+### 9. AI Chatbot Pengurus
+Versi admin dari asisten virtual dengan konteks pengurus.
+- Prompt khusus admin: saldo kas, laporan aktif, surat pending, tunggakan iuran, statistik RT, info pemilihan, dan draft pengumuman.
 
 ---
 
 ## 🛠️ Teknologi & Framework (Tech Stack)
 
-Aplikasi ini dibangun menggunakan teknologi modern untuk memastikan performa yang cepat dan pengalaman pengguna yang mulus:
-
--   **Frontend**: [React 19](https://react.dev/) - Library JavaScript untuk membangun antarmuka pengguna.
--   **Bundler & Build Tool**: [Vite](https://vitejs.dev/) - Tooling frontend generasi berikutnya yang sangat cepat.
--   **Bahasa Pemrograman**: [TypeScript](https://www.typescriptlang.org/) - Memberikan keamanan tipe data untuk mengurangi bug.
--   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) - Framework CSS utility-first untuk desain responsif yang cepat.
--   **Ikonografi**: [Lucide React](https://lucide.dev/) - Set ikon vektor yang bersih dan konsisten.
--   **Animasi**: [Motion](https://motion.dev/) - Digunakan untuk transisi halus dan feedback visual.
--   **Backend (Minimal)**: [Express](https://expressjs.com/) - Digunakan untuk melayani aset statis dan API sederhana.
--   **Inteligensi**: [Google Gemini AI (@google/genai)](https://ai.google.dev/) - Digunakan untuk teknologi Smart OCR pada pendaftaran KTP.
+- **Frontend**: [React 19](https://react.dev/) — Library JavaScript untuk antarmuka pengguna.
+- **Bundler**: [Vite](https://vitejs.dev/) — Build tool generasi berikutnya yang sangat cepat.
+- **Bahasa**: [TypeScript](https://www.typescriptlang.org/) — Keamanan tipe data untuk mengurangi bug.
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) — Utility-first CSS dengan design system custom via `@theme`.
+- **Animasi**: [Motion (Framer Motion)](https://motion.dev/) — Transisi halus dan feedback visual.
+- **Grafik**: [Recharts](https://recharts.org/) — Area chart, Bar chart, dan Donut/Pie chart.
+- **PDF**: [jsPDF](https://github.com/parallax/jsPDF) + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable) — Generasi PDF surat pengantar di sisi klien.
+- **Ikonografi**: [Lucide React](https://lucide.dev/) — Set ikon vektor bersih dan konsisten.
+- **Backend**: [Express](https://expressjs.com/) — Melayani aset statis dan REST API sederhana (in-memory).
+- **AI/OCR**: [Google Gemini AI (@google/genai)](https://ai.google.dev/) — Ekstraksi data KTP/KK otomatis via structured output.
 
 ---
 
 ## 🚀 Menjalankan di Lokal (Local Setup)
 
-Ikuti langkah-langkah terperinci di bawah ini untuk mengunduh, mengonfigurasi, dan menjalankan aplikasi SmartWarga pada mesin lokal Anda:
+### Prasyarat
+- **Node.js** v18 LTS atau lebih baru
+- **NPM** (bawaan Node.js)
 
-### 📋 Prasyarat Sistem
-Sebelum memulai, pastikan perangkat lokal Anda telah terpasang perangkat lunak pendukung berikut:
-- **Node.js** (Sangat disarankan Versi 18 LTS ke atas atau v20+)
-- **NPM** (Bawaan dari rilis instalasi Node.js)
-- **Git** (Opsional, untuk melakukan klon repositori)
+### Langkah Instalasi
 
----
-
-### 💻 Langkah-langkah Panduan Instalasi
-
-#### 1. Persiapan Direktori Proyek
-Unduh source-code atau lakukan kloning dari repositori Anda, kemudian masuk ke dalam direktori kerja:
 ```bash
-# Clone menggunakan git
-git clone <URL_REPOSITORI_ANDA> smartwarga
+# 1. Clone repositori
+git clone <URL_REPOSITORI> smartwarga
 cd smartwarga
 
-# Atau jika berbentuk arsip zip, ekstrak lalu masuk ke folder:
-cd smartwarga
-```
-
-#### 2. Pemasangan Dependensi (Dependency Installation)
-Pasang semua paket library pihak ketiga yang terdaftar pada `package.json` secara otomatis melalui package manager:
-```bash
+# 2. Install dependensi
 npm install
-```
 
-#### 3. Konfigurasi Environment Variables (.env)
-Aplikasi ini memanfaatkan API eksternal (Google Gemini) untuk fitur cerdas auto-fill KTP (OCR). Konfigurasikan variabel lingkungan Anda dengan membuat berkas `.env` dari blueprint contoh:
-```bash
+# 3. Konfigurasi environment
 cp .env.example .env
-```
-Buka berkas `.env` baru tersebut, lalu isi nilai kredensial Anda:
-```env
-# Port aplikasi server lokal dijalankan
-PORT=3000
+# Edit .env dan isi GEMINI_API_KEY dari Google AI Studio
 
-# Kunci API Google Gemini (Diperoleh dari Google AI Studio)
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-#### 4. Menjalankan Kode dalam Mode Pengembangan (Development Mode)
-Jalankan dev server lokal terintegrasi (Express backend & Vite HMR frontend) dengan perintah berikut:
-```bash
+# 4. Jalankan dev server (Express + Vite HMR, port 3000)
 npm run dev
 ```
 
-#### 5. Akses Hasil Running Proyek
-Buka peramban web (Chrome/Firefox/Edge) lalu kendali diarahkan ke:
-- URL Lokal: **`http://localhost:3000`**
+Buka **`http://localhost:3000`** di browser.
+
+### Akun Demo
+- **Warga**: Login sebagai warga dari halaman landing.
+- **Pengurus RT**: Login sebagai admin dari halaman landing (switch role di sidebar).
 
 ---
 
-## 💾 Panduan Konfigurasi Backend & Database (Production Integration)
+## 💾 Integrasi Database (Production)
 
-Secara bawaan (*default*), aplikasi memuat data interaktif (Surat, Finansial, Riwayat Iuran, Laporan, UMKM) menggunakan **in-memory data store** (variabel array JavaScript global) di dalam berkas server utama `server.ts`. 
+Secara default, seluruh data tersimpan **in-memory** di `server.ts` — reset saat server restart. Untuk produksi:
 
-Saat server dimatikan atau direstart pada komputer lokal, modifikasi data baru akan dikembalikan ke keadaan semula (*volatile*). Untuk implementasi produksi nyata, Anda dapat mengintegrasikan database menggunakan rekomendasi arsitektur berikut:
+### PostgreSQL / SQLite via Prisma ORM
+```bash
+npm install prisma @prisma/client
+npx prisma init
+# Definisikan schema, lalu:
+npx prisma migrate dev --name init
+```
 
-### Opsi A: Integrasi Database Relasional (PostgreSQL / SQLite via Prisma ORM)
-Pilihan terbaik demi menjaga integritas data keuangan iuran, relasi kependudukan warga, serta penanganan berkas pengajuan surat resmi.
-
-1. **Pasang Prisma ORM pada Proyek:**
-   ```bash
-   npm install prisma @prisma/client
-   npx prisma init
-   ```
-2. **Definisikan Skema Model di `prisma/schema.prisma`:**
-   ```prisma
-   datasource db {
-     provider = "sqlite" // atau "postgresql"
-     url      = env("DATABASE_URL")
-   }
-
-   generator client {
-     provider = "prisma-client-js"
-   }
-
-   model Resident {
-     id        String   @id @default(uuid())
-     name      String
-     address   String
-     phone     String
-     dues      Due[]
-   }
-
-   model Due {
-     id         String   @id @default(uuid())
-     month      String
-     amount     Float
-     status     String   // "paid", "unpaid", "pending"
-     residentId String
-     resident   Resident @relation(fields: [residentId], references: [id])
-   }
-   ```
-3. **Migrasi Database:**
-   ```bash
-   npx prisma migrate dev --name init
-   ```
-4. **Hubungkan di `server.ts`:**
-   Impor Prisma Client ke berkas `server.ts` Anda dan gantikan variabel in-memory dengan query DB nyata:
-   ```typescript
-   import { PrismaClient } from "@prisma/client";
-   const prisma = new PrismaClient();
-
-   // Ganti rute GET /api/admin/residents:
-   app.get("/api/admin/residents", async (req, res) => {
-     const residents = await prisma.resident.findMany({
-       include: { dues: true }
-     });
-     res.json(residents);
-   });
-   ```
+### Firebase Firestore
+```bash
+npm install firebase-admin
+# Inisialisasi Admin SDK dengan service account dari Google Cloud Console
+```
 
 ---
 
-### Opsi B: Integrasi Firebase (Firestore & Authentication)
-Sangat cocok untuk tim pengembang yang menginginkan infrastruktur serverless nir-kelola dengan sinkronisasi basis data real-time.
+## 🔒 Keamanan & Akses
 
-1. **Pasang Firebase SDK:**
-   ```bash
-   npm install firebase-admin
-   ```
-2. **Inisialisasi Firebase Admin di `server.ts`:**
-   ```typescript
-   import admin from "firebase-admin";
-   
-   // Siapkan akun layanan (Service Account) Firebase dari Konsol Google Cloud/Firebase
-   const serviceAccount = require("./firebase-service-account.json");
-
-   admin.initializeApp({
-     credential: admin.credential.cert(serviceAccount)
-   });
-
-   const db = admin.firestore();
-   ```
-3. **Ubah Query Collection:**
-   Gunakan fungsi Firestore SDK untuk mengambil dan mengubah status iuran serta laporan e-reporting warga secara cloud:
-   ```typescript
-   // Contoh rute GET /api/user/letters
-   app.get("/api/user/letters", async (req, res) => {
-     const snapshot = await db.collection("letters").orderBy("date", "desc").get();
-     const letters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-     res.json(letters);
-   });
-   ```
+- **Role-Based Access Control (RBAC)**: Pemisahan ketat antara warga (`user`) dan pengurus (`admin`) — tidak ada rute yang bisa diakses lintas peran.
+- **Digital Signature Gate**: Akses Data Warga di sisi pengurus wajib melewati verifikasi tanda tangan digital canvas sebelum data sensitif tampil.
+- **Read-Only Fields**: RT, RW, nama, dan alamat warga tidak bisa diubah sendiri — hanya pengurus yang berwenang mengubah via Data Warga.
+- **Validasi Server-Side**: Semua input keuangan dan pengajuan surat divalidasi di sisi Express sebelum disimpan.
 
 ---
 
----
+## 🎨 Desain & UX
 
-## 🎨 Filosofi Desain & User Experience
-
-Aplikasi ini dibangun dengan prinsip **"Trust through Clarity"** (Kepercayaan melalui Kejelasan):
--   **High Contrast UI**: Skema warna yang diperbarui dengan kontras tinggi (Latar belakang gelap pekat dengan teks putih murni dan aksen oranye/hijau neon) memastikan teks mudah dibaca oleh warga dari berbagai kelompok usia.
--   **Micro-Animations**: Menggunakan `framer-motion` untuk memberikan umpan balik visual saat tombol ditekan atau saat berpindah tab.
--   **Responsive Layout**: Dashboard yang menyesuaikan diri dengan sempurna baik diakses melalui smartphone (saat warga sedang di luar) maupun melalui laptop/tablet (saat pengurus sedang bekerja di meja).
+- **Mobile-First**: Layout responsif yang dioptimalkan untuk smartphone karena mayoritas warga mengakses lewat HP.
+- **Dark/Light Mode**: Dapat diubah via sidebar — menggunakan class `.light` pada `<html>` dengan CSS custom properties.
+- **Design System**: Token warna semantik (`--color-canvas`, `--color-primary`, `--color-accent`, dll.) didefinisikan di `src/index.css` via `@theme`. Selalu gunakan `bg-canvas`, `text-primary`, dst. — bukan warna Tailwind mentah.
+- **Tipografi**: Plus Jakarta Sans (display/heading) + Inter (body/UI).
 
 ---
 
-## 🔒 Keamanan & Integritas Data
-
--   **Role-Based Access Control (RBAC)**: Pemisahan akses yang ketat antara Warga dan Admin RT untuk mencegah kebocoran data sensitif.
--   **Validasi Server-Side**: Semua input (terutama keuangan) divalidasi di sisi server untuk mencegah manipulasi data.
--   **Enkripsi Sederhana**: Data sensitif dilindungi melalui alur otentikasi yang aman.
-
----
-*SmartWarga — Mewujudkan masa depan lingkungan yang lebih terorganisir.*
+*SmartWarga — Mewujudkan masa depan lingkungan yang lebih terorganisir, transparan, dan demokratis.*
