@@ -211,29 +211,29 @@ function OverviewTab({ letters, setTab }: { letters: any[], setTab: (tab: string
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => setTab("letters")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button onClick={() => setTab("letters")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
             <FileCheck size={15} />
           </div>
           <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Surat Pengantar</p>
           <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">{activeLettersCount}</p>
         </button>
-        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+        <button onClick={() => setTab("news_gotong_royong")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-violet-500/15 text-violet-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-violet-500/25 transition-colors shrink-0">
             <Newspaper size={15} />
           </div>
           <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Berita RT</p>
-          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">Baru</p>
+          <p className="text-lg sm:text-2xl font-bold text-text-main mt-0.5">3</p>
         </button>
-        <button onClick={() => setTab("finance_dues")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+        <button onClick={() => setTab("finance_dues")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-primary/20 transition-colors shrink-0">
             <CheckCircle2 size={15} />
           </div>
           <p className="text-[11px] sm:text-xs text-text-muted leading-tight">Status Iuran</p>
           <p className="text-lg sm:text-2xl font-bold text-primary mt-0.5">Lunas</p>
         </button>
-        <button onClick={() => setTab("reports")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group text-left">
+        <button onClick={() => setTab("reports")} className="bg-surface p-3 sm:p-5 rounded-xl border border-border-weak flex flex-col items-center text-center hover:border-primary/40 hover:bg-surface-hover transition-all cursor-pointer group">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-amber-500/20 transition-colors shrink-0">
             <MessageSquare size={15} />
           </div>
